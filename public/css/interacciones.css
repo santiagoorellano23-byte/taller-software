@@ -1,0 +1,109 @@
+/* Respuesta visual del panel. Solo los controles interactivos reciben relieve;
+   los datos, importes y estados permanecen quietos. */
+:root {
+  --respuesta-rapida: 120ms;
+  --respuesta: 180ms;
+  --respuesta-curva: cubic-bezier(.2, .7, .3, 1);
+  --sombra-control: 0 1px 2px rgb(20 20 20 / .06);
+  --sombra-control-activo: 0 4px 10px rgb(20 20 20 / .12);
+}
+
+@media screen {
+  .btn {
+    box-shadow: var(--sombra-control);
+    transition: background-color var(--respuesta-rapida), border-color var(--respuesta-rapida),
+      color var(--respuesta-rapida), box-shadow var(--respuesta) var(--respuesta-curva),
+      transform var(--respuesta) var(--respuesta-curva);
+  }
+  .btn-texto { box-shadow: none; }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+    transition-duration: 60ms;
+  }
+  .btn-texto:not(:disabled):not([aria-disabled="true"]):active { transform: none; box-shadow: none; }
+  .btn:disabled, .btn[aria-disabled="true"], .btn.cargando { transform: none; box-shadow: none; }
+
+  :is(.nav a, .tabbar a, .pestanas a, .grupo-menu a, .resultado, .area, .tira button,
+    .sugerencias button, details.mas > summary, .opcion span, .toast button) {
+    transition: background-color var(--respuesta-rapida), border-color var(--respuesta-rapida),
+      color var(--respuesta-rapida), box-shadow var(--respuesta) var(--respuesta-curva);
+  }
+  :is(.nav a, .tabbar a, .grupo-menu a, .area, .volver) > .i {
+    transition: color var(--respuesta-rapida), transform var(--respuesta) var(--respuesta-curva);
+  }
+  .grupo-menu a::after {
+    content: ''; width: 7px; height: 7px; flex: none; margin-left: auto;
+    border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor;
+    color: var(--muted); opacity: .55; transform: rotate(45deg);
+    transition: color var(--respuesta-rapida), opacity var(--respuesta-rapida),
+      transform var(--respuesta) var(--respuesta-curva);
+  }
+  .grupo-menu a > span { min-width: 0; }
+  .grupo-menu a:focus-visible, .resultado:focus-visible { outline-offset: -3px; }
+  .nav a:focus-visible { outline-color: #fff; outline-offset: -3px; background: var(--graphite-2); }
+  .nav a[aria-current="page"]:focus-visible { outline-color: var(--red); background: var(--surface); }
+  .tabbar a:active { background: var(--red-tint); color: var(--red); }
+  .pestanas a:focus-visible { outline-offset: -3px; }
+  .tira button:focus-visible { outline-offset: -3px; }
+  .opcion input:disabled + span { opacity: .55; cursor: not-allowed; }
+  .opcion input:not(:disabled):active + span { box-shadow: inset 0 1px 3px rgb(20 20 20 / .14); }
+
+  :is(.campo input, .campo select, .campo textarea, .buscador input) {
+    transition: border-color var(--respuesta-rapida), background-color var(--respuesta-rapida),
+      box-shadow var(--respuesta-rapida);
+  }
+  .campo > label { transition: color var(--respuesta-rapida); }
+  .campo:focus-within > label { color: var(--red); }
+  .tabla-autos td { transition: background-color var(--respuesta-rapida); }
+  .tabla-autos tbody tr:focus-within td { background: var(--surface-2); }
+  details.mas { transition: border-color var(--respuesta-rapida); }
+  details.mas:focus-within { border-color: var(--line-strong); }
+  details.mas > summary { border-radius: inherit; }
+  details.mas > summary::before {
+    transition: background-color var(--respuesta-rapida), color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida);
+  }
+  details.mas[open] > summary::before { color: var(--red); background: var(--red-tint); }
+  .toast button:focus-visible { outline-color: #fff; }
+  dialog.dialogo[open] { animation: confirmar-entrada var(--respuesta) var(--respuesta-curva); }
+  dialog.dialogo[open]::backdrop { animation: velo-entrada var(--respuesta) ease-out; }
+  @keyframes confirmar-entrada { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes velo-entrada { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* Hover solo donde hay un puntero: evita que el teléfono retenga ese aspecto. */
+@media screen and (hover: hover) and (pointer: fine) {
+  .btn:where(:not(:disabled):not([aria-disabled="true"]):not(.cargando):not(.btn-texto):not(.btn-peligro)):hover {
+    transform: translateY(-1px); box-shadow: var(--sombra-control-activo);
+  }
+  .btn-primario:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover {
+    box-shadow: 0 4px 12px rgb(174 4 15 / .24);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
+    transform: translateY(1px); box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+  }
+  .btn-texto:not(:disabled):not([aria-disabled="true"]):active { transform: none; box-shadow: none; }
+  .nav a:not([aria-current="page"]):hover > .i { transform: translateX(2px); }
+  .tabbar a:not([aria-current="page"]):hover { color: var(--red); background: var(--red-tint); }
+  .grupo-menu a:hover, .area:hover { background: #FBF5F5; box-shadow: inset 3px 0 0 var(--red); }
+  .grupo-menu a:hover::after { color: var(--red); opacity: 1; transform: translateX(2px) rotate(45deg); }
+  .grupo-menu a:hover > .i { transform: translateX(2px); }
+  .resultado:hover { border-color: var(--red-line); box-shadow: var(--sombra-control-activo); }
+  .tira button:not([aria-pressed="true"]):hover { background: var(--red-tint); box-shadow: inset 0 -3px 0 var(--red-line); }
+  .pestanas a:not([aria-current="page"]):hover { background: var(--surface-3); color: var(--red); }
+  .opcion input:not(:checked):not(:disabled):hover + span { background: var(--surface-2); border-color: var(--ink-2); }
+  .opcion input:checked:not(:disabled):hover + span { box-shadow: 0 0 0 2px var(--line); }
+  :is(.campo input, .campo select, .campo textarea):not(:disabled):not([readonly]):not(:focus):hover { border-color: var(--muted); }
+  .campo--error :is(input, select, textarea):not(:focus):hover { border-color: var(--red); }
+  details.mas > summary:hover { background: var(--surface-3); }
+  .volver:hover > .i { transform: translateX(-2px); }
+  .toast button:hover { background: var(--graphite-2); border-color: var(--silver); }
+}
+
+/* Conserva la respuesta de color y foco, sin desplazamientos ni giros. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .btn, .nav a > .i, .grupo-menu a > .i, .volver > .i { transform: none !important; }
+  .grupo-menu a::after { transform: rotate(45deg) !important; }
+}

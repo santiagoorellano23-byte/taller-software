@@ -1,0 +1,268 @@
+/* Respuesta del taller: controles precisos, datos quietos.
+   Última capa sobre interacciones/remaster; sin dependencias ni cambios de marca. */
+:root {
+  --respuesta-rapida: 120ms;
+  --respuesta: 180ms;
+  --respuesta-panel: 240ms;
+  --respuesta-curva: cubic-bezier(.23, 1, .32, 1);
+  --respuesta-curva-panel: cubic-bezier(.32, .72, 0, 1);
+  --motion-fast: var(--respuesta-rapida);
+  --motion-panel: var(--respuesta);
+}
+
+@media screen {
+  /* Ningún cambio de posición en filas, tarjetas, importes ni resultados. */
+  :is(.rec-motivo, .rec-marca, .mas-tarjeta a):active {
+    transform: none;
+  }
+  :is(.resultado, .area, .pos-producto, .rec-review-row) {
+    transform: none;
+    transition: background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida),
+      box-shadow var(--respuesta-rapida);
+  }
+
+  /* El movimiento se limita al propio control. Nunca retrasa su acción. */
+  .btn {
+    transition: background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida),
+      box-shadow var(--respuesta-rapida),
+      transform var(--respuesta-rapida) var(--respuesta-curva);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover {
+    transform: none;
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+  }
+  .btn-texto:not(:disabled):not([aria-disabled="true"]):active {
+    transform: none;
+    box-shadow: none;
+  }
+  :is(.btn:disabled, .btn[aria-disabled="true"], .btn.cargando) {
+    transform: none;
+    box-shadow: none;
+  }
+  .btn.cargando::after {
+    border-color: var(--sobre-accion) var(--sobre-accion) transparent transparent;
+    animation: giro 700ms linear infinite;
+  }
+  .btn:not(.btn-primario):not(.btn-oscuro).cargando::after {
+    border-color: var(--ink) var(--ink) transparent transparent;
+  }
+
+  /* Navegación, filtros y categorías: estado visible sin desplazar el texto. */
+  :is(.nav a, .tabbar a, .subnav a, .pestanas a, .subareas a,
+    .hoy-segmentos a, .prioridades-hoy > a, .tira button,
+    .categoria-pos, .motivo-pos, .sugerencias button, .selector-tema,
+    .mas-tarjeta a, .grupo-menu a, .toast button, button.enlace, .volver) {
+    transition: background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida),
+      box-shadow var(--respuesta-rapida);
+  }
+  :is(.nav a, .tabbar a, .grupo-menu a, .volver) > .i,
+  .mas-tarjeta a > .material-icon:last-child {
+    transition: color var(--respuesta-rapida), opacity var(--respuesta-rapida),
+      transform var(--respuesta-rapida) var(--respuesta-curva);
+  }
+  .mas-tarjeta a > .material-icon:last-child { transform: none; }
+  .tabbar--isla .isla-icono {
+    transition: transform var(--respuesta-rapida) var(--respuesta-curva);
+  }
+  .tabbar--isla a:active .isla-icono { transform: scale(.96); }
+  .rec-progreso span {
+    transition: background-color var(--respuesta) var(--respuesta-curva);
+  }
+
+  /* Las elecciones conservan su contorno y su marca; no dependen del movimiento. */
+  :is(.rec-motivo, .rec-marca > span, .rec-etapa .check, .opcion > span,
+    .catalogo-item, .catalogo-item__icono, .pos-producto__icono) {
+    transition: background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida),
+      box-shadow var(--respuesta-rapida);
+  }
+  .rec-motivo:not(:disabled):active,
+  .rec-marca:has(input:not(:disabled)):active > span,
+  .rec-review-row:not(:disabled):active,
+  .mas-tarjeta a:active {
+    background-color: var(--surface-3);
+  }
+  .rec-motivo[aria-pressed="true"]:active { background-color: var(--red-tint); }
+  .rec-marca input:checked + span { background-color: #fff6f6; }
+  .rec-etapa .check:has(input:checked),
+  .rec-detalles .btn[aria-pressed="true"] {
+    border-width: 1px;
+    box-shadow: inset 0 0 0 1px var(--red);
+  }
+  .rec-motivo:disabled,
+  .rec-marca:has(input:disabled) { cursor: not-allowed; }
+  .rec-motivo:disabled,
+  .rec-marca input:disabled + span { opacity: .6; }
+  .catalogo-item:has(.catalogo-eleccion input:checked) {
+    border-color: var(--red);
+    background-color: var(--red-tint);
+  }
+  .catalogo-item:has(.catalogo-eleccion input:checked) .catalogo-item__icono {
+    background-color: var(--surface);
+    color: var(--red);
+  }
+
+  /* Campos: respuesta al foco y al error; sin sacudidas ni movimiento del cursor. */
+  :is(.campo input, .campo select, .campo textarea, .buscador input) {
+    transition: border-color var(--respuesta-rapida),
+      background-color var(--respuesta-rapida), box-shadow var(--respuesta-rapida);
+  }
+  .buscador > .i { transition: color var(--respuesta-rapida); }
+  .buscador:focus-within > .i { color: var(--red); }
+  .campo > label { transition: color var(--respuesta-rapida); }
+  .campo:focus-within > label { color: var(--red); }
+  .campo input[type="file"]::file-selector-button {
+    transition: background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida);
+  }
+  :is(.campo--error, .resumen-errores) {
+    transition: border-color var(--respuesta-rapida), background-color var(--respuesta-rapida);
+  }
+  :is(.tabla-autos td, .tabla td, .agenda-dia > a, .agenda-dia [data-dia]) {
+    transition: background-color var(--respuesta-rapida), color var(--respuesta-rapida);
+  }
+  .tarjeta-auto:focus-within,
+  .tabla-autos tbody tr:focus-within td { background-color: var(--surface-2); }
+
+  /* Disclosure: el contenido sigue siendo nativo y accesible, sin esperar un cierre. */
+  :is(details.mas, .setup-compact, .contexto-toggle, .orden-bloqueos) {
+    transition: border-color var(--respuesta-rapida);
+  }
+  :is(details.mas, .setup-compact, .contexto-toggle, .orden-bloqueos,
+    .calculadora-inline, .motivos-opcionales, .rec-mas) > summary {
+    transition: background-color var(--respuesta-rapida), color var(--respuesta-rapida);
+  }
+  :is(.setup-compact, .contexto-toggle, .orden-bloqueos):focus-within {
+    border-color: var(--line-strong);
+  }
+
+  /* El controlador compartido cancela entradas/salidas interrumpidas con WAAPI. */
+  html[data-movimiento] :is(.toast, .panel-ayuda) { animation: none; }
+  dialog.dialogo[open] {
+    animation-duration: var(--respuesta);
+    animation-timing-function: var(--respuesta-curva);
+  }
+  dialog.dialogo[open]::backdrop {
+    animation-duration: var(--respuesta);
+    animation-timing-function: var(--respuesta-curva);
+  }
+  html[data-entrada="teclado"] dialog.dialogo[open],
+  html[data-entrada="teclado"] dialog.dialogo[open]::backdrop { animation: none; }
+
+  /* Teclado: foco inmediato; no desplazar iconos bajo una selección por tabulación. */
+  :is(.btn, .nav a, .tabbar a, .subnav a, .pestanas a, .subareas a,
+    .hoy-segmentos a, .prioridades-hoy > a, .tira button, .categoria-pos,
+    .motivo-pos, .rec-motivo, .rec-review-row, .sugerencias button,
+    .selector-tema, .mas-tarjeta a, .grupo-menu a, .resultado,
+    .pos-producto, .volver, .toast button):focus-visible {
+    transition: none;
+    transform: none !important;
+    outline: 3px solid var(--red);
+    outline-offset: 2px;
+  }
+  :is(.mas-tarjeta a, .grupo-menu a, .nav a, .tabbar a,
+    .subnav a, .pestanas a, .hoy-segmentos a, .tira button):focus-visible {
+    outline-offset: -3px;
+  }
+  :is(.nav a, .grupo-menu a, .volver):focus-visible > .i,
+  .mas-tarjeta a:focus-visible > .material-icon:last-child,
+  .tabbar--isla a:focus-visible .isla-icono {
+    transition: none;
+    transform: none !important;
+  }
+  .grupo-menu a:focus-visible::after {
+    transition: none;
+    transform: rotate(45deg) !important;
+  }
+  .opcion input:focus-visible + span,
+  .rec-marca input:focus-visible + span { transition: none; }
+  /* Superficies oscuras: el rojo de marca no contrasta como indicador de foco. */
+  .toast button:focus-visible,
+  .nav a:not([aria-current="page"]):focus-visible { outline-color: #fff; }
+}
+
+/* Hover existe solo con ratón/trackpad preciso. Los destinos de lectura quedan fijos. */
+@media screen and (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):not(.btn-texto):not(.btn-peligro):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-control);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):not(.btn-texto):not(.btn-peligro):active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+  }
+  .btn-texto:not(:disabled):not([aria-disabled="true"]):active { transform: none; box-shadow: none; }
+  .btn:focus-visible:hover { transform: none; }
+  :is(.mas-tarjeta a, .rec-review-row, .area, .grupo-menu a):hover {
+    background-color: var(--surface-2);
+  }
+  .mas-tarjeta a:hover > .material-icon:last-child {
+    transform: translateX(2px);
+    opacity: 1;
+  }
+  .mas-tarjeta a:focus-visible:hover > .material-icon:last-child { transform: none; }
+  .rec-motivo:not(:disabled):hover,
+  .rec-marca:has(input:not(:disabled)):hover > span { border-color: var(--ink-2); }
+  .rec-motivo[aria-pressed="true"]:hover { border-color: var(--red); }
+  .rec-marca:has(input:checked):hover > span { border-color: var(--accion); }
+  :is(.subnav a, .pestanas a):not([aria-current]):hover {
+    border-bottom-color: var(--line-strong);
+    color: var(--red);
+  }
+  :is(.subareas a, .hoy-segmentos a):not([aria-current]):hover {
+    color: var(--red);
+    background-color: var(--surface-2);
+  }
+  :is(.categoria-pos, .motivo-pos, .sugerencias button):not(:disabled):hover {
+    border-color: var(--ink-2);
+  }
+  .selector-tema:hover { background-color: var(--surface-2); border-color: var(--line-strong); }
+  :is(.setup-compact, .contexto-toggle, .orden-bloqueos,
+    .calculadora-inline, .motivos-opcionales, .rec-mas) > summary:hover {
+    color: var(--red);
+    background-color: var(--surface-2);
+  }
+  .campo input[type="file"]::file-selector-button:hover {
+    background-color: var(--surface-2);
+    border-color: var(--ink-2);
+  }
+  .agenda-dia > a:hover { background-color: var(--surface-2); color: var(--red); }
+}
+
+/* Los estilos anteriores contienen hover sin filtro. Evitar que queden adheridos al tocar. */
+@media screen and (hover: none) {
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover { transform: none; box-shadow: none; }
+  :is(.nav a, .tabbar a, .grupo-menu a, .area, .volver):hover > .i { transform: none; }
+  .grupo-menu a:hover { background-color: var(--surface); box-shadow: none; }
+  .grupo-menu a:hover::after { transform: rotate(45deg); }
+  .mas-tarjeta a:hover { background-color: var(--surface); }
+  .mas-tarjeta a:active { background-color: var(--surface-3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .btn,
+  :is(.nav a, .tabbar a, .grupo-menu a, .area, .volver) > .i,
+  .tabbar--isla .isla-icono,
+  .mas-tarjeta a > .material-icon:last-child,
+  .rec-motivo, .rec-marca, .mas-tarjeta a {
+    transform: none !important;
+  }
+  .grupo-menu a::after { transform: rotate(45deg) !important; }
+  /* Un aro estático sigue distinguiendo el botón ocupado; texto de estado accesible en JS. */
+  .btn.cargando::after { animation: none !important; }
+}
+
+@media print {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

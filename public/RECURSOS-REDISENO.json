@@ -1,0 +1,318 @@
+{
+  "fecha": "2026-11-10",
+  "nota": "Marcas identificativas: logotipos de sus titulares, no se atribuye afiliación. Colección VehicleSpecs, sin redibujar. Material Symbols Outlined de Google Apache 2.0. Recursos locales.",
+  "recursos": [
+    {
+      "archivo": "public/marcas/fiat.svg",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/fiat-logo.svg",
+      "sha256": "920b8e10ea4f0421155f251371bc3a1f88f4e8558e172662b623d66d76d4c4bc",
+      "bytes": 20890
+    },
+    {
+      "archivo": "public/marcas/volkswagen.svg",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/volkswagen-logo.svg",
+      "sha256": "870b1e89ead551c13bb6747602d0fb62ac4666f878e1eb037d5eb4b7871849f3",
+      "bytes": 980
+    },
+    {
+      "archivo": "public/marcas/toyota.svg",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/toyota-logo.svg",
+      "sha256": "f2766a58ee9095a6a101797ccfc39333935463a1ba06f2eae1a15386b26808aa",
+      "bytes": 1034
+    },
+    {
+      "archivo": "public/marcas/chevrolet.png",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/chevrolet-logo.png",
+      "sha256": "d29a2bf3f3eca14214a4809b399a793d0034e3ac58c6a4e8fc926bc9e5a97909",
+      "bytes": 6887
+    },
+    {
+      "archivo": "public/marcas/ford.png",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/ford-logo.png",
+      "sha256": "1ef4c73b180d78e2b0670bd6ba23d6c7c7a6c96ea792b75cad62fc9b38ffd59d",
+      "bytes": 12963
+    },
+    {
+      "archivo": "public/marcas/renault.svg",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/renault-logo.svg",
+      "sha256": "61ec247f977a5c1a6167dd6c794daae4804b73a1298b6bd5d797e099dc174207",
+      "bytes": 410
+    },
+    {
+      "archivo": "public/marcas/peugeot.svg",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/peugeot-logo.svg",
+      "sha256": "6f321d0b0c167bb616342971e0db82fb50e33b2e99e9fd07f8700f2ccfa532dc",
+      "bytes": 8150
+    },
+    {
+      "archivo": "public/iconos-material/calendar_month.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/calendar_month/materialsymbolsoutlined/calendar_month_24px.svg",
+      "sha256": "bdc60a3e813b0db2928261ff7376870a7af445a0bd498bcb83f43a7e6ef26987",
+      "bytes": 912
+    },
+    {
+      "archivo": "public/iconos-material/account_balance_wallet.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/account_balance_wallet/materialsymbolsoutlined/account_balance_wallet_24px.svg",
+      "sha256": "e3b5573589f4187e22cd1a89987da212f31e1c0f7c55cdd5c28350542c4cdaa7",
+      "bytes": 519
+    },
+    {
+      "archivo": "public/iconos-material/inventory_2.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/inventory_2/materialsymbolsoutlined/inventory_2_24px.svg",
+      "sha256": "89abaa4403e94b4c4f8e9ed8d6d90bb9b0a18f5ea66ecf4c243f006dea5b87e7",
+      "bytes": 356
+    },
+    {
+      "archivo": "public/iconos-material/local_shipping.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/local_shipping/materialsymbolsoutlined/local_shipping_24px.svg",
+      "sha256": "9a8738996f638c5a10e4181bfc8876e39f8101e81986c395ac402be8f69ecc25",
+      "bytes": 555
+    },
+    {
+      "archivo": "public/iconos-material/storefront.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/storefront/materialsymbolsoutlined/storefront_24px.svg",
+      "sha256": "ec781c4db5d5651337b66a5813e02b471c68f61c6a8ff8e6684515c40ac5b5dd",
+      "bytes": 749
+    },
+    {
+      "archivo": "public/iconos-material/payments.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/payments/materialsymbolsoutlined/payments_24px.svg",
+      "sha256": "12a6063fdb110a2899caea4c3857ad37e18788e57a5e0a0c7dd7f43f0d0df5b6",
+      "bytes": 495
+    },
+    {
+      "archivo": "public/iconos-material/bar_chart.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/bar_chart/materialsymbolsoutlined/bar_chart_24px.svg",
+      "sha256": "20fe01f4d43fb4afb0b58461424e27dd4dcb712c1bb0233e2b0140b626d0412a",
+      "bytes": 182
+    },
+    {
+      "archivo": "public/iconos-material/description.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/description/materialsymbolsoutlined/description_24px.svg",
+      "sha256": "65e2c1ac1ca2d0a894c8d8d89e530cb5df940d7ff0effbeb8c5f4b234a477670",
+      "bytes": 314
+    },
+    {
+      "archivo": "public/iconos-material/menu_book.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/menu_book/materialsymbolsoutlined/menu_book_24px.svg",
+      "sha256": "622ba05277e45154430cbc23d75b71b3b8210c249d9e2205cd21c563db028f4e",
+      "bytes": 877
+    },
+    {
+      "archivo": "public/iconos-material/calculate.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/calculate/materialsymbolsoutlined/calculate_24px.svg",
+      "sha256": "99838bd29bd942b8e5bf423e8a40225e416f84ace81672f05513442d9f3b77da",
+      "bytes": 463
+    },
+    {
+      "archivo": "public/iconos-material/qr_code_scanner.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/qr_code_scanner/materialsymbolsoutlined/qr_code_scanner_24px.svg",
+      "sha256": "8dcc4ba603ba7fef3c8c515ab1a942e51a09383e8758adcf61e528672f597a2f",
+      "bytes": 558
+    },
+    {
+      "archivo": "public/iconos-material/settings.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/settings/materialsymbolsoutlined/settings_24px.svg",
+      "sha256": "6aebb4a88b40a5bf1ce378ca532e4a885aedc402a0574562c6ed4ded03360fd2",
+      "bytes": 752
+    },
+    {
+      "archivo": "public/iconos-material/manage_accounts.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/manage_accounts/materialsymbolsoutlined/manage_accounts_24px.svg",
+      "sha256": "c7c9e576c43644743640592874aeda4350cc581b440d4c86fdb61cfe4be28b2b",
+      "bytes": 812
+    },
+    {
+      "archivo": "public/iconos-material/link.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/link/materialsymbolsoutlined/link_24px.svg",
+      "sha256": "efb400f168006f886e4f9e653c686928561403308d4a68aedb954ffac8288fb2",
+      "bytes": 361
+    },
+    {
+      "archivo": "public/iconos-material/history.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/history/materialsymbolsoutlined/history_24px.svg",
+      "sha256": "9dbbac013fd1a1fa4677670e64164f953647e32878c2870909a3e0910f28b0d9",
+      "bytes": 425
+    },
+    {
+      "archivo": "public/iconos-material/download.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/download/materialsymbolsoutlined/download_24px.svg",
+      "sha256": "9a9ad266a87dbd92e0d263628d31f3b73b59ab2e0a06ad6a44ac4eafe32b056d",
+      "bytes": 259
+    },
+    {
+      "archivo": "public/iconos-material/home.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/home/materialsymbolsoutlined/home_24px.svg",
+      "sha256": "41735f056fa43ed570585a294210f4c32dad1481bdf0a617b86b1007b2a8a913",
+      "bytes": 224
+    },
+    {
+      "archivo": "public/iconos-material/garage.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/garage/materialsymbolsoutlined/garage_24px.svg",
+      "sha256": "85f6d42e62113ca6a8b5d5bfc4ae340623aeae15bd943e612993920d1f40e41d",
+      "bytes": 676
+    },
+    {
+      "archivo": "public/iconos-material/group.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/group/materialsymbolsoutlined/group_24px.svg",
+      "sha256": "031fc5c789411892258f9018d71785d5144b18e25aadc147388ecb9ceccc3412",
+      "bytes": 747
+    },
+    {
+      "archivo": "public/iconos-material/apps.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/apps/materialsymbolsoutlined/apps_24px.svg",
+      "sha256": "c11e79be76394ee701595f8978628e80d6cc11a2af408596548a706b04331cb4",
+      "bytes": 1012
+    },
+    {
+      "archivo": "public/iconos-material/add.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/add/materialsymbolsoutlined/add_24px.svg",
+      "sha256": "e9532de2b9be01ce951e899e98ee673bb97acd574f0db118feb72fe074a1c376",
+      "bytes": 163
+    },
+    {
+      "archivo": "public/iconos-material/arrow_back.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/arrow_back/materialsymbolsoutlined/arrow_back_24px.svg",
+      "sha256": "bf55d4c9579f814d48fc03045f1098b1eb4d2f86f479dcc82c18ef521b957e62",
+      "bytes": 170
+    },
+    {
+      "archivo": "public/iconos-material/arrow_forward.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/arrow_forward/materialsymbolsoutlined/arrow_forward_24px.svg",
+      "sha256": "717c65e2e704a07b7b73e194b202858f52befbaa6dd363565a1d75d117c3a2aa",
+      "bytes": 171
+    },
+    {
+      "archivo": "public/iconos-material/check.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/check/materialsymbolsoutlined/check_24px.svg",
+      "sha256": "01edd53418816632be08e9565b8ca40d9028c230a8a67baaf4b8a1de20db00e6",
+      "bytes": 159
+    },
+    {
+      "archivo": "public/iconos-material/chevron_right.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/chevron_right/materialsymbolsoutlined/chevron_right_24px.svg",
+      "sha256": "f6b777ee0ce9059b5f8eea987d813ab12c4f309ba431063153841c742e668ac0",
+      "bytes": 159
+    },
+    {
+      "archivo": "public/iconos-material/search.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/search/materialsymbolsoutlined/search_24px.svg",
+      "sha256": "46d4ab85eba6eb4fe7c9a9a4c4db2fdf8fa9cc74c1f398ac72e7d872d490dd4c",
+      "bytes": 357
+    },
+    {
+      "archivo": "public/iconos-material/oil_barrel.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/oil_barrel/materialsymbolsoutlined/oil_barrel_24px.svg",
+      "sha256": "49028c1df62e15d6cc2dd49f6d4cb1246fb88a11fe6ec2dec963360cb0d208b1",
+      "bytes": 691
+    },
+    {
+      "archivo": "public/iconos-material/key_off.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/key_off/materialsymbolsoutlined/key_off_24px.svg",
+      "sha256": "3887282a0184b107981feb6d714f961dc8478b875dfc336c9c1304c741f9b9c7",
+      "bytes": 493
+    },
+    {
+      "archivo": "public/iconos-material/graphic_eq.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/graphic_eq/materialsymbolsoutlined/graphic_eq_24px.svg",
+      "sha256": "6c3e0539f00b3388c124c488caef9cb3a02c13141a6438add8ad9048d6822f6d",
+      "bytes": 230
+    },
+    {
+      "archivo": "public/iconos-material/water_drop.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/water_drop/materialsymbolsoutlined/water_drop_24px.svg",
+      "sha256": "11cce6ae1dcf6a3eb03611f94d08bd13c717ad453052638aca168dd09be9c963",
+      "bytes": 457
+    },
+    {
+      "archivo": "public/iconos-material/stop_circle.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/stop_circle/materialsymbolsoutlined/stop_circle_24px.svg",
+      "sha256": "a85e1fe1f018e1777bf15c7f32c8395847a498fab0d41e1b27a10a7c026044bf",
+      "bytes": 417
+    },
+    {
+      "archivo": "public/iconos-material/edit_note.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/edit_note/materialsymbolsoutlined/edit_note_24px.svg",
+      "sha256": "251e013d6996774f8f878d957e50c22bbbf5dc13665a0035eff39258c9b49915",
+      "bytes": 379
+    },
+    {
+      "archivo": "public/iconos-material/warning.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/warning/materialsymbolsoutlined/warning_24px.svg",
+      "sha256": "0212c59cfa1e2da887b0b36c7d89886de94b019feaaba5c063ec8dc7d32be436",
+      "bytes": 295
+    },
+    {
+      "archivo": "public/iconos-material/thermostat.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/thermostat/materialsymbolsoutlined/thermostat_24px.svg",
+      "sha256": "0de7911eb562f05551d7ced70f08b70a791fc9470e01931a3399a92678ad665e",
+      "bytes": 423
+    },
+    {
+      "archivo": "public/iconos-material/cloud.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/cloud/materialsymbolsoutlined/cloud_24px.svg",
+      "sha256": "a432f176f21f1f8b66fb55ba64507d4280f3ea82c3e4df0e360ead8907f8c27c",
+      "bytes": 405
+    },
+    {
+      "archivo": "public/iconos-material/electric_bolt.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/electric_bolt/materialsymbolsoutlined/electric_bolt_24px.svg",
+      "sha256": "002150a4cade3f38b10908d5f98bb0730cd1fa0ccfe2997ccdf2b59ac8cee11d",
+      "bytes": 228
+    },
+    {
+      "archivo": "public/iconos-material/ac_unit.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/ac_unit/materialsymbolsoutlined/ac_unit_24px.svg",
+      "sha256": "b0125f7da90b5905d839649ecc8d1f1a0bfd878397d25047619b3eefdb5dd0ea",
+      "bytes": 367
+    },
+    {
+      "archivo": "public/iconos-material/swap_horiz.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/swap_horiz/materialsymbolsoutlined/swap_horiz_24px.svg",
+      "sha256": "482276da5c5bc5c4c7850431cf6e9ba153163d4782fe9b252c22afdb60070692",
+      "bytes": 234
+    },
+    {
+      "archivo": "public/iconos-material/trending_down.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/trending_down/materialsymbolsoutlined/trending_down_24px.svg",
+      "sha256": "c8c84a4b4f42edafc6167c559f69b9c9023164d6b6e7fc970b9c6f31ae828737",
+      "bytes": 192
+    },
+    {
+      "archivo": "public/iconos-material/local_gas_station.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/local_gas_station/materialsymbolsoutlined/local_gas_station_24px.svg",
+      "sha256": "e53026970561ad5f0dd868b9035fa03b466b9723db95360317e08cb55713ade4",
+      "bytes": 583
+    },
+    {
+      "archivo": "public/iconos-material/person.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/person/materialsymbolsoutlined/person_24px.svg",
+      "sha256": "42f1c6f70aaea6be1bce078d1bd3bdc027a343943827443fe3ea46320b9dac96",
+      "bytes": 529
+    },
+    {
+      "archivo": "public/iconos-material/task_alt.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/task_alt/materialsymbolsoutlined/task_alt_24px.svg",
+      "sha256": "ac591138170daa88019cfe1eba5f3e67c7b03e9db192ff016817602d6bf2bcf7",
+      "bytes": 467
+    },
+    {
+      "archivo": "public/iconos-material/handshake.svg",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/handshake/materialsymbolsoutlined/handshake_24px.svg",
+      "sha256": "f4f3c5bac9924d12db45bde5f1c58a3ccb51c14986088ec0e5994a1d56effd3f",
+      "bytes": 1098
+    },
+    {
+      "archivo": "public/iconos-material/LICENSE",
+      "origen": "https://raw.githubusercontent.com/google/material-design-icons/master/LICENSE",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "bytes": 11357
+    },
+    {
+      "archivo": "public/marcas/LICENSE-origen",
+      "origen": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/main/LICENSE",
+      "sha256": "1c413310fe3cb67efcf2c712dbe686a21dc4f3a0c76a8e330cb96e72eb4be85d",
+      "bytes": 1516
+    }
+  ]
+}

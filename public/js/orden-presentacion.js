@@ -1,0 +1,11 @@
+import {esc,icono,fecha,km} from './ui.js?v=0.1.0';
+import {resumenMotivos} from './recepcion-modelo.js?v=0.1.0';
+import {vistaEstadoIngreso} from './estado-ingreso.js?v=0.1.0';
+export const grupoHoy=v=>v.lista_at?'listas':v.operacion?.autorizacion||v.operacion?.repuestos?'bloqueadas':'hacer';
+export const puedeOfrecerCobro=v=>!v.anulada_at&&!!v.totales&&(v.totales.saldo>0||!v.totales.liquidado&&v.totales.autorizado>v.totales.cobrado);
+export function estadoDimension(k,t){const color=/Esperando|parcial|Saldo pendiente/.test(t)?'ambar':/Aprobado|Pagado|Completo|Terminado|Listo/.test(t)?'verde':/revisión|Revisado|trabajo|Control/i.test(t)?'teal':'';return `<span class="estado ${color?'estado--'+color:''}" title="${esc(k)}">${esc(t)}</span>`;}
+export function dimensionesHTML(v){return `<dl class="orden-dimensiones">${(v.dimensiones||[]).map(([k,t])=>`<div><dt>${esc(k)}</dt><dd>${estadoDimension(k,t)}</dd></div>`).join('')}</dl>`;}
+export function resumenOrden(v,app){
+ const ingreso=v.lecturas[0];
+ return {html:`<section class="orden-resumen"><h2>Lo que contó el cliente</h2><div class="panel panel__cuerpo">${v.recepcion?.motivos?`<strong>${esc(resumenMotivos(v.recepcion.motivos,v.recepcion.otro))}</strong><p>${esc(v.recepcion.relato||'Sin relato adicional.')}</p>`:`<p>${esc(v.motivo)}</p>`}<p class="small muted">Síntomas informados al ingreso. No son diagnóstico.</p></div>${vistaEstadoIngreso(v)}<h2>Ingreso</h2><dl class="resumen-kv"><div><dt>Cliente</dt><dd>${esc(v.contacto_nombre)}</dd></div><div><dt>Fecha</dt><dd>${esc(fecha(v.ingreso_at))}</dd></div><div><dt>Kilometraje</dt><dd>${ingreso?esc(km(ingreso.km)):'Sin lectura'}</dd></div><div><dt>Responsable</dt><dd>${esc(v.responsable||'Sin asignar')}</dd></div><div><dt>Autorización al ingresar</dt><dd>${esc(v.autorizacion_ingreso||'Revisión y presupuesto. Reparaciones por autorizar.')}</dd></div></dl><div class="orden-accesos"><a class="btn" href="#/visitas/${v.id}/presupuesto">${icono('documento')}Presupuesto y respuesta</a><a class="btn" href="#/visitas/${v.id}/control">${icono('check')}Control y entrega</a>${app.puede('ver.dinero')?`<a class="btn" href="#/visitas/${v.id}/cobros">${icono('dinero')}Liquidación y cobros</a>`:''}<a class="btn" href="#/visitas/${v.id}/archivos">${icono('archivo')}Archivos y mensajes</a></div></section>`,enlazar(){}};
+}

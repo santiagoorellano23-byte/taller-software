@@ -1,0 +1,23 @@
+/* Páginas públicas del taller y directorio: mismo sistema visual, más aire. */
+body.publico { background: var(--bg); }
+.pub-ancho { width: min(1040px, calc(100% - 32px)); margin: 0 auto; }
+.pub-cab { background: var(--graphite); color: #fff; padding: 22px 0; }
+.pub-cab .marca { color: #fff; }
+.pub-cab__fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.pub-cab img { max-height: 64px; max-width: 200px; background: #fff; border-radius: 6px; padding: 4px; }
+main.pub-ancho { padding: 28px 0 40px; display: grid; gap: 22px; }
+.pub-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 880px) { .pub-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
+.pub-servicios { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pub-servicios li { border: 1px solid var(--line-strong); background: var(--surface); border-radius: var(--r); padding: 6px 12px; font-weight: 600; }
+.horarios-turno { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.horarios-turno label { position: relative; }
+.horarios-turno input { position: absolute; opacity: 0; inset: 0; }
+.horarios-turno span { display: flex; align-items: center; justify-content: center; min-height: 46px; border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--surface); font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.horarios-turno input:checked + span { background: var(--graphite); color: #fff; border-color: var(--graphite); }
+.horarios-turno input:disabled + span { opacity: .45; text-decoration: line-through; cursor: not-allowed; }
+.horarios-turno input:focus-visible + span { outline: 3px solid var(--red); outline-offset: 2px; }
+.trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.pub-pie { color: var(--muted); font-size: 14.5px; padding: 0 0 30px; }
+.tarjeta-taller { display: grid; gap: 8px; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); text-decoration: none; color: var(--ink); }
+.tarjeta-taller:hover { border-color: var(--ink-2); color: var(--ink); }

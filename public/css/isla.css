@@ -1,0 +1,52 @@
+/* Navegación móvil (isla). Superficie sólida, sin filtros ni motor de animación. */
+@media screen and (max-width:1023px) {
+  :root { --isla-reserva:calc(100px + env(safe-area-inset-bottom, 0px)); }
+  html {scroll-padding-bottom:var(--isla-reserva)}
+  .principal {padding-bottom:calc(var(--isla-reserva) + 20px)}
+  .tabbar--isla {
+    inset:auto max(12px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    width:auto;max-width:480px;margin-inline:auto;
+    grid-template-columns:repeat(auto-fit,minmax(0,1fr));
+    padding:6px;border:1px solid var(--line);border-radius:28px;
+    background:var(--surface);box-shadow:0 6px 24px rgb(0 0 0 / .1);
+  }
+  .tabbar--isla a {
+    min-width:0;min-height:62px;padding:0 2px;gap:2px;
+    border:0;border-radius:22px;color:var(--ink-2);font-size:12px;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+    user-select:none;-webkit-user-select:none;transition:none;
+  }
+  .tabbar--isla .isla-icono {
+    display:grid;place-items:center;position:relative;width:36px;height:36px;
+    border-radius:50%;transform:translateY(0);
+    transition:transform var(--respuesta-rapida) var(--respuesta-curva);
+  }
+  .tabbar--isla .isla-icono::before {
+    content:'';position:absolute;inset:0;border-radius:inherit;
+    background:var(--accion);opacity:0;transform:scale(.94);
+    transition:opacity var(--respuesta-rapida),transform var(--respuesta-rapida) var(--respuesta-curva);
+  }
+  .tabbar--isla .isla-icono .i {position:relative;width:21px;height:21px}
+  .tabbar--isla a[aria-current=page] {background:transparent;border:0;box-shadow:none;color:var(--red);font-weight:600}
+  .tabbar--isla a[aria-current=page] .isla-icono {transform:translateY(-4px);color:var(--sobre-accion)}
+  .tabbar--isla a[aria-current=page] .isla-icono::before {opacity:1;transform:scale(1)}
+  .tabbar--isla a:active {background:var(--surface-3)}
+  .tabbar--isla a:active .isla-icono {transform:scale(.96)}
+  .tabbar--isla a:focus-visible {outline:2px solid var(--red);outline-offset:-2px}
+  .tabbar--isla:has(:focus-visible) .isla-icono {transition:none}
+  .toasts {bottom:var(--isla-reserva)}
+  .recepcion-confirmar {bottom:var(--isla-reserva)}
+  @media (hover:hover) and (pointer:fine) {
+    .tabbar--isla a:not([aria-current=page]):hover {background:var(--surface-2);color:var(--ink)}
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .tabbar--isla .isla-icono,.tabbar--isla .isla-icono::before {transition:none}
+    .tabbar--isla a:active .isla-icono {transform:none}
+    .tabbar--isla a[aria-current=page]:active .isla-icono {transform:translateY(-4px)}
+  }
+  /* Al escribir con poco alto disponible, priorizar el campo y sus errores. */
+  @media (max-height:540px) {
+    .app:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .tabbar--isla {display:none}
+    .app:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .toasts {bottom:calc(12px + env(safe-area-inset-bottom, 0px))}
+  }
+}

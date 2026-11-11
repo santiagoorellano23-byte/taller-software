@@ -1,0 +1,21 @@
+# Datos y archivos de cada taller: nunca al repositorio
+data/
+respaldos/
+*.db
+*.db-wal
+*.db-shm
+.env
+node_modules/
+.playwright-mcp/
+qa/tmp/
+
+demo-data/
+evidence/
+
+demo-*-data/
+baseline-data/
+tmp/
+public/revision-v2.html
+
+# Estado de producción y publicación: solo local, nunca al repositorio
+privado/

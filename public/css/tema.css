@@ -1,0 +1,50 @@
+/* Colores de operación: tinta y acción separadas para conservar contraste. */
+:root {--accion:#af1927;--accion-hover:#8d1320;--sobre-accion:#fff}
+html[data-tema-efectivo="oscuro"] {
+  color-scheme:dark;background:#161b21;color:#edf1f5;
+  --bg:#161b21;--surface:#1d242c;--surface-2:#242e38;--surface-3:#303c48;
+  --ink:#edf1f5;--ink-2:#d0d9e2;--muted:#b2bfcc;
+  --line:#41505e;--line-2:#34424f;--line-strong:#74899b;
+  --red:#ff9aa4;--red-dark:#ffc2c8;--red-tint:#442630;--red-line:#a65c69;
+  --accion:#ae2034;--accion-hover:#8f192b;--sobre-accion:#fff;
+  --amber:#ffd089;--amber-bg:#3d3022;--amber-line:#8f7046;
+  --teal:#96d4e6;--teal-bg:#203740;--teal-line:#4e8799;
+  --purple:#d0b9f3;--purple-bg:#342b45;--purple-line:#88709f;
+  --blue:#accff1;--blue-bg:#263647;--blue-line:#63809c;
+  --green:#9bdfb5;--green-bg:#233b2d;--green-line:#5c9670;
+  --graphite:#161b21;--graphite-2:#242e38;--graphite-3:#41505e;--silver:#c0cbd6;--on-dark-2:#e1e8ee;
+  --sombra:none;--sombra-alta:0 12px 36px #0006;
+}
+.btn-primario {background:var(--accion);border-color:var(--accion);color:var(--sobre-accion)}
+.btn-primario:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover {background:var(--accion-hover);border-color:var(--accion-hover);color:var(--sobre-accion)}
+/* En oscuro el grafito coincide con el fondo: el botón fuerte se invierte para seguir viéndose y marcar la selección. */
+html[data-tema-efectivo="oscuro"] .btn-oscuro {background:var(--ink);border-color:var(--ink);color:var(--bg)}
+html[data-tema-efectivo="oscuro"] .btn-oscuro:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover {background:var(--ink-2);border-color:var(--ink-2);color:var(--bg)}
+html[data-tema-efectivo="oscuro"] .btn-oscuro.cargando::after {border-color:currentColor currentColor transparent transparent}
+/* El recuadro del QR queda blanco para leerse con la cámara; su texto usa la tinta clara del sistema. */
+html[data-tema-efectivo="oscuro"] .qr-caja .muted {color:#5d6871}
+.btn-peligro {background:var(--red-tint);color:var(--red);border-color:var(--red-line)}
+::selection {background:var(--accion);color:var(--sobre-accion)}
+.selector-tema {display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;flex:none;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink-2);cursor:pointer;transition:background-color 140ms ease,border-color 140ms ease}
+.selector-tema .i {width:21px;height:21px;pointer-events:none}
+@media(hover:hover){.selector-tema:hover {background:var(--surface-2);border-color:var(--line-strong)}}
+.selector-tema:focus-visible {outline:2px solid var(--red);outline-offset:3px}
+.ingreso-tema {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.workspacebar>.selector-tema,.topbar .selector-tema {margin-left:auto}
+.patente {color:#22282e;background:#fff}
+html[data-tema-efectivo="oscuro"] .nav a[aria-current=page],html[data-tema-efectivo="oscuro"] .usuario .avatar {background:var(--surface-3)}
+html[data-tema-efectivo="oscuro"] :is(input,select,textarea) {background-color:var(--surface);border-color:var(--line-strong)}
+html[data-tema-efectivo="oscuro"] :is(input,textarea)::placeholder {color:var(--muted);opacity:1}
+html[data-tema-efectivo="oscuro"] .dialogo::backdrop {background:#0009}
+html[data-tema-efectivo="oscuro"] .toast {background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}
+html[data-tema-efectivo="oscuro"] .toast--error {background:var(--red-tint);color:var(--ink);border-color:var(--red-line)}
+html[data-tema-efectivo="oscuro"] .campo--error :is(input,select,textarea) {border-color:var(--red)}
+html[data-tema-efectivo="oscuro"] .campo__error {color:var(--red)}
+.documento {color-scheme:light}
+.etiqueta-llave {color:#22282e;color-scheme:light}
+@media(max-width:380px){.topbar{gap:8px;padding-inline:12px}.topbar__usuario{font-size:12px;max-width:64px;overflow-wrap:anywhere;white-space:normal}.topbar .marca__nombre{font-size:20px}}
+@media print {
+  :root,html[data-tema-efectivo="oscuro"] {color-scheme:light;--bg:#fff;--surface:#fff;--surface-2:#f5f5f4;--surface-3:#eee;--ink:#222;--ink-2:#444;--muted:#555;--line:#ddd;--red:#ae040f;background:#fff;color:#222}
+  .selector-tema,.ingreso-tema{display:none!important}
+  body,.principal{background:#fff!important;color:#222!important}
+}

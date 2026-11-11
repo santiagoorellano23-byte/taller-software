@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T15:15:30.203Z",
+  "title": "Design System: Growth Labs Talleres · base operativa",
+  "extensions": {
+    "colorMeta": {
+      "action": {
+        "role": "primary",
+        "displayName": "Rojo de acción (por defecto)",
+        "tonalRamp": [
+          "oklch(15% 0.1820 23.68)",
+          "oklch(26% 0.1820 23.68)",
+          "oklch(38% 0.1820 23.68)",
+          "oklch(49% 0.1820 23.68)",
+          "oklch(61% 0.1820 23.68)",
+          "oklch(72% 0.1820 23.68)",
+          "oklch(84% 0.1820 23.68)",
+          "oklch(95% 0.1820 23.68)"
+        ]
+      },
+      "action-hover": {
+        "role": "neutral",
+        "displayName": "Rojo profundo",
+        "tonalRamp": [
+          "oklch(15% 0.1545 22.83)",
+          "oklch(26% 0.1545 22.83)",
+          "oklch(38% 0.1545 22.83)",
+          "oklch(49% 0.1545 22.83)",
+          "oklch(61% 0.1545 22.83)",
+          "oklch(72% 0.1545 22.83)",
+          "oklch(84% 0.1545 22.83)",
+          "oklch(95% 0.1545 22.83)"
+        ]
+      },
+      "on-action": {
+        "role": "neutral",
+        "displayName": "Sobre acción",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "action-tint": {
+        "role": "neutral",
+        "displayName": "Rojo suave",
+        "tonalRamp": [
+          "oklch(15% 0.0163 12.78)",
+          "oklch(26% 0.0163 12.78)",
+          "oklch(38% 0.0163 12.78)",
+          "oklch(49% 0.0163 12.78)",
+          "oklch(61% 0.0163 12.78)",
+          "oklch(72% 0.0163 12.78)",
+          "oklch(84% 0.0163 12.78)",
+          "oklch(95% 0.0163 12.78)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Marco gris",
+        "tonalRamp": [
+          "oklch(15% 0.0017 247.84)",
+          "oklch(26% 0.0017 247.84)",
+          "oklch(38% 0.0017 247.84)",
+          "oklch(49% 0.0017 247.84)",
+          "oklch(61% 0.0017 247.84)",
+          "oklch(72% 0.0017 247.84)",
+          "oklch(84% 0.0017 247.84)",
+          "oklch(95% 0.0017 247.84)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Hoja blanca",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "surface-soft": {
+        "role": "neutral",
+        "displayName": "Superficie suave",
+        "tonalRamp": [
+          "oklch(15% 0.0017 247.84)",
+          "oklch(26% 0.0017 247.84)",
+          "oklch(38% 0.0017 247.84)",
+          "oklch(49% 0.0017 247.84)",
+          "oklch(61% 0.0017 247.84)",
+          "oklch(72% 0.0017 247.84)",
+          "oklch(84% 0.0017 247.84)",
+          "oklch(95% 0.0017 247.84)"
+        ]
+      },
+      "surface-inset": {
+        "role": "neutral",
+        "displayName": "Superficie interior",
+        "tonalRamp": [
+          "oklch(15% 0.0034 247.86)",
+          "oklch(26% 0.0034 247.86)",
+          "oklch(38% 0.0034 247.86)",
+          "oklch(49% 0.0034 247.86)",
+          "oklch(61% 0.0034 247.86)",
+          "oklch(72% 0.0034 247.86)",
+          "oklch(84% 0.0034 247.86)",
+          "oklch(95% 0.0034 247.86)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta de taller",
+        "tonalRamp": [
+          "oklch(15% 0.0141 248.34)",
+          "oklch(26% 0.0141 248.34)",
+          "oklch(38% 0.0141 248.34)",
+          "oklch(49% 0.0141 248.34)",
+          "oklch(61% 0.0141 248.34)",
+          "oklch(72% 0.0141 248.34)",
+          "oklch(84% 0.0141 248.34)",
+          "oklch(95% 0.0141 248.34)"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Tinta secundaria",
+        "tonalRamp": [
+          "oklch(15% 0.0200 245.48)",
+          "oklch(26% 0.0200 245.48)",
+          "oklch(38% 0.0200 245.48)",
+          "oklch(49% 0.0200 245.48)",
+          "oklch(61% 0.0200 245.48)",
+          "oklch(72% 0.0200 245.48)",
+          "oklch(84% 0.0200 245.48)",
+          "oklch(95% 0.0200 245.48)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Gris de apoyo",
+        "tonalRamp": [
+          "oklch(15% 0.0197 242.71)",
+          "oklch(26% 0.0197 242.71)",
+          "oklch(38% 0.0197 242.71)",
+          "oklch(49% 0.0197 242.71)",
+          "oklch(61% 0.0197 242.71)",
+          "oklch(72% 0.0197 242.71)",
+          "oklch(84% 0.0197 242.71)",
+          "oklch(95% 0.0197 242.71)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divisor",
+        "tonalRamp": [
+          "oklch(15% 0.0052 247.88)",
+          "oklch(26% 0.0052 247.88)",
+          "oklch(38% 0.0052 247.88)",
+          "oklch(49% 0.0052 247.88)",
+          "oklch(61% 0.0052 247.88)",
+          "oklch(72% 0.0052 247.88)",
+          "oklch(84% 0.0052 247.88)",
+          "oklch(95% 0.0052 247.88)"
+        ]
+      },
+      "line-subtle": {
+        "role": "neutral",
+        "displayName": "Divisor suave",
+        "tonalRamp": [
+          "oklch(15% 0.0034 247.86)",
+          "oklch(26% 0.0034 247.86)",
+          "oklch(38% 0.0034 247.86)",
+          "oklch(49% 0.0034 247.86)",
+          "oklch(61% 0.0034 247.86)",
+          "oklch(72% 0.0034 247.86)",
+          "oklch(84% 0.0034 247.86)",
+          "oklch(95% 0.0034 247.86)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Borde fuerte",
+        "tonalRamp": [
+          "oklch(15% 0.0096 242.86)",
+          "oklch(26% 0.0096 242.86)",
+          "oklch(38% 0.0096 242.86)",
+          "oklch(49% 0.0096 242.86)",
+          "oklch(61% 0.0096 242.86)",
+          "oklch(72% 0.0096 242.86)",
+          "oklch(84% 0.0096 242.86)",
+          "oklch(95% 0.0096 242.86)"
+        ]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Ámbar de atención",
+        "tonalRamp": [
+          "oklch(15% 0.1124 59.93)",
+          "oklch(26% 0.1124 59.93)",
+          "oklch(38% 0.1124 59.93)",
+          "oklch(49% 0.1124 59.93)",
+          "oklch(61% 0.1124 59.93)",
+          "oklch(72% 0.1124 59.93)",
+          "oklch(84% 0.1124 59.93)",
+          "oklch(95% 0.1124 59.93)"
+        ]
+      },
+      "warning-background": {
+        "role": "semantic",
+        "displayName": "Fondo de atención",
+        "tonalRamp": [
+          "oklch(15% 0.0276 76.21)",
+          "oklch(26% 0.0276 76.21)",
+          "oklch(38% 0.0276 76.21)",
+          "oklch(49% 0.0276 76.21)",
+          "oklch(61% 0.0276 76.21)",
+          "oklch(72% 0.0276 76.21)",
+          "oklch(84% 0.0276 76.21)",
+          "oklch(95% 0.0276 76.21)"
+        ]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Verde de confirmación",
+        "tonalRamp": [
+          "oklch(15% 0.1059 152.47)",
+          "oklch(26% 0.1059 152.47)",
+          "oklch(38% 0.1059 152.47)",
+          "oklch(49% 0.1059 152.47)",
+          "oklch(61% 0.1059 152.47)",
+          "oklch(72% 0.1059 152.47)",
+          "oklch(84% 0.1059 152.47)",
+          "oklch(95% 0.1059 152.47)"
+        ]
+      },
+      "success-background": {
+        "role": "semantic",
+        "displayName": "Fondo de confirmación",
+        "tonalRamp": [
+          "oklch(15% 0.0190 157.87)",
+          "oklch(26% 0.0190 157.87)",
+          "oklch(38% 0.0190 157.87)",
+          "oklch(49% 0.0190 157.87)",
+          "oklch(61% 0.0190 157.87)",
+          "oklch(72% 0.0190 157.87)",
+          "oklch(84% 0.0190 157.87)",
+          "oklch(95% 0.0190 157.87)"
+        ]
+      },
+      "dark-background": {
+        "role": "neutral",
+        "displayName": "Marco oscuro",
+        "tonalRamp": [
+          "oklch(15% 0.0140 253.12)",
+          "oklch(26% 0.0140 253.12)",
+          "oklch(38% 0.0140 253.12)",
+          "oklch(49% 0.0140 253.12)",
+          "oklch(61% 0.0140 253.12)",
+          "oklch(72% 0.0140 253.12)",
+          "oklch(84% 0.0140 253.12)",
+          "oklch(95% 0.0140 253.12)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Hoja oscura",
+        "tonalRamp": [
+          "oklch(15% 0.0182 251.95)",
+          "oklch(26% 0.0182 251.95)",
+          "oklch(38% 0.0182 251.95)",
+          "oklch(49% 0.0182 251.95)",
+          "oklch(61% 0.0182 251.95)",
+          "oklch(72% 0.0182 251.95)",
+          "oklch(84% 0.0182 251.95)",
+          "oklch(95% 0.0182 251.95)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Tinta clara",
+        "tonalRamp": [
+          "oklch(15% 0.0069 247.90)",
+          "oklch(26% 0.0069 247.90)",
+          "oklch(38% 0.0069 247.90)",
+          "oklch(49% 0.0069 247.90)",
+          "oklch(61% 0.0069 247.90)",
+          "oklch(72% 0.0069 247.90)",
+          "oklch(84% 0.0069 247.90)",
+          "oklch(95% 0.0069 247.90)"
+        ]
+      },
+      "dark-action": {
+        "role": "primary",
+        "displayName": "Acción oscura",
+        "tonalRamp": [
+          "oklch(15% 0.1758 19.96)",
+          "oklch(26% 0.1758 19.96)",
+          "oklch(38% 0.1758 19.96)",
+          "oklch(49% 0.1758 19.96)",
+          "oklch(61% 0.1758 19.96)",
+          "oklch(72% 0.1758 19.96)",
+          "oklch(84% 0.1758 19.96)",
+          "oklch(95% 0.1758 19.96)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Título general",
+        "purpose": "Cabecera de pantalla."
+      },
+      "receiving-title": {
+        "displayName": "Pregunta del paso",
+        "purpose": "Decisión activa de recepción; 26px en móvil."
+      },
+      "body": {
+        "displayName": "Lectura",
+        "purpose": "Texto habitual y campos efectivos."
+      },
+      "plate": {
+        "displayName": "Patente",
+        "purpose": "Identidad del vehículo."
+      },
+      "label": {
+        "displayName": "Etiqueta",
+        "purpose": "Nombre permanente de campo."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet-flat",
+        "value": "none",
+        "purpose": "Formularios y tarjetas compartidos."
+      },
+      {
+        "name": "island",
+        "value": "0 6px 24px rgb(0 0 0 / .1)",
+        "purpose": "Separar navegación móvil del contenido."
+      },
+      {
+        "name": "receive-ring",
+        "value": "0 0 0 5px var(--surface)",
+        "purpose": "Anillo de la acción central Recibir."
+      },
+      {
+        "name": "overlay",
+        "value": "0 12px 36px #16202b26",
+        "purpose": "Superposición clara existente; oscuro usa #0006."
+      }
+    ],
+    "motion": [
+      {
+        "name": "feedback-fast",
+        "value": "120ms",
+        "purpose": "Feedback breve existente."
+      },
+      {
+        "name": "feedback-panel",
+        "value": "180ms",
+        "purpose": "Entrada de avisos; se elimina con movimiento reducido."
+      },
+      {
+        "name": "pressed-scale",
+        "value": "scale(.985)",
+        "purpose": "Marca, motivo y enlace Más; se elimina con movimiento reducido."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-shell-max",
+        "value": "1023px"
+      },
+      {
+        "name": "desktop-shell-min",
+        "value": "1024px"
+      },
+      {
+        "name": "general-context-collapse",
+        "value": "1279px"
+      },
+      {
+        "name": "short-height-max",
+        "value": "540px"
+      }
+    ],
+    "sources": [
+      "public/css/app.css",
+      "public/css/remaster.css",
+      "public/css/tema.css",
+      "public/css/operacion.css",
+      "public/css/isla.css",
+      "public/css/propuesta-a.css",
+      "public/js/views/recibir-pasos.js",
+      "public/js/views/mas-propuesta.js",
+      "public/js/views/visita.js",
+      "DESIGN.md"
+    ],
+    "notes": [
+      "Tonal ramps are synthesized OKLCH display metadata, not runtime tokens.",
+      "Snippets are isolated visual references; they do not execute product routes, permissions, persistence or server confirmations.",
+      "Token extraction is from source cascade; this documentation pass did not sample browser computed styles.",
+      "Current local candidate is 0.5.0-rc.1; no deployment implied."
+    ]
+  },
+  "components": [
+    {
+      "name": "Acción principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Confirmación explícita; tamaño compartido, ampliado a 52px en recepción.",
+      "html": "<button class=\"ds-primary\">Confirmar ingreso</button>",
+      "css": ".ds-primary{font-family:var(--f,'Barlow',system-ui,sans-serif);font-size:15px;font-weight:600;cursor:pointer;min-height:44px;padding:9px 14px;border:1px solid var(--accion,#af1927);border-radius:6px;background:var(--accion,#af1927);color:var(--sobre-accion,#fff);transition:background-color 120ms}.ds-primary:hover{background:var(--accion-hover,#8d1320);border-color:var(--accion-hover,#8d1320)}.ds-primary:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px}.ds-primary:active{filter:brightness(.94)}.ds-primary:disabled{cursor:not-allowed;background:var(--surface-3,#eceef0);border-color:var(--line,#e3e6e9);color:var(--muted,#5d6871)}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Acción secundaria",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Volver o editar con superficie y borde, sin competir con la confirmación.",
+      "html": "<button class=\"ds-secondary\">Volver</button>",
+      "css": ".ds-secondary{font-family:var(--f,'Barlow',system-ui,sans-serif);font-size:15px;font-weight:600;cursor:pointer;min-height:44px;padding:9px 14px;border:1px solid var(--line-strong,#c5cbd0);border-radius:6px;background:var(--surface,#fff);color:var(--ink,#22282e)}.ds-secondary:hover{background:var(--surface-2,#f8f9fa)}.ds-secondary:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px}.ds-secondary:active{background:var(--surface-3,#eceef0)}"
+    },
+    {
+      "name": "Campo de recepción",
+      "kind": "input",
+      "refersTo": "receiving-input",
+      "description": "Etiqueta permanente, ayuda vinculada y tamaño efectivo de 16px.",
+      "html": "<label class=\"ds-field\">Modelo<input aria-describedby=\"ds-model-help\" placeholder=\"Modelo del vehículo\"><small id=\"ds-model-help\">Usá el nombre que figura en el vehículo.</small></label>",
+      "css": ".ds-field{display:grid;gap:6px;font-family:var(--f,'Barlow',system-ui,sans-serif);font-size:14px;color:var(--ink,#22282e)}.ds-field input{font-family:var(--f,'Barlow',system-ui,sans-serif);font-size:16px;min-height:52px;padding:10px 12px;border:1px solid var(--line-strong,#c5cbd0);border-radius:12px;background:var(--surface,#fff);color:var(--ink,#22282e);caret-color:var(--red,#af1927)}.ds-field input:hover{border-color:var(--ink-2,#404a53)}.ds-field input:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px}.ds-field small{font-size:13px;color:var(--muted,#5d6871)}"
+    },
+    {
+      "name": "Navegación Más",
+      "kind": "nav",
+      "refersTo": "more-navigation",
+      "description": "Grupo de B: filas legibles con iconos locales. La muestra no ejecuta navegación del producto.",
+      "html": "<nav class=\"ds-more\" aria-label=\"Consulta\"><a href=\"#documentos\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\"M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6\"/></svg><span>Documentos</span><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></a><a href=\"#biblioteca\"><span>Biblioteca técnica</span><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></a></nav>",
+      "css": ".ds-more{border:1px solid var(--line,#e3e6e9);border-radius:16px;background:var(--surface,#fff);overflow:hidden}.ds-more a{display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 16px;color:var(--ink,#22282e);font:16px var(--f,'Barlow',system-ui,sans-serif);text-decoration:none}.ds-more a+a{border-top:1px solid var(--line-2,#eef0f2)}.ds-more span{flex:1;overflow-wrap:anywhere}.ds-more svg{width:22px;height:22px;flex:none}.ds-more a:hover{background:var(--surface-2,#f8f9fa)}.ds-more a:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px;outline-offset:-3px}.ds-more a:active{transform:scale(.985)}@media(prefers-reduced-motion:reduce){.ds-more a:active{transform:none}}"
+    },
+    {
+      "name": "Estado con palabras",
+      "kind": "chip",
+      "refersTo": "status-warning",
+      "description": "Estado textual con icono; el color refuerza la explicación.",
+      "html": "<span class=\"ds-status\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\"m12 3 10 18H2L12 3zM12 9v5M12 17v1\"/></svg>Bloqueado · falta autorización</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 9px;border:1px solid var(--amber-line,#EFD2A6);border-radius:4px;background:var(--amber-bg,#FCEFDD);color:var(--amber,#8A4B00);font-family:var(--f,'Barlow',system-ui,sans-serif);font-weight:600;font-size:13px;line-height:1.25}.ds-status svg{width:16px;height:16px;flex:none}"
+    },
+    {
+      "name": "Motivo seleccionado",
+      "kind": "card",
+      "refersTo": "receiving-option",
+      "description": "Elección de motivo con estado explícito; no diagnostica ni autoriza.",
+      "html": "<button class=\"ds-motive\" aria-pressed=\"true\"><span class=\"ds-check\" aria-hidden=\"true\">✓</span><strong>Ruido o vibración</strong><span>Registrar lo que cuenta el cliente</span></button>",
+      "css": ".ds-motive{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:start;text-align:left;gap:12px;min-height:90px;padding:14px;border:1px solid var(--line-strong,#c5cbd0);border-radius:16px;background:var(--surface,#fff);color:var(--ink,#22282e);font:16px var(--f,'Barlow',system-ui,sans-serif);cursor:pointer}.ds-motive strong{font-size:16px;font-weight:600}.ds-motive[aria-pressed=true]{background:var(--red-tint,#fff0f1);border-color:var(--red,#af1927);box-shadow:inset 0 0 0 1px var(--red,#af1927)}.ds-check{align-self:end;color:var(--red,#af1927)}.ds-motive:hover{border-color:var(--ink,#22282e)}.ds-motive:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px}.ds-motive:active{transform:scale(.985)}@media(prefers-reduced-motion:reduce){.ds-motive:active{transform:none}}"
+    },
+    {
+      "name": "Tarjeta de auto",
+      "kind": "card",
+      "description": "Identidad por patente y estado, con siguiente acción legible.",
+      "html": "<article class=\"ds-car\"><span class=\"ds-plate\">PATENTE</span><h3>Modelo del vehículo</h3><p>Para hacer · continuar la revisión</p><a href=\"#orden\">Abrir orden</a></article>",
+      "css": ".ds-car{padding:14px 16px;border:1px solid var(--line,#e3e6e9);border-radius:16px;background:var(--surface,#fff);color:var(--ink,#22282e);font:16px/1.45 var(--f,'Barlow',system-ui,sans-serif)}.ds-plate{display:inline-flex;padding:3px 9px 2px;border:2px solid var(--ink,#22282e);border-top-width:6px;border-radius:5px;background:var(--surface,#fff);font-family:var(--fc,'Barlow Condensed','Barlow',sans-serif);font-weight:600;font-size:18px;letter-spacing:.06em;line-height:1.1}.ds-car h3{margin:12px 0 6px;font-size:17px}.ds-car p{margin:0;color:var(--ink-2,#404a53)}.ds-car a{display:inline-flex;align-items:center;min-height:48px;color:var(--red,#af1927);font-weight:600}.ds-car a:hover{color:var(--accion-hover,#8d1320)}.ds-car a:focus-visible{outline:3px solid var(--red,#af1927);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Paso a paso",
+    "overview": "Una decisión de recepción por pantalla y una próxima acción clara por orden. Dirección A «Paso a paso», heredada de la base operativa original; la pantalla Más conserva exclusivamente los grupos, el orden y los iconos de B. Se fusiona con el sistema anterior: siguen la hoja clara sobre marco gris, la tinta oscura, Barlow local y el rojo de acción por defecto; recepción y navegación incorporan formas más amplias y redondeadas.\n\nLa identidad la llevan las patentes, la orden numerada y el lenguaje real del taller. El logo existente y el selector sol/luna se conservan. Las superficies y los estados comunican decisiones operativas, sin indicadores inventados ni fotografías genéricas. Este documento describe la candidata local 0.5.0-rc.1 del 10/11/2026; no acredita publicación ni reemplaza el informe de QA.",
+    "keyCharacteristics": [
+      "Una decisión visible y un siguiente paso concreto.",
+      "Patente y número de orden como anclas de identidad.",
+      "Superficies sobrias, controles amplios y estados con palabras.",
+      "Datos, permisos y confirmaciones fieles al servidor."
+    ],
+    "rules": [
+      {
+        "name": "Estado con palabras",
+        "body": "Ningún color sustituye el nombre del estado, el icono o la explicación de un bloqueo.",
+        "section": "colors"
+      },
+      {
+        "name": "Hoja plana",
+        "body": "No agregar sombras decorativas a formularios o tarjetas para crear jerarquía; usar espacio, borde, texto y estado.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** conservar el logo original, el selector sol/luna y las fuentes locales con licencia.",
+      "**Do** mostrar la próxima acción y los estados reales con texto, icono y foco visible.",
+      "**Do** preservar errores, ayudas, datos introducidos y confirmación explícita del servidor.",
+      "**Do** respetar movimiento reducido, áreas seguras y espacio para acciones fijas.",
+      "**Do** conservar las versiones, documentos fechados y reglas de permisos del producto."
+    ],
+    "donts": [
+      "**Don't** mezclar el runtime de los prototipos con el producto o inventar actividad, importes, tarifas, fotografías o indicadores.",
+      "**Don't** equiparar autorizado, realizado, liquidado y cobrado; recibido y colocado; listo y entregado.",
+      "**Don't** transformar navegar, elegir motivos o escribir una nota en autorización o cobro.",
+      "**Don't** reemplazar la identidad existente ni convertir Más de B en una nueva dirección para las demás pantallas.",
+      "**Don't** presentar esta candidata local o sus emulaciones como publicación o validación en teléfonos físicos."
+    ]
+  }
+}
+

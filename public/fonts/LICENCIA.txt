@@ -1,0 +1,16 @@
+Barlow y Barlow Condensed
+Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+
+Estas fuentes se distribuyen bajo la SIL Open Font License, versión 1.1.
+Texto completo de la licencia: https://openfontlicense.org/open-font-license-official-text/
+
+Resumen de condiciones relevantes (no reemplaza el texto oficial):
+- Se pueden usar, estudiar, modificar y redistribuir libremente, incluso junto con software comercial.
+- No se pueden vender por sí solas.
+- Las versiones modificadas no pueden usar el nombre reservado de la fuente sin permiso.
+- Deben distribuirse con esta licencia y su aviso de copyright.
+
+Origen en este proyecto: subconjunto latino (woff2) extraído de un diseño exportado de Claude Design,
+sin modificar las fuentes.
+Textos completos incorporados: OFL-Barlow.txt y OFL-BarlowCondensed.txt.
+Origen: repositorio oficial google/fonts, carpetas ofl/barlow y ofl/barlowcondensed.
