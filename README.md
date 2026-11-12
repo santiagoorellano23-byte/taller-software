@@ -21,7 +21,7 @@ Abrir http://127.0.0.1:3000. La demostración usa exclusivamente datos ficticios
 npm test
 ```
 
-97 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
+98 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
 
 ## Funciones
 
