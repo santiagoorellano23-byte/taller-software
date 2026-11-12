@@ -17,7 +17,7 @@ export function ipCliente(req) {
   return req.socket.remoteAddress;
 }
 
-export const COOKIE = 'iny_sesion';
+export const COOKIE = 'glt_sesion';
 const LIMITE_JSON = 1_000_000;
 export const LIMITE_ARCHIVO = 15 * 1024 * 1024;
 

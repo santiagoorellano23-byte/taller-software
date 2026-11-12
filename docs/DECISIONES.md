@@ -18,6 +18,6 @@ Heredadas de la base operativa original y vigentes en Growth Labs Talleres 0.1.0
 ## Decisiones de Growth Labs Talleres 0.1.0 (11/11/2026)
 
 13. **Repositorio propio, sin la historia de la base original.** El código parte de la versión operativa 0.6.1 de la primera instalación cliente. Ningún dato, logo, contacto ni fotografía de ese cliente forma parte de este repositorio.
-14. **Nombres técnicos neutrales desde el inicio:** variables `TALLERES_*`, base `talleres.db`, cabecera `X-Talleres`, claves locales `talleres-*`. Se cambiaron antes de existir instalaciones del producto, por eso no requirieron migración. A partir de ahora son contratos de compatibilidad: renombrarlos exige migración.
+14. **Nombres técnicos neutrales desde el inicio:** variables `TALLERES_*`, base `talleres.db`, cabecera `X-Talleres`, cookie `glt_sesion`, claves locales `talleres-*`. Se cambiaron antes de existir instalaciones del producto, por eso no requirieron migración. A partir de ahora son contratos de compatibilidad: renombrarlos exige migración.
 15. **Marca del producto separada de la marca del taller.** Sin sesión (ingreso, invitación, directorio) se muestra Growth Labs Talleres. Dentro del espacio de un taller y en sus documentos, el nombre y el logo configurados por ese taller.
 16. **Demo neutral:** «Taller Modelo» y «Taller Norte», ficticios, con usuarios `@taller-modelo.test` y `@norte.test`.
