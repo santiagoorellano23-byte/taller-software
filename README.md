@@ -21,7 +21,7 @@ Abrir http://127.0.0.1:3000. La demostración usa exclusivamente datos ficticios
 npm test
 ```
 
-81 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
+97 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
 
 ## Funciones
 
@@ -30,7 +30,8 @@ npm test
 - Órdenes con Resumen, Revisión, Trabajos, Repuestos e Historial.
 - Agenda, clientes, compras, proveedores, stock, mostrador, caja, cuentas, reportes, documentos, biblioteca y configuración.
 - Perfiles y permisos comprobados en el servidor. Datos separados por taller.
-- Nombre, logo y página pública configurables por taller.
+- Nombre, logo, colores y página pública configurables por taller.
+- Planes con módulos y cupos comprobados en el servidor; suscripción con vencimiento y gracia por fecha.
 - No es un sistema fiscal: ARCA y Libro IVA están excluidos. Mensajería automática e IA no están activas; no se simulan envíos.
 
 Lo que falta para ofrecerlo como servicio pago está en `docs/HOJA-DE-RUTA.md`.
@@ -39,7 +40,21 @@ Lo que falta para ofrecerlo como servicio pago está en `docs/HOJA-DE-RUTA.md`.
 
 Definir `TALLERES_DATOS` con una ruta absoluta fuera del código y de cualquier carpeta que el despliegue reemplace. Configurar `NODE_ENV=production`, `TALLERES_SEGURO=1` y `TALLERES_URL_PUBLICA` con la URL HTTPS. Usar `TALLERES_PROXY=1` solo detrás del proxy del alojamiento.
 
-Crear cada taller con `npm run crear-taller`. Las invitaciones y recuperaciones son enlaces personales de un uso; el responsable los entrega por un medio seguro. No publicar esos enlaces ni bases o archivos privados.
+Las invitaciones y recuperaciones son enlaces personales de un uso; el responsable los entrega por un medio seguro. No publicar esos enlaces ni bases o archivos privados.
+
+## Panel de Growth Labs
+
+`/plataforma` es el panel central: buscar talleres, dar de alta un taller con la invitación de su responsable (se puede retomar si queda incompleta), asignar plan y vigencia, registrar pagos confirmados a mano y revisar el registro de acciones. Usa cuentas propias, separadas de las de los talleres.
+
+```sh
+npm run crear-admin -- --email persona@ejemplo.com --nombre "Nombre"
+```
+
+Imprime un enlace de un uso (24 h) para crear la contraseña. `npm run crear-taller` sigue disponible por consola.
+
+**Suscripciones.** El acceso de cada taller se decide por fecha en cada solicitud: en prueba o activa, uso completo; vencida, uso completo hasta la fecha de gracia que se cargue (sin gracia, nada); suspendida o cancelada, solo consulta, exportación y salida. Nunca se borran datos. El servidor guarda y registra los cambios de estado al arrancar y cada hora; si el alojamiento reinicia el proceso seguido, programar además `npm run vencimientos` una vez por día en su cron.
+
+**Planes.** Los dos planes cargados (Esencial y Profesional) son **configuración de prueba**: cupos tomados como hipótesis y sin precio. Para cambiarlos se agrega una versión nueva en la tabla `planes`; los talleres conservan la versión que tienen hasta que se les asigne otra. El cobro es por conciliación manual: no hay integración de pagos.
 
 ## Respaldos y actualizaciones
 

@@ -108,6 +108,16 @@ function interpretar() {
   return null;
 }
 
+// Estado de la suscripción del taller a Growth Labs. Lo decide el servidor; este aviso solo lo explica.
+const fechaLarga = (f) => f ? f.split('-').reverse().join('/') : '';
+function avisoServicio(s) {
+  if (!s || s.estado === 'activa' || s.estado === 'prueba') return '';
+  const texto = s.estado === 'vencida'
+    ? `La suscripción venció el ${fechaLarga(s.periodoHasta)}. El acceso completo sigue ${s.graciaHasta ? 'hasta el ' + fechaLarga(s.graciaHasta) : 'por ahora'}; después solo se podrá consultar y exportar.`
+    : `${esc(s.estadoTexto)}. No se pueden registrar cambios; todo lo cargado se conserva y se puede consultar y exportar desde Ajustes.`;
+  return `<div class="aviso aviso--${s.estado === 'vencida' ? 'ambar' : 'gris'} aviso-servicio" role="status">${icono('info')}<div><strong>Suscripción del taller.</strong> ${texto} ${app.puede('config.taller') ? 'Para regularizarla, contactá a Growth Labs.' : 'Avisale al dueño del taller.'}</div></div>`;
+}
+
 function marcaHTML(t) {
   const logo = t.logoId ? `<img src="/api/adjuntos/${Number(t.logoId)}" alt="" width="600" height="202">` : '';
   // Nombre completo: cortarlo en la primera palabra deja «Taller…» o «Mecánica…» sin identificar.
@@ -230,7 +240,7 @@ async function mostrar({ conservarScroll = false } = {}) {
     const v = await mod.default({ params: r.params, query: r.query, app });
     if(renderId!==turnoRender) return;
     if (!v) { main.removeAttribute('aria-busy'); return; }
-    main.innerHTML = submenu(r)+v.html;
+    main.innerHTML = avisoServicio(app.sesion.taller.servicio)+submenu(r)+v.html;
     main.dataset.pantalla=r.modulo;
     main.querySelectorAll('.volver[href="#/mas"]').forEach(x=>x.remove());
     const rt=raiz.querySelector('[data-ruta-titulo]'); if(rt)rt.textContent=v.titulo;

@@ -28,7 +28,9 @@ Software de gestión para talleres mecánicos que Growth Labs ofrece como servic
 
 - **Toda consulta y escritura filtra por `taller_id` en el servidor.** Cada permiso se comprueba en el servidor (`server/permisos.js`). Ocultar un botón no protege nada.
 - Cada módulo nuevo agrega su caso a la matriz de aislamiento (`test/talleres.test.js`): un taller no puede leer, relacionar, editar ni exportar datos de otro cambiando identificadores.
-- Plan contratado ≠ permiso del usuario. Cuando existan planes, se comprueban en el servidor y nunca reemplazan el rol.
+- Plan contratado ≠ permiso del usuario. Los dos se comprueban en el servidor y uno nunca reemplaza al otro. Un módulo nuevo que dependa del plan se agrega en `RUTAS_MODULO` de `server/planes.js` con su prueba.
+- La suscripción del taller a Growth Labs no se mezcla con la caja ni los cobros del taller. Bajar de plan, vencer o cancelar nunca borra datos ni impide exportar.
+- Las rutas `/api/plataforma/*` exigen sesión de Growth Labs (`server/admin.js`); una sesión de taller, aunque sea de dueño, no sirve.
 - Las escrituras que mueven dinero o crean registros usan clave de idempotencia (`Idempotency-Key`). Un reintento no puede duplicar.
 - Nunca subir a git: bases (`*.db`), `data/`, `respaldos/`, `.env`, `privado/`, fotos reales, claves, enlaces de acceso, correos personales ni datos del alojamiento.
 - La clave de la demo (`scripts/seed.js`) es solo para datos ficticios. Nunca probarla contra una instalación real.
@@ -45,6 +47,9 @@ Node.js 24, `node:sqlite`, servidor HTTP propio, frontend en HTML/CSS/JS con mó
 | `server/config.js` | Variables `TALLERES_*`. No arranca si los datos quedan dentro del código. |
 | `server/db.js`, `server/migrations/NNN_*.sql` | Base y migraciones automáticas. |
 | `server/permisos.js`, `auth.js`, `plataforma.js` | Permisos, sesiones, talleres. |
+| `server/planes.js` | Plan, capacidades, límites y estado de la suscripción. Se aplica en `http.js` para toda la API del taller. |
+| `server/admin.js`, `routes/plataforma.js`, `public/plataforma.html` | Panel de Growth Labs: cuentas, sesiones y rutas propias (`/api/plataforma/*`). |
+| `public/js/marca.js` | Colores del taller y tokens de marca; lo usan servidor e interfaz. |
 | `server/reglas.js`, `recepcion.js`, `estado-ingreso.js`, `hallazgos.js`, `routes/` | Reglas de negocio y API. |
 | `server/respaldo.js`, `scripts/backup.js`, `restore.js` | Respaldo y restauración. |
 | `public/js/app.js`, `public/js/views/` | Navegación y pantallas. |

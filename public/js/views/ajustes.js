@@ -3,7 +3,7 @@ import { get, post, put, api } from '../api.js?v=0.1.0';
 import { esc, icono, pesos, cant, fechaHora, chip, campo, casilla, alEnviar, toast, confirmar, aviso, copiar, aEntradaDinero, aEntradaCant } from '../ui.js?v=0.1.0';
 import { PALETAS, tokensApariencia, problemaApariencia, aparienciaEfectiva, normalizarHex } from '../marca.js?v=0.1.0';
 
-const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['identidad', 'Logo y colores', 'config.taller'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
+const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['identidad', 'Logo y colores', 'config.taller'], ['plan', 'Plan y uso', 'config.taller'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export default async function ajustes({ params, app }) {
@@ -12,7 +12,7 @@ export default async function ajustes({ params, app }) {
   if (!app.puede(def[2])) return { titulo: 'Ajustes', html: `<div class="pagina"><h1 tabindex="-1">Sin acceso</h1><p>Esta parte la administra el dueño del taller.</p></div>` };
   const pestanas = `<nav class="pestanas" aria-label="Secciones de ajustes">${SECC.filter((s) => app.puede(s[2])).map(([k, t]) => `<a href="#/ajustes/${k}" ${k === sec ? 'aria-current="page"' : ''}><strong>${t}</strong></a>`).join('')}</nav>`;
   const marco = (cuerpo) => `<div class="pagina" style="max-width:1120px"><a class="volver" href="#/mas">${icono('izq')}Más funciones</a><div class="cab"><h1 tabindex="-1">${esc(def[1])}</h1><button type="button" class="btn btn-chico btn-texto" data-ayuda="${sec === 'usuarios' ? 'usuarios' : sec === 'datos' ? 'respaldo' : 'guia'}">${icono('ayuda')}¿Cómo hago…?</button></div>${pestanas}${cuerpo}</div>`;
-  const vistas = { taller: vTaller, identidad: vIdentidad, usuarios: vUsuarios, catalogos: vCatalogos, integraciones: vIntegraciones, datos: vDatos, registro: vRegistro };
+  const vistas = { taller: vTaller, identidad: vIdentidad, plan: vPlan, usuarios: vUsuarios, catalogos: vCatalogos, integraciones: vIntegraciones, datos: vDatos, registro: vRegistro };
   const v = await vistas[sec](app);
   return { titulo: `Ajustes · ${def[1]}`, html: marco(v.html), despues: v.despues };
 }
@@ -174,6 +174,28 @@ async function vIdentidad(app) {
         try { await api('DELETE', '/api/taller/logo'); toast('Logo quitado.'); location.reload(); } catch (e) { toast(e.message, { error: true }); }
       });
     }
+  };
+}
+
+// Plan contratado y consumo. Solo lectura: el plan y la suscripción los administra Growth Labs.
+const MODULOS_PLAN = { stock: 'Repuestos, compras, proveedores y mostrador', cuentas: 'Cuentas corrientes', reportes: 'Reportes' };
+async function vPlan() {
+  const s = await get('/api/plan');
+  const f = (d) => d ? d.split('-').reverse().join('/') : '—';
+  const barra = (uso, max, unidad) => {
+    if (max == null) return `<p><strong>${esc(uso)}</strong> ${unidad} · sin límite en el plan</p>`;
+    const pct = Math.min(100, Math.round((uso / max) * 100));
+    return `<p><strong>${esc(uso)}</strong> de ${esc(max)} ${unidad}${uso > max ? ' · <span class="texto-rojo">supera el plan</span>' : ''}</p><div class="uso-barra" role="img" aria-label="${pct}% usado"><span style="width:${pct}%"></span></div>`;
+  };
+  return {
+    html: `<section class="panel panel__cuerpo bloque"><h2>${esc(s.plan?.nombre || 'Sin plan asignado')}</h2>
+        <p>${chip(s.estadoTexto, s.soloLectura ? '' : s.estado === 'vencida' ? 'ambar' : 'verde', s.soloLectura ? 'ban' : 'check')}</p>
+        <dl class="datos-plan"><div><dt>Vigente hasta</dt><dd>${s.periodoHasta ? f(s.periodoHasta) : 'Sin vencimiento cargado'}</dd></div>${s.graciaHasta ? `<div><dt>Gracia hasta</dt><dd>${f(s.graciaHasta)}</dd></div>` : ''}${s.cancelaAlCierre ? '<div><dt>Cancelación</dt><dd>Al cierre del período</dd></div>' : ''}</dl>
+        ${s.plan?.dePrueba ? aviso('Plan de prueba para el piloto: los cupos pueden cambiar y no tiene precio definido.', 'gris') : ''}</section>
+      <section class="panel panel__cuerpo bloque"><h2>Incluye</h2><ul class="lista">${Object.entries(MODULOS_PLAN).map(([k, t]) => `<li class="fila"><span>${esc(t)}</span>${s.modulos[k] ? chip('Incluido', 'verde', 'check') : chip('No incluido', '', 'ban')}</li>`).join('')}</ul>
+        <p class="muted small">Recepción, órdenes, presupuestos, agenda, cobros, documentos, seguridad, respaldos y exportación están en todos los planes. Si un módulo deja de estar incluido, lo cargado se conserva.</p></section>
+      <section class="panel panel__cuerpo bloque"><h2>Uso</h2><div class="fila-campos"><div><h3>Usuarios activos</h3>${barra(s.uso.usuarios_activos, s.limites.usuarios_activos, 'usuarios')}</div><div><h3>Archivos</h3>${barra(s.uso.almacenamiento_mb, s.limites.almacenamiento_mb, 'MB')}</div></div>
+        <p class="muted small">Para cambiar de plan o ampliar cupos, contactá a Growth Labs. Ningún cambio de plan borra información.</p></section>`
   };
 }
 
