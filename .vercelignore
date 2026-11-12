@@ -1,0 +1,17 @@
+# Solo el código de la demo. Nunca bases, datos, respaldos ni estado privado.
+data/
+demo-data/
+demo-*-data/
+baseline-data/
+respaldos/
+privado/
+evidence/
+tmp/
+qa/
+test/
+.playwright-mcp/
+.impeccable/
+*.db
+*.db-wal
+*.db-shm
+.env
