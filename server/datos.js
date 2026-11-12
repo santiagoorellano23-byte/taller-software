@@ -3,6 +3,7 @@ import { uno, todos } from './db.js';
 import { noEncontrado, json } from './util.js';
 import { situacion, totales, resumenOperativo, dimensionesVisita } from './reglas.js';
 import { leerHallazgos } from './hallazgos.js';
+import { aparienciaEfectiva } from '../public/js/marca.js';
 
 export function delTaller(db, tabla, tallerId, id, mensaje) {
   const fila = id ? uno(db, `SELECT * FROM ${tabla} WHERE taller_id = ? AND id = ?`, tallerId, id) : null;
@@ -100,6 +101,6 @@ export function tallerPublico(t) {
   return {
     slug: t.slug, nombre: t.nombre, descripcion: c.descripcion || '', telefono: c.telefono || '', whatsapp: c.whatsapp || '',
     direccion: c.direccion || '', localidad: c.localidad || '', horarios: c.horarios || '', servicios: c.serviciosPublicos || [],
-    lema: c.lema || '', tieneLogo: !!c.logoAdjuntoId, mapa: c.mapa || ''
+    lema: c.lema || '', tieneLogo: !!c.logoAdjuntoId, mapa: c.mapa || '', apariencia: aparienciaEfectiva(c.apariencia)
   };
 }

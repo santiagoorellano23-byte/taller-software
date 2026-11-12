@@ -1,6 +1,8 @@
 // Dibuja un documento emitido (copia fechada) como HTML imprimible. Lo usan la aplicación y la vista pública de enlaces.
 // Función pura: recibe el contenido guardado y devuelve texto HTML escapado.
 
+// Color copiado al emitir; los documentos anteriores a esa copia conservan el rojo con que se emitieron.
+const colorDoc = (c) => /^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : '#AE040F';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pesos = (c) => c == null ? '' : '$ ' + (c / 100).toLocaleString('es-AR', { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 });
 const cant = (m, u) => `${(m / 1000).toLocaleString('es-AR', { maximumFractionDigits: 3 })} ${esc(u || '')}`.trim();
@@ -21,7 +23,7 @@ const TAREA = { hecho: 'Hecho', no_aplica: 'No aplica', pendiente: 'Pendiente' }
 
 function encabezado(c) {
   const t = c.taller || {};
-  return `<header class="doc-head">
+  return `<header class="doc-head" style="border-bottom-color:${colorDoc(t.color)}">
     <div class="doc-marca">${t.logo ? `<img src="${esc(t.logo)}" alt="Logo de ${esc(t.nombre)}">` : ''}<div><strong>${esc(t.nombre)}</strong>${t.lema ? `<span>${esc(t.lema)}</span>` : ''}
     <span>${esc([t.direccion, t.telefono, t.email].filter(Boolean).join(' · '))}</span></div></div>
     <div class="doc-num"><strong>${esc(c.titulo)}</strong><span>N.º ${esc(c.numero)}</span><span>Emitido ${fecha(c.emitido)}</span></div>

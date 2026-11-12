@@ -1,6 +1,7 @@
 // Página pública voluntaria del taller y solicitud de turno (queda sin confirmar hasta que el taller la confirma).
 import { api } from './api.js?v=0.1.0';
 import { esc, campo, casilla, alEnviar, icono, aviso } from './ui.js?v=0.1.0';
+import { cssApariencia } from './marca.js?v=0.1.0';
 
 const slug = location.pathname.split('/')[2];
 const main = document.getElementById('contenido');
@@ -16,8 +17,8 @@ async function iniciar() {
     return;
   }
   document.title = `${t.nombre}${t.localidad ? ' · ' + t.localidad : ''}`;
-  const partes = t.nombre.split(' ');
-  cab.innerHTML = `<div class="pub-cab__fila">${t.tieneLogo ? `<img src="/publico/logo/${esc(t.slug)}" alt="${esc(t.nombre)}">` : `<span class="marca"><span class="marca__nombre">${esc(partes[0])}</span>${partes.length > 1 ? `<span class="marca__sub">${esc(partes.slice(1).join(' '))}</span>` : ''}</span>`}
+  const hoja = document.createElement('style'); hoja.textContent = cssApariencia(t.apariencia); document.head.append(hoja);
+  cab.innerHTML = `<div class="pub-cab__fila">${t.tieneLogo ? `<img src="/publico/logo/${esc(t.slug)}" alt="${esc(t.nombre)}">` : `<span class="marca"><span class="marca__nombre"><span class="marca__texto">${esc(t.nombre)}</span></span></span>`}
     <div>${t.lema ? `<p style="color:var(--silver);font-weight:600">${esc(t.lema)}</p>` : ''}${t.localidad ? `<p style="color:var(--on-dark-2)">${icono('mapa', 'i-sm')} ${esc(t.localidad)}</p>` : ''}</div></div>`;
   main.innerHTML = `<div class="pub-grid">
     <section class="bloque"><h1 tabindex="-1">${esc(t.nombre)}</h1>${t.descripcion ? `<p>${esc(t.descripcion)}</p>` : ''}

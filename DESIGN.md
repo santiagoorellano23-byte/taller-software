@@ -2,10 +2,10 @@
 name: Growth Labs Talleres · base operativa
 description: Paso a paso, con una próxima acción clara y estados fieles al taller.
 colors:
-  action: "#af1927"
-  action-hover: "#8d1320"
+  action: "#2e3bff"
+  action-hover: "#2630d1"
   on-action: "#fff"
-  action-tint: "#fff0f1"
+  action-tint: "#eaebff"
   background: "#f4f5f6"
   surface: "#fff"
   surface-soft: "#f8f9fa"
@@ -107,9 +107,9 @@ components:
 
 **Creative North Star: "Paso a paso"**
 
-Una decisión de recepción por pantalla y una próxima acción clara por orden. Dirección A «Paso a paso», heredada de la base operativa original; la pantalla Más conserva exclusivamente los grupos, el orden y los iconos de B. Se fusiona con el sistema anterior: siguen la hoja clara sobre marco gris, la tinta oscura, Barlow local y el rojo de acción por defecto; recepción y navegación incorporan formas más amplias y redondeadas.
+Una decisión de recepción por pantalla y una próxima acción clara por orden. Dirección A «Paso a paso», heredada de la base operativa original; la pantalla Más conserva exclusivamente los grupos, el orden y los iconos de B. Se fusiona con el sistema anterior: siguen la hoja clara sobre marco gris, la tinta oscura, Barlow local y el color de marca de cada taller; recepción y navegación incorporan formas más amplias y redondeadas.
 
-La identidad la llevan el nombre y el logo de cada taller, las patentes, la orden numerada y el lenguaje real del taller. El selector sol/luna se conserva. Las superficies y los estados comunican decisiones operativas, sin indicadores inventados ni fotografías genéricas. Sistema heredado de la base operativa (versión 0.6.1) al iniciar Growth Labs Talleres 0.1.0. El rojo es el color de acción por defecto: la identidad configurable por taller lo separará de los colores semánticos (error, deuda, acción destructiva) mediante tokens propios; ver docs/HOJA-DE-RUTA.md.
+La identidad la llevan el nombre y el logo de cada taller, las patentes, la orden numerada y el lenguaje real del taller. El selector sol/luna se conserva. Las superficies y los estados comunican decisiones operativas, sin indicadores inventados ni fotografías genéricas. Sistema heredado de la base operativa (versión 0.6.1) al iniciar Growth Labs Talleres 0.1.0, con la marca separada de la semántica.
 
 **Key Characteristics:**
 
@@ -122,13 +122,22 @@ Los valores se extraen de la cascada de `public/index.html`: app, interacciones,
 
 ## Colors
 
-Rojo de acción sobre una base gris fría y superficies blancas; los colores semánticos conservan texto, icono y borde.
+Color de marca del taller sobre una base gris fría y superficies blancas; los colores semánticos conservan texto, icono y borde y no dependen de la marca.
 
-### Primary
+### Marca (configurable por taller)
 
-- **Rojo de acción (por defecto):** acción principal y selección. El token de acción y el rojo semántico coinciden en claro; en oscuro se separan para preservar el contraste entre botón y texto.
-- **Rojo profundo:** respuesta de hover de la acción principal.
-- **Rojo suave:** fondo de una elección activa o de un aviso de error; nunca reemplaza el mensaje.
+Tokens en `app.css` (claro) y `tema.css` (oscuro) con el azul Growth Labs `#2e3bff` por defecto; cada taller los reemplaza desde Ajustes → Logo y colores. `public/js/marca.js` calcula todos los valores a partir de dos colores #rrggbb y garantiza el contraste; nunca se acepta CSS del usuario.
+
+- `--marca` / `--marca-hover` / `--sobre-marca`: relleno del botón principal, selección de texto, casillas. Texto sobre la marca ≥ 4,5:1. En oscuro, si el relleno se confunde con el fondo (grafito), se invierte a tono claro con texto oscuro.
+- `--marca-texto`: la marca usada como texto, contorno, foco o indicador; ≥ 4,5:1 contra el fondo de cada tema.
+- `--marca-tinte` / `--marca-linea`: fondo y borde de una elección activa.
+- `--acento`: detalle junto al nombre del taller; ≥ 3:1 contra la superficie.
+- `--accion*` quedan como alias de la marca por compatibilidad.
+
+### Semánticos (fijos)
+
+- **Rojo** (`--red*`): solo errores, deudas, acciones destructivas y estado rojo. No se usa como marca.
+- Ámbar, verde, azul, violeta y turquesa: estados, con palabra e icono.
 
 ### Neutral
 

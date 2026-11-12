@@ -10,6 +10,7 @@ import { falla, requerido, enLista, isoAhora, idEntero, normTexto, json, ErrorUs
 import { respuestaDe, controlVigente, RESULTADOS, TIPOS_LINEA } from '../reglas.js';
 import { carpetaArchivos, config } from '../config.js';
 import { tokenNuevo } from '../auth.js';
+import { aparienciaEfectiva } from '../../public/js/marca.js';
 
 const TIPOS = { presupuesto: 'Presupuesto', informe: 'Informe de trabajo', entrega: 'Resumen de entrega', venta: 'Comprobante de venta', recibo: 'Recibo de pago' };
 const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
@@ -23,7 +24,8 @@ function marcaDelTaller(db, taller) {
       try { logo = `data:${a.mime};base64,${fs.readFileSync(path.join(carpetaArchivos(), a.ruta)).toString('base64')}`; } catch { logo = null; }
     }
   }
-  return { nombre: taller.nombre, lema: c.lema || '', direccion: [c.direccion, c.localidad].filter(Boolean).join(', '), telefono: c.telefono || '', email: c.email || '', logo };
+  // Copia fija: cambiar el logo o los colores después no modifica documentos ya emitidos.
+  return { nombre: taller.nombre, lema: c.lema || '', direccion: [c.direccion, c.localidad].filter(Boolean).join(', '), telefono: c.telefono || '', email: c.email || '', logo, color: aparienciaEfectiva(c.apariencia).principal };
 }
 
 function contenidoVisita(db, taller, v, tipo, { incluirFotos = false } = {}) {

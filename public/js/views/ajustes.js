@@ -1,8 +1,9 @@
 // Ajustes del taller (solo dueño): datos y página pública, usuarios, catálogos, conexiones externas, datos y registro.
 import { get, post, put, api } from '../api.js?v=0.1.0';
 import { esc, icono, pesos, cant, fechaHora, chip, campo, casilla, alEnviar, toast, confirmar, aviso, copiar, aEntradaDinero, aEntradaCant } from '../ui.js?v=0.1.0';
+import { PALETAS, tokensApariencia, problemaApariencia, aparienciaEfectiva, normalizarHex } from '../marca.js?v=0.1.0';
 
-const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
+const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['identidad', 'Logo y colores', 'config.taller'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export default async function ajustes({ params, app }) {
@@ -11,7 +12,7 @@ export default async function ajustes({ params, app }) {
   if (!app.puede(def[2])) return { titulo: 'Ajustes', html: `<div class="pagina"><h1 tabindex="-1">Sin acceso</h1><p>Esta parte la administra el dueño del taller.</p></div>` };
   const pestanas = `<nav class="pestanas" aria-label="Secciones de ajustes">${SECC.filter((s) => app.puede(s[2])).map(([k, t]) => `<a href="#/ajustes/${k}" ${k === sec ? 'aria-current="page"' : ''}><strong>${t}</strong></a>`).join('')}</nav>`;
   const marco = (cuerpo) => `<div class="pagina" style="max-width:1120px"><a class="volver" href="#/mas">${icono('izq')}Más funciones</a><div class="cab"><h1 tabindex="-1">${esc(def[1])}</h1><button type="button" class="btn btn-chico btn-texto" data-ayuda="${sec === 'usuarios' ? 'usuarios' : sec === 'datos' ? 'respaldo' : 'guia'}">${icono('ayuda')}¿Cómo hago…?</button></div>${pestanas}${cuerpo}</div>`;
-  const vistas = { taller: vTaller, usuarios: vUsuarios, catalogos: vCatalogos, integraciones: vIntegraciones, datos: vDatos, registro: vRegistro };
+  const vistas = { taller: vTaller, identidad: vIdentidad, usuarios: vUsuarios, catalogos: vCatalogos, integraciones: vIntegraciones, datos: vDatos, registro: vRegistro };
   const v = await vistas[sec](app);
   return { titulo: `Ajustes · ${def[1]}`, html: marco(v.html), despues: v.despues };
 }
@@ -47,11 +48,7 @@ async function vTaller(app) {
         ${aviso('La página pública nunca muestra clientes, autos ni trabajos. Confirmá cada dato con el dueño antes de activarla.', 'gris')}</section>
       <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar ajustes</button></div>
     </form>
-    <section class="panel panel__cuerpo bloque"><h2>Logo</h2>
-      ${c.logoAdjuntoId ? `<img src="/api/adjuntos/${c.logoAdjuntoId}" alt="Logo actual" style="max-height:72px;background:#fff;padding:6px;border:1px solid var(--line);border-radius:6px">` : '<p class="muted">Sin logo cargado: se muestra el nombre del taller.</p>'}
-      ${c.logoAdjuntoId ? '<p><button type="button" class="btn btn-texto" data-quitar-logo>Quitar logo</button></p>' : ''}
-      <form class="form" id="f-logo" novalidate><div class="campo" data-campo="logo"><label for="logo-in">Imagen PNG, JPG o WEBP (menos de 400 KB)</label><input id="logo-in" type="file" accept="image/png,image/jpeg,image/webp"></div><button class="btn" type="submit">${icono('subir')}Subir logo</button></form>
-      <p class="muted small">Los documentos ya emitidos conservan el logo que tenían.</p></section>`,
+    <p class="muted small">El logo y los colores del taller están en <a href="#/ajustes/identidad">Logo y colores</a>.</p>`,
     despues(raiz) {
       alEnviar(raiz.querySelector('#f-taller'), async (d) => {
         await put('/api/taller', {
@@ -62,6 +59,108 @@ async function vTaller(app) {
         toast('Ajustes guardados.');
         location.reload();
       });
+    }
+  };
+}
+
+// Vista previa con los tokens calculados para cada tema. No depende del tema de la pantalla actual.
+const SUPERFICIE = { claro: { fondo: '#f3f3f2', hoja: '#ffffff', tinta: '#292929', suave: '#555555', linea: '#e0e0de', rojo: '#ae040f', rojoFondo: '#fcebec' }, oscuro: { fondo: '#161b21', hoja: '#1d242c', tinta: '#edf1f5', suave: '#b2bfcc', linea: '#41505e', rojo: '#ff9aa4', rojoFondo: '#442630' } };
+function muestra(tema, k, nombre, logo) {
+  const s = SUPERFICIE[tema];
+  return `<figure class="vp" style="background:${s.fondo};color:${s.tinta};border-color:${s.linea}"><figcaption class="vp__tema">${tema === 'claro' ? 'Modo claro' : 'Modo oscuro'}</figcaption>
+    <div class="vp__hoja" style="background:${s.hoja};border-color:${s.linea}">
+      <div class="vp__marca">${logo ? `<img src="${logo}" alt="" class="vp__logo">` : `<span class="vp__punto" style="background:${k.acento}"></span>`}<strong translate="no">${esc(nombre)}</strong></div>
+      <div class="vp__nav"><span class="vp__activo" style="color:${k.marcaTexto};background:${k.marcaTinte};border-color:${k.marcaLinea}">Hoy</span><span style="color:${s.suave}">Taller</span><span style="color:${s.suave}">Agenda</span></div>
+      <div class="vp__fila"><span class="vp__btn" style="background:${k.marca};color:${k.sobreMarca}">Recibir un auto</span><span class="vp__enlace" style="color:${k.marcaTexto}">Ver orden</span></div>
+      <p class="vp__error" style="color:${s.rojo};background:${s.rojoFondo}">Saldo pendiente: los errores y las deudas no cambian de color.</p>
+    </div></figure>`;
+}
+
+async function vIdentidad(app) {
+  const { taller: t } = await get('/api/taller');
+  const c = t.config;
+  const guardada = aparienciaEfectiva(c.apariencia);
+  const logo = c.logoAdjuntoId ? `/api/adjuntos/${Number(c.logoAdjuntoId)}` : '';
+  let version = t.version;
+  return {
+    html: `<form class="form" id="f-colores" novalidate>
+      <section class="panel panel__cuerpo bloque"><h2>Colores del taller</h2>
+        <p class="muted small">Se usan en botones, selección y navegación de todo el equipo. Los colores de errores, deudas y avisos son fijos para que siempre se entiendan.</p>
+        <fieldset class="grupo" data-campo="paleta"><legend>Elegí una paleta</legend><div class="paletas">${PALETAS.map((p) => `<label class="paleta"><input type="radio" name="paleta" value="${p.clave}"><span><i style="background:${p.principal}"></i><i style="background:${p.acento}"></i>${esc(p.nombre)}</span></label>`).join('')}
+          <label class="paleta"><input type="radio" name="paleta" value="propia"><span><i data-propia-p></i><i data-propia-a></i>Colores propios</span></label></div></fieldset>
+        <div class="fila-campos" data-propios>
+          <div class="campo" data-campo="principal"><label for="col-principal">Color principal</label><div class="color-campo"><input type="color" id="col-principal-sel" aria-label="Elegir color principal"><input type="text" id="col-principal" name="principal" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" aria-describedby="ayuda-principal"></div><p class="campo__ayuda" id="ayuda-principal">Botones y selección. Tiene que ser oscuro para que el texto blanco se lea.</p></div>
+          <div class="campo" data-campo="acento"><label for="col-acento">Acento</label><div class="color-campo"><input type="color" id="col-acento-sel" aria-label="Elegir acento"><input type="text" id="col-acento" name="acento" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" aria-describedby="ayuda-acento"></div><p class="campo__ayuda" id="ayuda-acento">Detalle junto al nombre del taller.</p></div>
+        </div>
+        <div class="vp-cab"><h3>Vista previa</h3><span class="vp-estado" data-estado aria-live="polite"></span></div>
+        <div class="vp-par" data-vista></div>
+        <div class="form-pie acciones"><button class="btn btn-primario" type="submit" data-guardar>${icono('check')}Guardar colores</button><button type="button" class="btn" data-descartar>Descartar cambios</button>${guardada.propia ? `<button type="button" class="btn btn-texto" data-restaurar>Volver a los colores de Growth Labs</button>` : ''}</div>
+        <p class="muted small">Los documentos ya emitidos conservan los colores y el logo de su fecha.</p>
+      </section></form>
+    <section class="panel panel__cuerpo bloque"><h2>Logo</h2>
+      ${logo ? `<img src="${logo}" alt="Logo actual" style="max-height:72px;background:#fff;padding:6px;border:1px solid var(--line);border-radius:6px">` : '<p class="muted">Sin logo cargado: se muestra el nombre del taller.</p>'}
+      ${logo ? '<p><button type="button" class="btn btn-texto" data-quitar-logo>Quitar logo</button></p>' : ''}
+      <form class="form" id="f-logo" novalidate><div class="campo" data-campo="logo"><label for="logo-in">Imagen PNG, JPG o WEBP (menos de 400 KB)</label><input id="logo-in" type="file" accept="image/png,image/jpeg,image/webp"></div><button class="btn" type="submit">${icono('subir')}Subir logo</button></form>
+      <p class="muted small">Los documentos ya emitidos conservan el logo que tenían.</p></section>`,
+    despues(raiz) {
+      const f = raiz.querySelector('#f-colores');
+      const inP = f.querySelector('#col-principal'), inA = f.querySelector('#col-acento');
+      const selP = f.querySelector('#col-principal-sel'), selA = f.querySelector('#col-acento-sel');
+      const estado = f.querySelector('[data-estado]'), vista = f.querySelector('[data-vista]');
+      let base = { principal: guardada.principal, acento: guardada.acento };
+      const borrador = () => ({ principal: normalizarHex(inP.value), acento: normalizarHex(inA.value) });
+      const marcarPaleta = (d) => {
+        const p = PALETAS.find((x) => x.principal === d.principal && x.acento === d.acento);
+        f.querySelector(`input[name="paleta"][value="${p ? p.clave : 'propia'}"]`).checked = true;
+        f.querySelector('[data-propia-p]').style.background = d.principal || 'transparent';
+        f.querySelector('[data-propia-a]').style.background = d.acento || d.principal || 'transparent';
+      };
+      const cargar = (d) => { inP.value = d.principal; inA.value = d.acento; selP.value = d.principal; selA.value = d.acento; };
+      const pintar = () => {
+        const d = borrador();
+        const p = problemaApariencia({ principal: inP.value, acento: inA.value });
+        for (const [campoEl, nombre] of [[inP, 'principal'], [inA, 'acento']]) {
+          const cont = campoEl.closest('.campo');
+          cont.classList.toggle('campo--error', p?.campo === nombre);
+          cont.querySelector('.campo__error')?.remove();
+          if (p?.campo === nombre) cont.insertAdjacentHTML('beforeend', `<p class="campo__error" role="alert">${esc(p.error)}</p>`);
+        }
+        const cambiado = d.principal !== base.principal || (d.acento || d.principal) !== base.acento;
+        estado.textContent = p ? 'Corregí el color para ver la vista previa' : cambiado ? 'Sin guardar: solo vos ves esta vista previa' : 'Guardado: así lo ve todo el equipo';
+        estado.dataset.tipo = p ? 'error' : cambiado ? 'borrador' : 'guardado';
+        f.querySelector('[data-guardar]').disabled = !!p || !cambiado;
+        f.querySelector('[data-descartar]').disabled = !cambiado;
+        if (!p) { const k = tokensApariencia(d); vista.innerHTML = muestra('claro', k.claro, t.nombre, logo) + muestra('oscuro', k.oscuro, t.nombre, logo); marcarPaleta({ principal: d.principal, acento: d.acento || d.principal }); }
+        f.dataset.cambios = cambiado ? '1' : '';
+      };
+      f.querySelectorAll('input[name="paleta"]').forEach((r) => r.addEventListener('change', () => {
+        const p = PALETAS.find((x) => x.clave === r.value);
+        if (p) cargar(p); else inP.focus();
+        pintar();
+      }));
+      selP.addEventListener('input', () => { inP.value = selP.value; pintar(); });
+      selA.addEventListener('input', () => { inA.value = selA.value; pintar(); });
+      inP.addEventListener('input', () => { if (normalizarHex(inP.value)) selP.value = normalizarHex(inP.value); pintar(); });
+      inA.addEventListener('input', () => { if (normalizarHex(inA.value)) selA.value = normalizarHex(inA.value); pintar(); });
+      f.querySelector('[data-descartar]').addEventListener('click', () => { cargar(base); pintar(); });
+      alEnviar(f, async () => {
+        const d = borrador();
+        const r = await put('/api/taller/apariencia', { version, principal: d.principal, acento: d.acento });
+        version = r.version; base = { principal: r.apariencia.principal, acento: r.apariencia.acento };
+        app.sesion.taller.apariencia = r.apariencia; app.aplicarApariencia(r.apariencia);
+        cargar(base); pintar();
+        toast('Colores guardados. Ya los ve todo el equipo.');
+      });
+      raiz.querySelector('[data-restaurar]')?.addEventListener('click', async () => {
+        const ok = await confirmar({ titulo: 'Volver a los colores de Growth Labs', texto: 'El taller deja de usar sus colores propios. Podés volver a elegirlos cuando quieras; los documentos emitidos no cambian.', aceptar: 'Volver a los colores de Growth Labs' });
+        if (!ok.ok) return;
+        try {
+          const r = await put('/api/taller/apariencia', { version, restaurar: true });
+          app.sesion.taller.apariencia = r.apariencia; app.aplicarApariencia(r.apariencia);
+          toast('Se restauraron los colores de Growth Labs.'); app.recargar();
+        } catch (e) { toast(e.message, { error: true }); }
+      });
+      cargar(base); pintar();
       alEnviar(raiz.querySelector('#f-logo'), async () => {
         const f = raiz.querySelector('#logo-in').files[0];
         if (!f) throw Object.assign(new Error('Elegí una imagen.'), { campo: 'logo' });

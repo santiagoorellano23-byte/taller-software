@@ -27,12 +27,12 @@
     transition:opacity var(--respuesta-rapida),transform var(--respuesta-rapida) var(--respuesta-curva);
   }
   .tabbar--isla .isla-icono .i {position:relative;width:21px;height:21px}
-  .tabbar--isla a[aria-current=page] {background:transparent;border:0;box-shadow:none;color:var(--red);font-weight:600}
+  .tabbar--isla a[aria-current=page] {background:transparent;border:0;box-shadow:none;color:var(--marca-texto);font-weight:600}
   .tabbar--isla a[aria-current=page] .isla-icono {transform:translateY(-4px);color:var(--sobre-accion)}
   .tabbar--isla a[aria-current=page] .isla-icono::before {opacity:1;transform:scale(1)}
   .tabbar--isla a:active {background:var(--surface-3)}
   .tabbar--isla a:active .isla-icono {transform:scale(.96)}
-  .tabbar--isla a:focus-visible {outline:2px solid var(--red);outline-offset:-2px}
+  .tabbar--isla a:focus-visible {outline:2px solid var(--marca-texto);outline-offset:-2px}
   .tabbar--isla:has(:focus-visible) .isla-icono {transition:none}
   .toasts {bottom:var(--isla-reserva)}
   .recepcion-confirmar {bottom:var(--isla-reserva)}

@@ -13,6 +13,15 @@ import { ENTREGA_SALDO, reglaEntregaSaldo } from '../reglas.js';
 import path from 'node:path';
 import { config } from '../config.js';
 import { estadoRespaldo } from '../respaldo.js';
+import { aparienciaEfectiva, problemaApariencia, normalizarHex } from '../../public/js/marca.js';
+
+// Firma real del archivo: el tipo declarado por el navegador no alcanza.
+function esImagen(b, mime) {
+  if (/png/.test(mime)) return b.length > 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (/jpeg/.test(mime)) return b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  if (/webp/.test(mime)) return b.length > 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP';
+  return false;
+}
 
 function guardarConfig(ctx, cambios) {
   const t = uno(ctx.db, 'SELECT config, version FROM talleres WHERE id = ?', ctx.taller.id);
@@ -81,6 +90,7 @@ export default function rutas(r) {
     const mime = String(ctx.req.headers['content-type'] || '');
     if (!/^image\/(png|jpeg|webp)/.test(mime)) falla('El logo debe ser una imagen PNG, JPG o WEBP.');
     if (ctx.archivo.length > 400_000) falla('El logo debe pesar menos de 400 KB para que entre en los documentos.');
+    if (!esImagen(ctx.archivo, mime)) falla('El archivo no es una imagen PNG, JPG o WEBP válida. Exportalo de nuevo desde el programa de diseño.');
     const id = guardarArchivo(ctx, { ambito: 'logo', descripcion: 'Logo del taller' });
     guardarConfig(ctx, { logoAdjuntoId: id });
     ctx.auditar('Logo actualizado (los documentos ya emitidos conservan el anterior)', 'taller', ctx.taller.id);
@@ -93,6 +103,25 @@ export default function rutas(r) {
     guardarConfig(ctx, { logoAdjuntoId: null });
     ctx.auditar('Logo quitado del taller (se conservan documentos anteriores)', 'taller', ctx.taller.id);
     return { ok: true };
+  });
+
+  // Colores del taller. Solo se aceptan colores #rrggbb que cumplan el contraste; `restaurar` vuelve a la marca del producto.
+  r.put('/api/taller/apariencia', (ctx) => {
+    exigir(ctx.usuario, 'config.taller');
+    const b = ctx.cuerpo;
+    if (Number(b.version) !== ctx.taller.version) conflicto();
+    const antes = aparienciaEfectiva(ctx.taller.config.apariencia);
+    let apariencia = null;
+    if (!b.restaurar) {
+      const p = problemaApariencia({ principal: b.principal, acento: b.acento });
+      if (p) falla(p.error, p.campo);
+      apariencia = { principal: normalizarHex(b.principal), acento: normalizarHex(b.acento) || null };
+    }
+    guardarConfig(ctx, { apariencia });
+    const despues = aparienciaEfectiva(apariencia);
+    ctx.auditar(apariencia ? 'Colores del taller actualizados' : 'Colores del taller restaurados a los del producto', 'taller', ctx.taller.id,
+      `principal ${antes.principal} → ${despues.principal}; acento ${antes.acento} → ${despues.acento} (los documentos ya emitidos conservan sus colores)`);
+    return { apariencia: despues, version: ctx.taller.version + 1 };
   });
 
   // ----- Usuarios -----

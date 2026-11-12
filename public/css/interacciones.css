@@ -42,8 +42,8 @@
   .grupo-menu a > span { min-width: 0; }
   .grupo-menu a:focus-visible, .resultado:focus-visible { outline-offset: -3px; }
   .nav a:focus-visible { outline-color: #fff; outline-offset: -3px; background: var(--graphite-2); }
-  .nav a[aria-current="page"]:focus-visible { outline-color: var(--red); background: var(--surface); }
-  .tabbar a:active { background: var(--red-tint); color: var(--red); }
+  .nav a[aria-current="page"]:focus-visible { outline-color: var(--marca-texto); background: var(--surface); }
+  .tabbar a:active { background: var(--marca-tinte); color: var(--marca-texto); }
   .pestanas a:focus-visible { outline-offset: -3px; }
   .tira button:focus-visible { outline-offset: -3px; }
   .opcion input:disabled + span { opacity: .55; cursor: not-allowed; }
@@ -54,7 +54,7 @@
       box-shadow var(--respuesta-rapida);
   }
   .campo > label { transition: color var(--respuesta-rapida); }
-  .campo:focus-within > label { color: var(--red); }
+  .campo:focus-within > label { color: var(--marca-texto); }
   .tabla-autos td { transition: background-color var(--respuesta-rapida); }
   .tabla-autos tbody tr:focus-within td { background: var(--surface-2); }
   details.mas { transition: border-color var(--respuesta-rapida); }
@@ -64,7 +64,7 @@
     transition: background-color var(--respuesta-rapida), color var(--respuesta-rapida),
       border-color var(--respuesta-rapida);
   }
-  details.mas[open] > summary::before { color: var(--red); background: var(--red-tint); }
+  details.mas[open] > summary::before { color: var(--marca-texto); background: var(--marca-tinte); }
   .toast button:focus-visible { outline-color: #fff; }
   dialog.dialogo[open] { animation: confirmar-entrada var(--respuesta) var(--respuesta-curva); }
   dialog.dialogo[open]::backdrop { animation: velo-entrada var(--respuesta) ease-out; }
@@ -78,20 +78,20 @@
     transform: translateY(-1px); box-shadow: var(--sombra-control-activo);
   }
   .btn-primario:not(:disabled):not([aria-disabled="true"]):not(.cargando):hover {
-    box-shadow: 0 4px 12px rgb(174 4 15 / .24);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--marca) 24%, transparent);
   }
   .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
     transform: translateY(1px); box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
   }
   .btn-texto:not(:disabled):not([aria-disabled="true"]):active { transform: none; box-shadow: none; }
   .nav a:not([aria-current="page"]):hover > .i { transform: translateX(2px); }
-  .tabbar a:not([aria-current="page"]):hover { color: var(--red); background: var(--red-tint); }
-  .grupo-menu a:hover, .area:hover { background: #FBF5F5; box-shadow: inset 3px 0 0 var(--red); }
-  .grupo-menu a:hover::after { color: var(--red); opacity: 1; transform: translateX(2px) rotate(45deg); }
+  .tabbar a:not([aria-current="page"]):hover { color: var(--marca-texto); background: var(--marca-tinte); }
+  .grupo-menu a:hover, .area:hover { background: var(--marca-tinte); box-shadow: inset 3px 0 0 var(--marca-texto); }
+  .grupo-menu a:hover::after { color: var(--marca-texto); opacity: 1; transform: translateX(2px) rotate(45deg); }
   .grupo-menu a:hover > .i { transform: translateX(2px); }
-  .resultado:hover { border-color: var(--red-line); box-shadow: var(--sombra-control-activo); }
-  .tira button:not([aria-pressed="true"]):hover { background: var(--red-tint); box-shadow: inset 0 -3px 0 var(--red-line); }
-  .pestanas a:not([aria-current="page"]):hover { background: var(--surface-3); color: var(--red); }
+  .resultado:hover { border-color: var(--marca-linea); box-shadow: var(--sombra-control-activo); }
+  .tira button:not([aria-pressed="true"]):hover { background: var(--marca-tinte); box-shadow: inset 0 -3px 0 var(--marca-linea); }
+  .pestanas a:not([aria-current="page"]):hover { background: var(--surface-3); color: var(--marca-texto); }
   .opcion input:not(:checked):not(:disabled):hover + span { background: var(--surface-2); border-color: var(--ink-2); }
   .opcion input:checked:not(:disabled):hover + span { box-shadow: 0 0 0 2px var(--line); }
   :is(.campo input, .campo select, .campo textarea):not(:disabled):not([readonly]):not(:focus):hover { border-color: var(--muted); }

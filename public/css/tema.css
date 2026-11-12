@@ -1,12 +1,12 @@
 /* Colores de operación: tinta y acción separadas para conservar contraste. */
-:root {--accion:#af1927;--accion-hover:#8d1320;--sobre-accion:#fff}
+:root {--accion:var(--marca);--accion-hover:var(--marca-hover);--sobre-accion:var(--sobre-marca)}
 html[data-tema-efectivo="oscuro"] {
   color-scheme:dark;background:#161b21;color:#edf1f5;
   --bg:#161b21;--surface:#1d242c;--surface-2:#242e38;--surface-3:#303c48;
   --ink:#edf1f5;--ink-2:#d0d9e2;--muted:#b2bfcc;
   --line:#41505e;--line-2:#34424f;--line-strong:#74899b;
   --red:#ff9aa4;--red-dark:#ffc2c8;--red-tint:#442630;--red-line:#a65c69;
-  --accion:#ae2034;--accion-hover:#8f192b;--sobre-accion:#fff;
+  --marca-texto:#7982ff;--marca-tinte:#222a67;--marca-linea:#3e47b5;--acento:#4f5aff;
   --amber:#ffd089;--amber-bg:#3d3022;--amber-line:#8f7046;
   --teal:#96d4e6;--teal-bg:#203740;--teal-line:#4e8799;
   --purple:#d0b9f3;--purple-bg:#342b45;--purple-line:#88709f;
@@ -28,7 +28,7 @@ html[data-tema-efectivo="oscuro"] .qr-caja .muted {color:#5d6871}
 .selector-tema {display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;flex:none;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink-2);cursor:pointer;transition:background-color 140ms ease,border-color 140ms ease}
 .selector-tema .i {width:21px;height:21px;pointer-events:none}
 @media(hover:hover){.selector-tema:hover {background:var(--surface-2);border-color:var(--line-strong)}}
-.selector-tema:focus-visible {outline:2px solid var(--red);outline-offset:3px}
+.selector-tema:focus-visible {outline:2px solid var(--marca-texto);outline-offset:3px}
 .ingreso-tema {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
 .workspacebar>.selector-tema,.topbar .selector-tema {margin-left:auto}
 .patente {color:#22282e;background:#fff}

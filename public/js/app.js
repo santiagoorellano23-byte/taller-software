@@ -5,6 +5,14 @@ import { abrirAyuda } from './ayuda.js?v=0.1.0';
 import { selectorTema, enlazarTema } from './tema.js?v=0.1.0';
 import {material,borrarBorrador} from './recepcion-modelo.js?v=0.1.0';
 import { entrada, detenerMovimiento } from './movimiento.js?v=0.1.0';
+import { cssApariencia } from './marca.js?v=0.1.0';
+
+// Colores del taller sobre los tokens de marca. La hoja solo contiene colores calculados por marca.js.
+function aplicarApariencia(apariencia) {
+  let hoja = document.getElementById('apariencia-taller');
+  if (!hoja) { hoja = document.createElement('style'); hoja.id = 'apariencia-taller'; document.head.append(hoja); }
+  hoja.textContent = cssApariencia(apariencia);
+}
 
 // [patrón, módulo, permiso, sección del menú]
 const RUTAS = [
@@ -74,6 +82,7 @@ export const app = {
   puede(p) { return this.permisos.has(p); },
   ir(hash) { if (location.hash === hash) mostrar(); else location.hash = hash; },
   recargar: () => mostrar({ conservarScroll: true }),
+  aplicarApariencia: (a) => aplicarApariencia(a),
   ayuda: (tema) => abrirAyuda(tema, app),
   salir: (todas) => salir(todas),
   pantalla: ''
@@ -101,8 +110,8 @@ function interpretar() {
 
 function marcaHTML(t) {
   const logo = t.logoId ? `<img src="/api/adjuntos/${Number(t.logoId)}" alt="" width="600" height="202">` : '';
-  const partes = t.nombre.split(' ');
-  return `<a class="marca" href="#/hoy" aria-label="${esc(t.nombre)}, ir a Hoy"><span class="marca__nombre${logo ? ' marca__nombre--logo' : ''}" translate="no">${logo || esc(partes[0])}</span>${partes.length > 1 && !logo ? `<span class="marca__sub" translate="no">${esc(partes.slice(1).join(' '))}</span>` : ''}</a>`;
+  // Nombre completo: cortarlo en la primera palabra deja «Taller…» o «Mecánica…» sin identificar.
+  return `<a class="marca" href="#/hoy" aria-label="${esc(t.nombre)}, ir a Hoy" title="${esc(t.nombre)}"><span class="marca__nombre${logo ? ' marca__nombre--logo' : ''}" translate="no">${logo || `<span class="marca__texto">${esc(t.nombre)}</span>`}</span></a>`;
 }
 
 function armarEsqueleto() {
@@ -165,7 +174,7 @@ function pantallaIngreso(mensaje) {
   raiz.className = '';
   raiz.removeAttribute('aria-busy');
   // Sin sesión no se conoce el taller: se muestra la marca del producto, no la de un cliente.
-  raiz.innerHTML = `<main class="ingreso" id="contenido" tabindex="-1"><div class="ingreso__caja"><div class="ingreso-tema"><span class="marca" translate="no"><span class="marca__nombre">Growth Labs</span><span class="marca__sub">Talleres</span></span>${selectorTema()}</div>
+  raiz.innerHTML = `<main class="ingreso" id="contenido" tabindex="-1"><div class="ingreso__caja"><div class="ingreso-tema"><span class="marca-producto" translate="no"><svg viewBox="272 272 384 384" aria-hidden="true"><path fill="currentColor" d="M464 272A192 192 0 1 0 652.2 502H572.5A115 115 0 1 1 464 349ZM464 426H656V502H464Z"/><path fill="var(--marca-texto)" d="M580 272H656V348H580Z"/></svg><span><strong>Growth Labs</strong><span>Talleres</span></span></span>${selectorTema()}</div>
     <div><h1>Ingresar al panel del taller</h1><p class="muted small" style="margin-top:6px">Usá el correo y la contraseña que te dio el dueño del taller.</p></div>
     ${mensaje ? `<div class="aviso aviso--ambar">${icono('info')}<div>${esc(mensaje)}</div></div>` : ''}
     <form class="form" id="f-ingreso" novalidate data-sin-aviso>
@@ -284,6 +293,7 @@ async function iniciar() {
     return;
   }
   app.permisos = new Set(app.sesion.permisos);
+  aplicarApariencia(app.sesion.taller.apariencia);
   fijarZona(app.sesion.taller.zona);
   raiz.className = 'app';
   armarEsqueleto();

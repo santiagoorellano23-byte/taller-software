@@ -1,7 +1,7 @@
 .prioridades-hoy {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-block:1px solid var(--line);gap:0}
 .prioridades-hoy>a {display:flex;flex-direction:column;justify-content:space-between;gap:12px;padding:14px 16px;text-decoration:none;border-bottom:2px solid transparent;min-width:0}
 .prioridades-hoy>a:hover {background:var(--surface-2)}
-.prioridades-hoy>a[aria-current] {border-color:var(--red);background:var(--surface-2)}
+.prioridades-hoy>a[aria-current] {border-color:var(--marca-texto);background:var(--surface-2)}
 .prioridades-hoy>a>span {display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--ink-2)}
 .prioridades-hoy>a strong {font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .prioridades-hoy>p {grid-column:1/-1;padding:0 16px 12px;color:var(--muted);font-size:12px;max-width:95ch}
@@ -25,7 +25,7 @@
 .topbar__ayuda {display:inline-flex;align-items:center;justify-content:center}
 .topbar__ayuda .i {width:21px;height:21px}
 @media(hover:hover){.topbar__acciones .selector-tema:hover,.topbar__ayuda:hover {background:var(--surface-2)}}
-.topbar__ayuda:focus-visible {outline:2px solid var(--red);outline-offset:3px}
+.topbar__ayuda:focus-visible {outline:2px solid var(--marca-texto);outline-offset:3px}
 .topbar__sep {width:1px;height:28px;margin-inline:8px;background:var(--line)}
 .topbar .marca {min-height:44px;justify-content:center}
 .topbar__usuario {gap:10px;min-width:44px;justify-content:center;color:var(--ink)}

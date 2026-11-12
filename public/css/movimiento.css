@@ -88,24 +88,24 @@
   .mas-tarjeta a:active {
     background-color: var(--surface-3);
   }
-  .rec-motivo[aria-pressed="true"]:active { background-color: var(--red-tint); }
-  .rec-marca input:checked + span { background-color: #fff6f6; }
+  .rec-motivo[aria-pressed="true"]:active { background-color: var(--marca-tinte); }
+  .rec-marca input:checked + span { background-color: var(--marca-tinte); }
   .rec-etapa .check:has(input:checked),
   .rec-detalles .btn[aria-pressed="true"] {
     border-width: 1px;
-    box-shadow: inset 0 0 0 1px var(--red);
+    box-shadow: inset 0 0 0 1px var(--marca-texto);
   }
   .rec-motivo:disabled,
   .rec-marca:has(input:disabled) { cursor: not-allowed; }
   .rec-motivo:disabled,
   .rec-marca input:disabled + span { opacity: .6; }
   .catalogo-item:has(.catalogo-eleccion input:checked) {
-    border-color: var(--red);
-    background-color: var(--red-tint);
+    border-color: var(--marca-texto);
+    background-color: var(--marca-tinte);
   }
   .catalogo-item:has(.catalogo-eleccion input:checked) .catalogo-item__icono {
     background-color: var(--surface);
-    color: var(--red);
+    color: var(--marca-texto);
   }
 
   /* Campos: respuesta al foco y al error; sin sacudidas ni movimiento del cursor. */
@@ -114,9 +114,9 @@
       background-color var(--respuesta-rapida), box-shadow var(--respuesta-rapida);
   }
   .buscador > .i { transition: color var(--respuesta-rapida); }
-  .buscador:focus-within > .i { color: var(--red); }
+  .buscador:focus-within > .i { color: var(--marca-texto); }
   .campo > label { transition: color var(--respuesta-rapida); }
-  .campo:focus-within > label { color: var(--red); }
+  .campo:focus-within > label { color: var(--marca-texto); }
   .campo input[type="file"]::file-selector-button {
     transition: background-color var(--respuesta-rapida),
       border-color var(--respuesta-rapida), color var(--respuesta-rapida);
@@ -163,7 +163,7 @@
     .pos-producto, .volver, .toast button):focus-visible {
     transition: none;
     transform: none !important;
-    outline: 3px solid var(--red);
+    outline: 3px solid var(--marca-texto);
     outline-offset: 2px;
   }
   :is(.mas-tarjeta a, .grupo-menu a, .nav a, .tabbar a,
@@ -209,14 +209,14 @@
   .mas-tarjeta a:focus-visible:hover > .material-icon:last-child { transform: none; }
   .rec-motivo:not(:disabled):hover,
   .rec-marca:has(input:not(:disabled)):hover > span { border-color: var(--ink-2); }
-  .rec-motivo[aria-pressed="true"]:hover { border-color: var(--red); }
+  .rec-motivo[aria-pressed="true"]:hover { border-color: var(--marca-texto); }
   .rec-marca:has(input:checked):hover > span { border-color: var(--accion); }
   :is(.subnav a, .pestanas a):not([aria-current]):hover {
     border-bottom-color: var(--line-strong);
-    color: var(--red);
+    color: var(--marca-texto);
   }
   :is(.subareas a, .hoy-segmentos a):not([aria-current]):hover {
-    color: var(--red);
+    color: var(--marca-texto);
     background-color: var(--surface-2);
   }
   :is(.categoria-pos, .motivo-pos, .sugerencias button):not(:disabled):hover {
@@ -225,14 +225,14 @@
   .selector-tema:hover { background-color: var(--surface-2); border-color: var(--line-strong); }
   :is(.setup-compact, .contexto-toggle, .orden-bloqueos,
     .calculadora-inline, .motivos-opcionales, .rec-mas) > summary:hover {
-    color: var(--red);
+    color: var(--marca-texto);
     background-color: var(--surface-2);
   }
   .campo input[type="file"]::file-selector-button:hover {
     background-color: var(--surface-2);
     border-color: var(--ink-2);
   }
-  .agenda-dia > a:hover { background-color: var(--surface-2); color: var(--red); }
+  .agenda-dia > a:hover { background-color: var(--surface-2); color: var(--marca-texto); }
 }
 
 /* Los estilos anteriores contienen hover sin filtro. Evitar que queden adheridos al tocar. */
