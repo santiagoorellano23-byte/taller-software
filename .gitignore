@@ -19,3 +19,5 @@ public/revision-v2.html
 
 # Estado de producción y publicación: solo local, nunca al repositorio
 privado/
+
+.vercel
