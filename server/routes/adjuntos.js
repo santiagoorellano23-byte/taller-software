@@ -9,6 +9,7 @@ import { delTaller } from '../datos.js';
 import { ErrorUsuario, falla, requerido, opcional, texto, normTexto, isoAhora, idEntero } from '../util.js';
 import { carpetaArchivos } from '../config.js';
 import {claveIngreso,TIPOS_FOTO_INGRESO} from '../estado-ingreso.js';
+import { exigirLimite } from '../planes.js';
 
 const TIPOS = {
   'image/jpeg': { ext: 'jpg', firma: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
@@ -26,6 +27,7 @@ export function guardarArchivo(ctx, { ambito, visitaId = null, vehiculoId = null
   const tipo = TIPOS[mime];
   if (!tipo) falla('Ese tipo de archivo no se acepta. Usá fotos (JPG, PNG, WEBP), videos MP4/MOV o documentos PDF.');
   if (!tipo.firma(buf)) falla('El contenido del archivo no coincide con su tipo. Probá exportarlo de nuevo.');
+  exigirLimite(ctx.db, ctx.taller.id, 'almacenamiento_mb', buf.length);
   let nombre = 'archivo';
   try { nombre = decodeURIComponent(String(ctx.req.headers['x-nombre-archivo'] || 'archivo')); } catch { /* nombre por defecto */ }
   nombre = nombre.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 150) || 'archivo';

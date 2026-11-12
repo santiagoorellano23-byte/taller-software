@@ -9,6 +9,7 @@ import { permisosDe, ROLES } from '../permisos.js';
 import { tallerPublico } from '../datos.js';
 import { reglaEntregaSaldo, puedeEntregarConSaldo } from '../reglas.js';
 import { aparienciaEfectiva } from '../../public/js/marca.js';
+import { resumenServicio } from '../planes.js';
 
 // Hash fijo para comparar en tiempo similar cuando el email no existe.
 const HASH_FALSO = hashClave('clave-inexistente-para-tiempo-constante');
@@ -57,7 +58,7 @@ export default function rutas(r) {
         id: t.id, slug: t.slug, nombre: t.nombre, publico: !!t.publico, en_directorio: !!t.en_directorio,
         zona: t.config.zona_horaria || 'America/Argentina/Mendoza', moneda: t.config.moneda || 'ARS',
         validezDias: t.config.validez_presupuesto_dias || 15, agenda: t.config.agenda || null,
-        perfil: tallerPublico(t), logoId: t.config.logoAdjuntoId || null, apariencia: aparienciaEfectiva(t.config.apariencia), demo: !!t.config.demo, entregaSaldo: { regla: reglaEntregaSaldo(t), puedo: puedeEntregarConSaldo(ctx.usuario, t) }, integraciones: t.config.integraciones || {}, guiaVista: (json(t.config.guiasVistas, {}) || {})
+        perfil: tallerPublico(t), logoId: t.config.logoAdjuntoId || null, apariencia: aparienciaEfectiva(t.config.apariencia), servicio: resumenServicio(ctx.db, t.id), demo: !!t.config.demo, entregaSaldo: { regla: reglaEntregaSaldo(t), puedo: puedeEntregarConSaldo(ctx.usuario, t) }, integraciones: t.config.integraciones || {}, guiaVista: (json(t.config.guiasVistas, {}) || {})
       },
       ahora: new Date().toISOString()
     };

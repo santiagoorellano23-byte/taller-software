@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { abrirBase, uno } from './db.js';
+import { abrirBase, uno, transaccion } from './db.js';
 import { Enrutador, crearManejador, servirEstatico } from './http.js';
 import { config, archivoBase } from './config.js';
 import { documentoPublico } from './routes/documentos.js';
@@ -22,6 +22,8 @@ import rutasAdjuntos from './routes/adjuntos.js';
 import rutasDocumentos from './routes/documentos.js';
 import rutasTaller from './routes/taller.js';
 import rutasReportes from './routes/reportes.js';
+import rutasPlataforma from './routes/plataforma.js';
+import { evaluarVencimientos } from './planes.js';
 
 const PUBLICO = path.join(config.raiz, 'public');
 const VERSION = JSON.parse(fs.readFileSync(path.join(config.raiz, 'package.json'), 'utf8')).version;
@@ -30,7 +32,7 @@ const { renderDocumento, ESTILO_DOCUMENTO } = await import(pathToFileURL(path.jo
 export function crearServidor({ archivo = archivoBase() } = {}) {
   const db = abrirBase(archivo);
   const r = new Enrutador();
-  for (const registrar of [rutasSesion, rutasVehiculos, rutasVisitas, rutasStock, rutasCaja, rutasVentas, rutasPublico, rutasAgenda, rutasSeguimientos, rutasAdjuntos, rutasDocumentos, rutasTaller, rutasReportes]) registrar(r);
+  for (const registrar of [rutasSesion, rutasVehiculos, rutasVisitas, rutasStock, rutasCaja, rutasVentas, rutasPublico, rutasAgenda, rutasSeguimientos, rutasAdjuntos, rutasDocumentos, rutasTaller, rutasReportes, rutasPlataforma]) registrar(r);
 
   // Páginas públicas y recursos que no pasan por la API.
   async function extras(req, res, url) {
@@ -71,6 +73,7 @@ export function crearServidor({ archivo = archivoBase() } = {}) {
     }
     if (/^\/t\/[a-z0-9-]{2,60}\/?$/.test(p)) { servirEstatico(res, PUBLICO, '/taller.html'); return true; }
     if (p === '/directorio' || p === '/directorio/') { servirEstatico(res, PUBLICO, '/directorio.html'); return true; }
+    if (p === '/plataforma' || p === '/plataforma/') { servirEstatico(res, PUBLICO, '/plataforma.html'); return true; }
     return false;
   }
 
@@ -89,6 +92,14 @@ export function arrancar() {
     console.log(`Datos en ${config.datos}`);
     if (!n) console.log('No hay talleres cargados. Para datos de prueba: npm run seed. Para un taller real: npm run crear-taller.');
   });
+  // Vencimientos: el acceso ya se decide por fecha en cada solicitud; esto deja el estado guardado y auditado
+  // aunque nadie entre. Al arrancar y cada hora (también se puede correr `npm run vencimientos` desde cron).
+  const vencimientos = () => {
+    try { for (const c of transaccion(servidor.db, () => evaluarVencimientos(servidor.db))) console.log(`Suscripción del taller ${c.tallerId}: ${c.de} → ${c.a}`); }
+    catch (e) { console.error(new Date().toISOString(), 'No se pudieron evaluar los vencimientos:', e.message); }
+  };
+  vencimientos();
+  setInterval(vencimientos, 3600e3).unref();
   const cerrar = () => { servidor.close(() => { servidor.db.close(); process.exit(0); }); setTimeout(() => process.exit(0), 3000).unref(); };
   process.on('SIGINT', cerrar);
   process.on('SIGTERM', cerrar);

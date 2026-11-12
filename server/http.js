@@ -6,6 +6,7 @@ import { ErrorUsuario, isoAhora, json as leerJson } from './util.js';
 import { sesionDesdeToken } from './auth.js';
 import { transaccion, uno, insertar, ejecutar } from './db.js';
 import { config } from './config.js';
+import { exigirServicio } from './planes.js';
 
 // Detrás de un proxy propio (TALLERES_PROXY=1) la IP del cliente es la última que agregó ese proxy.
 // Sin esa variable se ignora X-Forwarded-For: cualquiera podría inventarla.
@@ -143,6 +144,8 @@ export function crearManejador({ db, enrutador, publico, seguro, extras }) {
     if (usuario) {
       taller = uno(db, 'SELECT * FROM talleres WHERE id = ?', usuario.tallerId);
       taller.config = leerJson(taller.config, {});
+      // Suscripción y plan del taller: se comprueban aquí para toda la API, no en cada pantalla.
+      if (r.opciones.auth !== false) exigirServicio(db, taller.id, req.method, url.pathname);
     }
 
     let cuerpo = {};
