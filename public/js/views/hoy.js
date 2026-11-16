@@ -51,22 +51,22 @@ export default async function hoy({ app, query }) {
   try { guiaVista = localStorage.getItem(guiaClave) === '1'; } catch { guiaVista = true; }
 
   const fila = (v) => `
-    <tr data-patente="${esc(v.vehiculo.patente.replace(/\W/g, '').toLowerCase())}" data-texto="${esc((v.vehiculo.marca + ' ' + v.vehiculo.modelo + ' ' + (v.contacto || '')).toLowerCase())}">
+    <tr data-patente="${esc(v.vehiculo.patente.replace(/\W/g, '').toLowerCase())}" data-texto="${esc((v.vehiculo.marca + ' ' + v.vehiculo.modelo + ' ' + (v.contacto || '')).toLowerCase())}" data-telefono="${esc((v.telefono || '').replace(/\D/g, ''))}">
       <td>${patente(v.vehiculo.patente)}<span class="auto-nombre">${nombreAuto(v.vehiculo)}</span><span class="fila-sub">N.º ${v.numero} · ${esc(v.responsable||'Sin asignar')}</span><span class="fila-sub">Retiro ${v.retiro_acordado?esc(cuando(v.retiro_acordado)):'a confirmar'}</span></td>
       ${(v.dimensiones||[]).map(([k,t])=>`<td>${estadoDimension(k,t)}</td>`).join('')}
       
-      <td><a class="btn btn-chico" href="#/visitas/${v.id}/${seccionAccion(v,app)}">${esc(accionCorta(v,app))} ${icono('der', 'i-sm')}</a></td>
+      <td><a class="btn btn-chico btn-siguiente" href="#/visitas/${v.id}/${seccionAccion(v,app)}">${esc(accionCorta(v,app))} ${icono('der', 'i-sm')}</a></td>
     </tr>`;
   const gruposHoy=[['hacer','Para hacer'],['bloqueadas','Bloqueados'],['listas','Listos para retirar']];
   const filas=gruposHoy.map(([k,t])=>{const lista=presentes.filter(v=>grupoHoy(v)===k);return `<tbody data-grupo-tabla="${k}"><tr class="hoy-grupo-tabla"><th colspan="${app.puede('ver.dinero')?7:6}" scope="rowgroup">${t} <span class="small muted">${lista.length} auto${lista.length===1?'':'s'}</span></th></tr>${lista.length?lista.map(fila).join(''):`<tr><td colspan="${app.puede('ver.dinero')?7:6}" class="muted">No hay autos en este grupo.</td></tr>`}</tbody>`;}).join('');
   const tarjeta = (v) => `
-    <article class="tarjeta-auto" data-patente="${esc(v.vehiculo.patente.replace(/\W/g, '').toLowerCase())}" data-texto="${esc((v.vehiculo.marca + ' ' + v.vehiculo.modelo + ' ' + (v.contacto || '')).toLowerCase())}">
+    <article class="tarjeta-auto" data-patente="${esc(v.vehiculo.patente.replace(/\W/g, '').toLowerCase())}" data-texto="${esc((v.vehiculo.marca + ' ' + v.vehiculo.modelo + ' ' + (v.contacto || '')).toLowerCase())}" data-telefono="${esc((v.telefono || '').replace(/\D/g, ''))}">
       <div class="tarjeta-auto__cab">${patente(v.vehiculo.patente)}<strong class="auto-nombre" style="margin:0">${nombreAuto(v.vehiculo)}</strong></div>
       <div class="hoy-estados">${(v.dimensiones||[]).filter(([k,t])=>k==='Trabajo'||!['Sin pedir','Sin pedidos','Sin movimientos','En taller'].includes(t)).map(([k,t])=>estadoDimension(k,t)).join('')}</div>
       <p class="muted small">${detalle(v)}</p>
       
       <div class="tarjeta-auto__pie"><span>${esc(v.responsable || 'Sin asignar')} · Retiro ${v.retiro_acordado ? '<strong>' + esc(cuando(v.retiro_acordado)) + '</strong>' : 'a confirmar'}</span>
-        <a class="btn btn-chico" href="#/visitas/${v.id}/${seccionAccion(v,app)}">${esc(accionCorta(v,app))} ${icono('der', 'i-sm')}</a></div>
+        <a class="btn btn-chico btn-siguiente" href="#/visitas/${v.id}/${seccionAccion(v,app)}">${esc(accionCorta(v,app))} ${icono('der', 'i-sm')}</a></div>
     </article>`;
   const tarjetas=gruposHoy.map(([k,t])=>{const lista=presentes.filter(v=>grupoHoy(v)===k);return `<section class="hoy-grupo" data-grupo-hoy="${k}"><header><h2>${t}</h2><span class="small muted">${lista.length} auto${lista.length===1?'':'s'}</span></header><div class="tarjetas">${lista.length?lista.map(tarjeta).join(''):'<p class="small muted">No hay autos en este grupo.</p>'}</div></section>`;}).join('');
   const borrador=app.puede('visita.recibir')?leerBorrador(app):null;
@@ -89,7 +89,7 @@ export default async function hoy({ app, query }) {
         </div>
         ${borrador?`<section class="borrador-recepcion"><h2>Recepción sin terminar</h2><p>${esc(borrador.campos?.patente||'Auto en preparación')}. Es un borrador: todavía no cuenta como recibido.</p><div class="acciones"><a class="btn" href="#/recibir">Continuar</a>${!borrador.pendiente?'<button type="button" class="btn btn-texto" data-descartar-borrador>Descartar</button>':''}</div></section>`:''}
         <nav class="hoy-segmentos" aria-label="Alcance de Hoy">
-          ${[['todos','Todo el taller',d.presentes.length],['mias','Asignado a mí',d.mias?.length||0]].map(([ver,nombre,cantidad])=>`<a href="#/hoy?ver=${ver}" ${filtro===ver?'aria-current="page"':''}><span class="hoy-segmento__texto"><strong>${nombre}</strong><span>${cantidad} vehículo${cantidad===1?'':'s'}</span></span><span class="hoy-segmento__indicador" aria-hidden="true"></span></a>`).join('')}
+          ${[['todos','Todo el taller',d.presentes.length],['mias','Asignado a mí',d.mias?.length||0]].map(([ver,nombre,cantidad])=>`<a href="#/hoy?ver=${ver}" ${filtro===ver?'aria-current="page"':''}><span class="hoy-segmento__nombre">${nombre}</span><span class="hoy-segmento__cuenta">${cantidad}<span class="sr"> vehículo${cantidad===1?'':'s'}</span></span></a>`).join('')}
         </nav>
         <section class="prioridades-hoy" aria-label="Pendientes operativos">
           ${operativos.map(([k,t,i])=>`<a href="#/hoy?ver=${k}" ${filtro===k?'aria-current="true"':''}><span>${icono(i)}${t}</span><strong>${pendientes[k]?.length||0}</strong></a>`).join('')}
@@ -102,11 +102,11 @@ export default async function hoy({ app, query }) {
         <section class="panel" aria-labelledby="t-lista">
           <h2 id="t-lista" class="sr">Autos ${filtro === 'todos' ? 'presentes' : 'filtrados'}</h2>
           <div class="panel__cab">
-            <div class="buscador" style="flex:1 1 280px;max-width:440px">${icono('buscar')}<label class="sr" for="hoy-q">Buscar por patente, modelo o cliente</label><input id="hoy-q" type="search" placeholder="Patente, modelo o cliente" autocomplete="off"></div>
+            <div class="buscador" style="flex:1 1 280px;max-width:440px">${icono('buscar')}<label class="sr" for="hoy-q">Buscar por patente, modelo, cliente o teléfono</label><input id="hoy-q" type="search" placeholder="Patente, cliente o teléfono" autocomplete="off"></div>
             <span class="muted small" data-cuenta>${presentes.length} de ${d.presentes.length} autos${operativos.find(x=>x[0]===filtro)?' · '+esc(operativos.find(x=>x[0]===filtro)[1]):''}</span>
           </div>
           <div data-sin-resultados hidden class="panel__cuerpo"><p class="muted">Ninguno de los autos presentes coincide. <button type="button" class="enlace" data-buscar-todos>Buscar en todos los autos del taller</button></p></div>
-          ${presentes.length ? `<div class="hoy-tabla solo-escritorio"><table class="tabla-autos" style="margin-top:12px"><thead><tr><th scope="col">Vehículo</th>${['Trabajo','Autorización','Repuestos',...(app.puede('ver.dinero')?['Dinero']:[]),'Vehículo'].map(t=>`<th scope="col">${t}</th>`).join('')}<th scope="col"><span class="sr">Acción</span></th></tr></thead>${filas}</table></div>
+          ${presentes.length ? `<div class="hoy-tabla solo-escritorio"><table class="tabla-autos" style="margin-top:12px"><thead><tr><th scope="col">Vehículo</th>${['Trabajo','Autorización','Repuestos',...(app.puede('ver.dinero')?['Dinero']:[]),'Ubicación'].map(t=>`<th scope="col">${t}</th>`).join('')}<th scope="col"><span class="sr">Acción</span></th></tr></thead>${filas}</table></div>
             <div class="hoy-grupos solo-telefono">${tarjetas}</div>` : `<div class="panel__cuerpo">${filtro==='mias'?'<p><strong>No tenés vehículos asignados</strong></p><p class="muted">Podés ver los autos presentes en «Todo el taller».</p>':`<p class="muted">${filtro === 'todos' ? 'No hay autos en el taller en este momento.' : 'No hay autos en esta situación.'}</p>`}</div>`}
         </section>
         ${d.configurar?.some(x=>!x.hecho)?`<details class="setup-compact"><summary>${icono('ajustes')} Configuración pendiente · ${d.configurar.filter(x=>!x.hecho).length} ${icono('abajo')}</summary><ol class="pasos-inicio">${d.configurar.map(x=>`<li class="${x.hecho?'hecho':''}">${x.hecho?esc(x.texto):`<a href="#/${x.ruta}">${esc(x.texto)}</a>`}</li>`).join('')}</ol></details>`:''}
@@ -125,9 +125,9 @@ export default async function hoy({ app, query }) {
       const q = raiz.querySelector('#hoy-q');
       const items = raiz.querySelectorAll('[data-patente]');
       q.addEventListener('input', () => {
-        const t = q.value.trim().toLowerCase(), tp = t.replace(/\W/g, '');
+        const t = q.value.trim().toLowerCase(), tp = t.replace(/\W/g, ''), td = t.replace(/\D/g, '');
         let vis = 0;
-        items.forEach((el) => { const ok = !t || el.dataset.patente.includes(tp) || el.dataset.texto.includes(t); el.hidden = !ok; if (ok) vis++; });
+        items.forEach((el) => { const ok = !t || el.dataset.patente.includes(tp) || el.dataset.texto.includes(t) || (td.length >= 3 && el.dataset.telefono.includes(td)); el.hidden = !ok; if (ok) vis++; });
         raiz.querySelectorAll('[data-grupo-tabla],[data-grupo-hoy]').forEach(g=>g.hidden=!!t&&!g.querySelector('[data-patente]:not([hidden])'));
         const n = raiz.querySelectorAll('tr[data-patente]:not([hidden])').length || raiz.querySelectorAll('article[data-patente]:not([hidden])').length;
         raiz.querySelector('[data-cuenta]').textContent = `${t ? n : presentes.length} de ${d.presentes.length} autos`;

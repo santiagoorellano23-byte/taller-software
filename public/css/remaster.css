@@ -39,6 +39,7 @@ h1 {font-size:26px;letter-spacing:-.02em} h2 {font-size:19px} h3 {font-size:17px
 .btn {box-shadow:none;min-height:44px;border-radius:6px;font-size:15px;padding:9px 14px}
 .btn-chico {min-height:40px;font-size:14px;padding:8px 12px}
 .btn-texto {background:transparent}
+.btn-icono {width:44px;min-width:44px;padding:0;gap:0}.btn-icono.btn-chico {width:44px;min-height:44px}
 .btn:hover,.btn:focus-visible {box-shadow:none}
 .fila,.fila__izq,.resultado>span {min-width:0}
 .fila__izq>span,.orden-identidad h1,.orden-meta>span,.usuario strong {overflow-wrap:anywhere}

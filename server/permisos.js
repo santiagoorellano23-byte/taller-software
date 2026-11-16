@@ -54,6 +54,8 @@ const MATRIZ = {
   'reportes.ver': ['dueno'],
   'exportar': ['dueno'],
   'config.taller': ['dueno'],
+  // Servicio de Growth Labs (plan, período y pagos del taller a Growth Labs; no los cobros a sus clientes)
+  'servicio.gestionar': ['dueno'],
   'usuarios.gestionar': ['dueno'],
   'auditoria.ver': ['dueno'],
   'biblioteca.ver': ['dueno', 'recepcion', 'mecanico'],

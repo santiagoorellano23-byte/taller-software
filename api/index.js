@@ -25,7 +25,7 @@ async function preparar() {
       await new Promise((ok) => tcp.listen(0, '127.0.0.1', ok));
       try {
         console.log('demo: cargando datos de prueba en el puerto', tcp.address().port);
-        await sembrar({ db: carga.db, base: `http://127.0.0.1:${tcp.address().port}` });
+        await sembrar({ db: carga.db, base: `http://127.0.0.1:${tcp.address().port}`, demo: true });
         console.log('demo: datos cargados', Date.now() - t0, 'ms');
       } finally {
         tcp.close();

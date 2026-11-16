@@ -31,3 +31,11 @@ Heredadas de la base operativa original y vigentes en Growth Labs Talleres 0.1.0
 21. **Planes de prueba sin precio.** Los cupos de Esencial (3 usuarios, 2 GB) y Profesional (10 usuarios, 10 GB) son hipótesis del plan maestro marcadas `de_prueba`. Se cambian con una versión nueva del plan.
 22. **Conciliación manual, no cobro automático.** Un pago lo registra una persona de Growth Labs con referencia y clave de idempotencia; extiende la vigencia y un pago atrasado no la acorta. No hay integración con proveedores de pago.
 23. **Panel con cuentas propias.** Tabla, sesiones (8 h) y cookie (`glt_admin`, limitada a `/api/plataforma`, SameSite=Strict) separadas de los talleres. Altas solo por enlaces de un uso; nunca se imprimen claves.
+
+## Demo operativa y Mi plan (16/11/2026)
+
+24. **Geist Sans como tipografía del software.** Comparada con Inter y con Barlow sobre tarjeta de vehículo, formulario de recepción y presupuesto (390 y 1440 px). Un archivo variable cubre los pesos; cifras tabulares disponibles; acentos, ñ y $ correctos. Las patentes siguen en Barlow Condensed. La página comercial puede usar otra fuente.
+25. **Renovar no habilita.** El taller pide la renovación o consulta un cambio de plan desde «Mi plan» (`solicitudes_servicio`); queda pendiente. Solo Growth Labs, al confirmar la acreditación y registrar el pago con la solicitud, extiende el período. Una sola solicitud pendiente por taller; se puede pedir aun suspendido.
+26. **Períodos en meses calendario.** El fin es el día anterior al mismo día del mes siguiente (17/11 → 16/12); si ese día no existe, el último del mes. Renovar antes de vencer empieza al día siguiente del vencimiento y conserva los días pagados. Solo «1 mes» está habilitado (`PERIODOS_MESES`); otros períodos se agregan cuando Growth Labs los apruebe, sin descuentos inventados. No hay renovación automática.
+27. **Datos de transferencia por configuración.** `TALLERES_TRANSFERENCIA` (texto aprobado por Growth Labs). Sin ese dato, «Mi plan» no muestra ninguna cuenta. Sin precio cargado en el plan, el importe figura «A confirmar» y se pide la renovación sin pagar.
+28. **Permiso propio para el servicio.** `servicio.gestionar` (dueño). Mecánico y recepción no ven «Mi plan» ni reciben el aviso de vencimiento; el servidor lo comprueba.

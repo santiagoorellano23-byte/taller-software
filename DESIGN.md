@@ -26,29 +26,29 @@ colors:
   dark-action: "#ae2034"
 typography:
   headline:
-    fontFamily: "Barlow, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontFamily: "Geist, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
     fontSize: "26px"
     fontWeight: 700
     lineHeight: 1.15
     letterSpacing: "-.02em"
   receiving-title:
-    fontFamily: "Barlow, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "28px"
     fontWeight: 700
     lineHeight: 1.15
     letterSpacing: "-.02em"
   body:
-    fontFamily: "Barlow, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontFamily: "Geist, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
     fontSize: "16px"
     lineHeight: 1.45
   plate:
-    fontFamily: "Barlow Condensed, Barlow, Arial Narrow, system-ui, sans-serif"
+    fontFamily: "Barlow Condensed, Arial Narrow, system-ui, sans-serif"
     fontSize: "24px"
     fontWeight: 600
     lineHeight: 1.1
     letterSpacing: ".06em"
   label:
-    fontFamily: "Barlow, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "14px"
 rounded:
   small: "4px"
@@ -159,8 +159,10 @@ El selector sol/luna existente gobierna el tema. La variante oscura usa sus vari
 
 ## Typography
 
-**Body Font:** Barlow local, con fallback de sistema. Pesos disponibles: 400, 500, 600 y 700.
-**Label/Mono Font:** Barlow Condensed local para patentes; cifras tabulares para dinero, kilometraje y fechas cuando corresponde.
+**Body Font:** Geist Sans local (un archivo variable, subconjunto latino, 28 KB) con fallback de sistema; pesos 400 a 700. Elegida el 16/11/2026 frente a Inter: cubre todos los pesos con un solo archivo, tiene cifras tabulares y lee bien patentes, fechas e importes a 16 px en el teléfono. Barlow queda declarada solo para documentos ya emitidos.
+**Label/Mono Font:** Barlow Condensed local para patentes y el nombre del taller; cifras tabulares (`.num`, `td.n`) para dinero, kilometraje y fechas.
+
+Pesos: título 700, etiqueta 600, dato 600 con cifras tabulares, lectura 400. Campos a 16 px como mínimo (sin zoom al enfocar en iOS).
 
 La voz es directa y propia del taller. No se introduce una tipografía de exhibición ni una descarga externa de fuentes.
 
@@ -255,3 +257,11 @@ Mostrador conserva categorías con iconos, grilla/lista y disponibilidad/precios
 - **Don't** transformar navegar, elegir motivos o escribir una nota en autorización o cobro.
 - **Don't** reemplazar la identidad existente ni convertir Más de B en una nueva dirección para las demás pantallas.
 - **Don't** presentar esta candidata local o sus emulaciones como publicación o validación en teléfonos físicos.
+
+### Controles e iconos (16/11/2026)
+
+- **Variantes de botón:** principal (`.btn-primario`), secundario (`.btn`), discreto (`.btn-texto`), destructivo (`.btn-peligro`), de icono (`.btn-icono`, 44 × 44, nombre en `aria-label`) y siguiente acción de una tarjeta (`.btn-siguiente`: tinte de marca, distinta de una acción secundaria).
+- **Estados:** hover solo con puntero fino y sin elevar el control; foco con contorno de marca; presionado con `scale(.97)` breve (sin cambiar el tamaño de diseño); carga con `.cargando` y `aria-busy`; deshabilitado gris. Con movimiento reducido no hay escala. Guardar usa `alEnviar`: bloquea el doble envío, conserva lo escrito ante un error y solo avisa éxito tras la respuesta del servidor.
+- **Selector segmentado** (Hoy: Todo el taller / Asignado a mí): pista gris, segmento activo con superficie elevada, peso 600 y cantidad en tinte de marca; `aria-current` además del aspecto.
+- **Iconos Material:** máscara pintada con `currentColor`; toman el color del texto (marca en el activo, claro/oscuro) sin filtros.
+- **Dinero de una orden:** presupuestado, autorizado, realizado, cobrado y saldo en una tira propia, nunca animada; el saldo se fija al liquidar.

@@ -1,9 +1,10 @@
 // Ajustes del taller (solo dueño): datos y página pública, usuarios, catálogos, conexiones externas, datos y registro.
-import { get, post, put, api } from '../api.js?v=0.1.0';
+import { get, post, put, api, claveDeEnvio } from '../api.js?v=0.1.0';
 import { esc, icono, pesos, cant, fechaHora, chip, campo, casilla, alEnviar, toast, confirmar, aviso, copiar, aEntradaDinero, aEntradaCant } from '../ui.js?v=0.1.0';
 import { PALETAS, tokensApariencia, problemaApariencia, aparienciaEfectiva, normalizarHex } from '../marca.js?v=0.1.0';
+import { entrada } from '../movimiento.js?v=0.1.0';
 
-const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['identidad', 'Logo y colores', 'config.taller'], ['plan', 'Plan y uso', 'config.taller'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
+const SECC = [['taller', 'Datos y página pública', 'config.taller'], ['identidad', 'Logo y colores', 'config.taller'], ['plan', 'Mi plan', 'servicio.gestionar'], ['usuarios', 'Usuarios', 'usuarios.gestionar'], ['catalogos', 'Servicios y plantillas', 'config.taller'], ['integraciones', 'Conexiones externas', 'config.taller'], ['datos', 'Exportación y respaldo', 'exportar'], ['registro', 'Registro de acciones', 'auditoria.ver']];
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export default async function ajustes({ params, app }) {
@@ -177,25 +178,137 @@ async function vIdentidad(app) {
   };
 }
 
-// Plan contratado y consumo. Solo lectura: el plan y la suscripción los administra Growth Labs.
+// Mi plan: el servicio de Growth Labs para este taller. Pedir una renovación no habilita nada:
+// Growth Labs confirma la acreditación y registra el período. Separado de los cobros del taller a sus clientes.
 const MODULOS_PLAN = { stock: 'Repuestos, compras, proveedores y mostrador', cuentas: 'Cuentas corrientes', reportes: 'Reportes' };
-async function vPlan() {
-  const s = await get('/api/plan');
+const BASE_PLAN = 'Recepción paso a paso, órdenes, presupuestos versionados, trabajo, cobros, entrega, historial por patente, agenda, documentos, seguridad, respaldos y exportación';
+async function vPlan(app) {
+  const m = await get('/api/plan');
+  const s = m.servicio;
   const f = (d) => d ? d.split('-').reverse().join('/') : '—';
+  const mesesTexto = (n) => `${n} mes${n === 1 ? '' : 'es'}`;
+  const importe = (c) => c == null ? 'A confirmar por Growth Labs' : pesos(c);
+  const pendiente = m.solicitudes.find((q) => q.estado === 'pendiente');
+  const estado = s.soloLectura
+    ? { titulo: s.estado === 'cancelada' ? 'Cancelado: solo consulta y exportación' : 'Suspendido: solo consulta y exportación', color: 'rojo', icono: 'ban' }
+    : s.estado === 'vencida' ? { titulo: `Vencido el ${f(s.periodoHasta)} · acceso hasta el ${f(s.graciaHasta)}`, color: 'ambar', icono: 'alerta' }
+    : s.periodoHasta ? { titulo: `${s.estado === 'prueba' ? 'En prueba' : 'Activo'} hasta el ${f(s.periodoHasta)}`, color: 'verde', icono: 'check' }
+    : { titulo: s.estado === 'prueba' ? 'En prueba, sin vencimiento cargado' : 'Activo, sin vencimiento cargado', color: 'verde', icono: 'check' };
+  const restan = s.diasRestantes == null ? '' : s.diasRestantes === 0 ? 'Hoy es el último día del período.' : `Quedan ${s.diasRestantes} día${s.diasRestantes === 1 ? '' : 's'}.`;
   const barra = (uso, max, unidad) => {
-    if (max == null) return `<p><strong>${esc(uso)}</strong> ${unidad} · sin límite en el plan</p>`;
+    if (max == null) return `<p><strong class="num">${esc(uso)}</strong> ${unidad} · sin límite en el plan</p>`;
     const pct = Math.min(100, Math.round((uso / max) * 100));
-    return `<p><strong>${esc(uso)}</strong> de ${esc(max)} ${unidad}${uso > max ? ' · <span class="texto-rojo">supera el plan</span>' : ''}</p><div class="uso-barra" role="img" aria-label="${pct}% usado"><span style="width:${pct}%"></span></div>`;
+    return `<p><strong class="num">${esc(uso)}</strong> de <span class="num">${esc(max)}</span> ${unidad}${uso > max ? ' · <span class="texto-rojo">supera el plan</span>' : ''}</p><div class="uso-barra" role="img" aria-label="${pct}% usado"><span style="width:${pct}%"></span></div>`;
   };
+  const otros = m.planes.filter((p) => !p.actual);
+  const op = m.opciones[0];
+  const estadoSolicitud = { pendiente: ['Pago pendiente de confirmación', 'ambar', 'reloj'], confirmada: ['Confirmada', 'verde', 'check'], rechazada: ['No confirmada', 'rojo', 'ban'], anulada: ['Anulada', '', 'ban'] };
+  const pagoComo = m.datosTransferencia
+    ? `<div class="plan-transferencia"><h4>Transferencia</h4><p class="plan-transferencia__datos">${esc(m.datosTransferencia)}</p></div>`
+    : `<p class="muted small">Growth Labs te envía los datos de la cuenta por su canal habitual. No transfieras a una cuenta que Growth Labs no te haya confirmado.</p>`;
+
   return {
-    html: `<section class="panel panel__cuerpo bloque"><h2>${esc(s.plan?.nombre || 'Sin plan asignado')}</h2>
-        <p>${chip(s.estadoTexto, s.soloLectura ? '' : s.estado === 'vencida' ? 'ambar' : 'verde', s.soloLectura ? 'ban' : 'check')}</p>
-        <dl class="datos-plan"><div><dt>Vigente hasta</dt><dd>${s.periodoHasta ? f(s.periodoHasta) : 'Sin vencimiento cargado'}</dd></div>${s.graciaHasta ? `<div><dt>Gracia hasta</dt><dd>${f(s.graciaHasta)}</dd></div>` : ''}${s.cancelaAlCierre ? '<div><dt>Cancelación</dt><dd>Al cierre del período</dd></div>' : ''}</dl>
-        ${s.plan?.dePrueba ? aviso('Plan de prueba para el piloto: los cupos pueden cambiar y no tiene precio definido.', 'gris') : ''}</section>
-      <section class="panel panel__cuerpo bloque"><h2>Incluye</h2><ul class="lista">${Object.entries(MODULOS_PLAN).map(([k, t]) => `<li class="fila"><span>${esc(t)}</span>${s.modulos[k] ? chip('Incluido', 'verde', 'check') : chip('No incluido', '', 'ban')}</li>`).join('')}</ul>
-        <p class="muted small">Recepción, órdenes, presupuestos, agenda, cobros, documentos, seguridad, respaldos y exportación están en todos los planes. Si un módulo deja de estar incluido, lo cargado se conserva.</p></section>
-      <section class="panel panel__cuerpo bloque"><h2>Uso</h2><div class="fila-campos"><div><h3>Usuarios activos</h3>${barra(s.uso.usuarios_activos, s.limites.usuarios_activos, 'usuarios')}</div><div><h3>Archivos</h3>${barra(s.uso.almacenamiento_mb, s.limites.almacenamiento_mb, 'MB')}</div></div>
-        <p class="muted small">Para cambiar de plan o ampliar cupos, contactá a Growth Labs. Ningún cambio de plan borra información.</p></section>`
+    html: `<div class="mi-plan">
+      <section class="panel panel__cuerpo plan-resumen" aria-labelledby="plan-nombre">
+        <div class="plan-resumen__cab"><div><p class="muted small">Plan contratado</p><h2 id="plan-nombre">${esc(s.plan?.nombre || 'Sin plan asignado')}</h2></div>${chip(estado.titulo, estado.color, estado.icono)}</div>
+        <dl class="datos-plan"><div><dt>Habilitado hasta</dt><dd>${s.periodoHasta ? f(s.periodoHasta) : 'Sin vencimiento cargado'}</dd></div>${s.graciaHasta ? `<div><dt>Acceso completo hasta</dt><dd>${f(s.graciaHasta)}</dd></div>` : ''}<div><dt>Renovación</dt><dd>Manual: cada período se paga y Growth Labs lo confirma</dd></div></dl>
+        ${restan ? `<p class="small">${restan}</p>` : ''}
+        ${s.soloLectura ? aviso('Mientras el servicio esté suspendido podés consultar y exportar todo; no se registran cambios. Nada se borra. Al confirmarse el pago vuelve el uso completo.', 'gris') : ''}
+        ${s.plan?.dePrueba ? aviso('Plan de prueba para el piloto: los cupos pueden cambiar y el precio todavía no está definido.', 'gris') : ''}
+        <div class="acciones plan-acciones">
+          ${pendiente ? '' : `<button type="button" class="btn btn-primario" data-abrir-renovar aria-expanded="false" aria-controls="plan-renovar">${icono('calendario')}Renovar acceso</button>`}
+          <a class="btn" href="#plan-incluye" data-ir-incluye>Ver qué incluye mi plan</a>
+        </div>
+      </section>
+
+      ${pendiente ? `<section class="panel panel__cuerpo plan-pendiente" aria-labelledby="plan-pendiente-t">
+        <div class="plan-resumen__cab"><h2 id="plan-pendiente-t">Pago pendiente de confirmación</h2>${chip('Pendiente', 'ambar', 'reloj')}</div>
+        <p>${pendiente.tipo === 'cambio_plan' ? `Cambio a ${esc(pendiente.plan)}` : `Renovación de ${esc(pendiente.plan)}`} por ${mesesTexto(pendiente.meses)}: del <strong>${f(pendiente.periodo_desde)}</strong> al <strong>${f(pendiente.periodo_hasta)}</strong>. Importe: <strong class="num">${esc(importe(pendiente.importe_centavos))}</strong>.</p>
+        ${pendiente.aviso_pago ? `<p class="small">Dato que informaste: ${esc(pendiente.aviso_pago)}</p>` : ''}
+        <p class="muted small">El período se habilita cuando Growth Labs confirma la acreditación. Hasta entonces el servicio sigue como está.</p>
+        <div class="acciones"><button type="button" class="btn btn-texto" data-anular="${pendiente.id}">Anular esta solicitud</button></div>
+      </section>` : ''}
+
+      ${!pendiente && op ? `<section class="panel panel__cuerpo plan-renovar" id="plan-renovar" hidden aria-labelledby="plan-renovar-t">
+        <h2 id="plan-renovar-t" tabindex="-1">Renovar acceso</h2>
+        <form id="f-renovar" class="form" novalidate>
+          <input type="hidden" name="tipo" value="renovacion">
+          <fieldset class="grupo"><legend>Período</legend><div class="opciones">${m.opciones.map((o, i) => `<label class="opcion"><input type="radio" name="meses" value="${o.meses}"${i === 0 ? ' checked' : ''} required><span>${mesesTexto(o.meses)}</span></label>`).join('')}</div></fieldset>
+          <dl class="plan-detalle">
+            <div><dt>Plan</dt><dd>${esc(s.plan?.nombre || '')}</dd></div>
+            <div><dt>Cubre</dt><dd>del ${f(op.desde)} al ${f(op.hasta)}</dd></div>
+            <div><dt>Importe total</dt><dd class="num">${esc(importe(op.importe))}</dd></div>
+            <div><dt>Renovación automática</dt><dd>No. Al terminar, se pide y se paga otro período.</dd></div>
+          </dl>
+          ${s.periodoHasta && op.desde > s.periodoHasta ? `<p class="small">Empieza al día siguiente del vencimiento actual: conservás los días que ya tenés.</p>` : ''}
+          ${op.importe == null ? aviso('Este plan todavía no tiene precio cargado. Pedí la renovación y Growth Labs te confirma el importe antes de que pagues.', 'gris') : `<h3>Cómo pagar</h3>${pagoComo}`}
+          ${op.importe == null ? '' : campo({ nombre: 'avisoPago', etiqueta: 'Número de operación de la transferencia', ayuda: 'Ayuda a Growth Labs a encontrar el pago. No lo confirma por sí solo.' })}
+          <p class="muted small">Al enviar, la solicitud queda <strong>pendiente de confirmación</strong>. El período se habilita recién cuando Growth Labs confirma que el pago se acreditó.</p>
+          <div class="acciones"><button class="btn btn-primario">${op.importe == null ? 'Pedir la renovación' : 'Ya transferí: avisar a Growth Labs'}</button><button type="button" class="btn btn-texto" data-cerrar-renovar>Cancelar</button></div>
+        </form>
+      </section>` : ''}
+
+      <section class="panel panel__cuerpo" id="plan-incluye" tabindex="-1" aria-labelledby="plan-incluye-t">
+        <h2 id="plan-incluye-t">Qué incluye mi plan</h2>
+        <p class="small">En todos los planes: ${BASE_PLAN}.</p>
+        <ul class="lista plan-modulos">${Object.entries(MODULOS_PLAN).map(([k, t]) => `<li class="fila"><span>${esc(t)}</span>${s.modulos[k] ? chip('Incluido', 'verde', 'check') : chip('No incluido', '', 'ban')}</li>`).join('')}</ul>
+        <h3>Uso y límites</h3>
+        <div class="fila-campos"><div><h4>Usuarios activos</h4>${barra(s.uso.usuarios_activos, s.limites.usuarios_activos, 'usuarios')}</div><div><h4>Archivos</h4>${barra(s.uso.almacenamiento_mb, s.limites.almacenamiento_mb, 'MB')}</div></div>
+        <p class="muted small">Si un módulo deja de estar incluido, lo cargado se conserva y sale en la exportación.</p>
+      </section>
+
+      ${otros.length ? `<section class="panel panel__cuerpo" aria-labelledby="plan-cambio-t">
+        <h2 id="plan-cambio-t">Consultar un cambio de plan</h2>
+        <ul class="lista">${otros.map((p) => `<li><div class="fila"><strong>${esc(p.nombre)}</strong><span class="num">${p.precio == null ? 'Precio a definir' : esc(pesos(p.precio)) + ' por mes'}</span></div>
+          <p class="small muted">${Object.entries(MODULOS_PLAN).filter(([k]) => p.capacidades.modulos?.[k]).map(([, t]) => esc(t)).join(' · ') || 'Operación diaria'}</p>
+          ${pendiente ? '' : `<button type="button" class="btn btn-chico" data-cambio="${p.id}" data-nombre="${esc(p.nombre)}">Consultar el cambio a ${esc(p.nombre)}</button>`}</li>`).join('')}</ul>
+        <p class="muted small">Consultar no cambia nada todavía: Growth Labs confirma el importe y la fecha. Ningún cambio de plan borra información.</p>
+      </section>` : ''}
+
+      <section class="panel panel__cuerpo" aria-labelledby="plan-pagos-t">
+        <h2 id="plan-pagos-t">Pagos confirmados por Growth Labs</h2>
+        <p class="muted small">Son los pagos del taller a Growth Labs por el servicio. Los cobros a tus clientes están en Caja.</p>
+        ${m.pagos.length ? `<div class="tabla-envoltura"><table class="tabla"><thead><tr><th scope="col">Período</th><th scope="col" class="n">Importe</th><th scope="col">Medio</th><th scope="col">Referencia</th></tr></thead><tbody>${m.pagos.map((p) => `<tr><td>${f(p.periodo_desde)} al ${f(p.periodo_hasta)}</td><td class="n">${esc(pesos(p.importe_centavos))}</td><td>${esc(p.medio)}</td><td>${esc(p.referencia)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Todavía no hay pagos confirmados.</p>'}
+        ${m.solicitudes.some((q) => q.estado !== 'pendiente') ? `<details class="mas"><summary>Solicitudes anteriores</summary><div class="mas__cuerpo"><ul class="lista">${m.solicitudes.filter((q) => q.estado !== 'pendiente').map((q) => { const [t, c, i] = estadoSolicitud[q.estado]; return `<li><div class="fila"><span>${q.tipo === 'cambio_plan' ? 'Cambio a ' : 'Renovación de '}${esc(q.plan)} · ${f(q.periodo_desde)} al ${f(q.periodo_hasta)}</span>${chip(t, c, i)}</div>${q.resolucion ? `<p class="small muted">${esc(q.resolucion)}</p>` : ''}</li>`; }).join('')}</ul></div></details>` : ''}
+      </section>
+    </div>`,
+    despues(raiz) {
+      const panel = raiz.querySelector('#plan-renovar');
+      const abrir = raiz.querySelector('[data-abrir-renovar]');
+      abrir?.addEventListener('click', () => {
+        panel.hidden = false;
+        entrada(panel, { tipo: 'aviso' });
+        abrir.setAttribute('aria-expanded', 'true');
+        panel.querySelector('h2').focus();
+        panel.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      });
+      raiz.querySelector('[data-cerrar-renovar]')?.addEventListener('click', () => { panel.hidden = true; abrir.setAttribute('aria-expanded', 'false'); abrir.focus(); });
+      raiz.querySelector('[data-ir-incluye]')?.addEventListener('click', (e) => { e.preventDefault(); const s = raiz.querySelector('#plan-incluye'); s.scrollIntoView({ block: 'start' }); s.focus({ preventScroll: true }); });
+      const form = raiz.querySelector('#f-renovar');
+      if (form) alEnviar(form, async (d) => {
+        await post('/api/plan/solicitudes', { tipo: 'renovacion', meses: Number(d.meses), avisoPago: d.avisoPago || '' }, { idempotencia: claveDeEnvio(form) });
+        toast('Solicitud enviada. Queda pendiente hasta que Growth Labs confirme el pago.');
+        app.recargar();
+      });
+      raiz.querySelectorAll('[data-cambio]').forEach((b) => b.addEventListener('click', async () => {
+        const ok = await confirmar({ titulo: `Consultar el cambio a ${b.dataset.nombre}`, texto: `Growth Labs recibe la consulta y te confirma el importe y la fecha. Hasta entonces el plan actual sigue igual.`, aceptar: 'Enviar la consulta' });
+        if (!ok) return;
+        b.disabled = true; b.classList.add('cargando'); b.setAttribute('aria-busy', 'true');
+        try {
+          await post('/api/plan/solicitudes', { tipo: 'cambio_plan', planId: Number(b.dataset.cambio), meses: m.opciones[0]?.meses || 1 }, { idempotencia: true });
+          toast('Consulta enviada. Queda pendiente hasta que Growth Labs la confirme.');
+          app.recargar();
+        } catch (err) { toast(err.message, { error: true }); b.disabled = false; b.classList.remove('cargando'); b.removeAttribute('aria-busy'); }
+      }));
+      raiz.querySelector('[data-anular]')?.addEventListener('click', async (e) => {
+        const b = e.currentTarget;
+        const ok = await confirmar({ titulo: 'Anular la solicitud', texto: 'Growth Labs deja de esperar este pago. Si ya transferiste, no la anules: avisá a Growth Labs.', aceptar: 'Anular la solicitud', peligro: true });
+        if (!ok) return;
+        b.disabled = true; b.classList.add('cargando');
+        try { await post(`/api/plan/solicitudes/${b.dataset.anular}/anular`, {}, { idempotencia: true }); toast('Solicitud anulada.'); app.recargar(); }
+        catch (err) { toast(err.message, { error: true }); b.disabled = false; b.classList.remove('cargando'); }
+      });
+    }
   };
 }
 

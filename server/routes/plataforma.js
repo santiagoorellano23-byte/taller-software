@@ -78,6 +78,8 @@ export default function rutas(r) {
       taller: t, duenos: duenos(ctx.db, t.id), servicio: resumenServicio(ctx.db, t.id),
       suscripcion: s && { id: s.id, planId: s.plan_id, estadoGuardado: s.estado, periodoDesde: s.periodo_desde, periodoHasta: s.periodo_hasta, graciaHasta: s.gracia_hasta, cancelaAlCierre: !!s.cancela_al_cierre, modalidad: s.modalidad, nota: s.nota, version: s.version },
       pagos: todos(ctx.db, 'SELECT p.*, a.nombre AS por FROM pagos_suscripcion p JOIN plataforma_admins a ON a.id = p.registrado_por WHERE p.taller_id = ? ORDER BY p.id DESC', t.id),
+      solicitudes: todos(ctx.db, `SELECT q.*, p.nombre AS plan, u.nombre AS por FROM solicitudes_servicio q JOIN planes p ON p.id = q.plan_id LEFT JOIN usuarios u ON u.id = q.creado_por
+        WHERE q.taller_id = ? ORDER BY q.id DESC LIMIT 20`, t.id),
       registro: todos(ctx.db, 'SELECT r.*, a.nombre AS por FROM plataforma_auditoria r LEFT JOIN plataforma_admins a ON a.id = r.admin_id WHERE r.taller_id = ? ORDER BY r.id DESC LIMIT 100', t.id)
     };
   }, SIN);
@@ -158,14 +160,35 @@ export default function rutas(r) {
       return { pago: previo, servicio: resumenServicio(ctx.db, t.id), repetido: true };
     }
     if (uno(ctx.db, 'SELECT id FROM pagos_suscripcion WHERE taller_id = ? AND referencia = ?', t.id, referencia)) falla('Ya hay un pago registrado con esa referencia para este taller.', 'referencia');
+    // Si el pago confirma una solicitud del taller, tiene que ser de este taller y seguir pendiente.
+    const solicitud = b.solicitudId == null || b.solicitudId === '' ? null
+      : uno(ctx.db, "SELECT * FROM solicitudes_servicio WHERE id = ? AND taller_id = ?", idEntero(b.solicitudId), t.id) || falla('Esa solicitud no es de este taller.', 'solicitudId');
+    if (solicitud && solicitud.estado !== 'pendiente') throw new ErrorUsuario(409, 'Esa solicitud ya no está pendiente. Recargá para ver su estado.');
     const id = insertar(ctx.db, `INSERT INTO pagos_suscripcion (taller_id, suscripcion_id, importe_centavos, medio, referencia, periodo_desde, periodo_hasta, nota, registrado_por, registrado_at, clave)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, t.id, s.id, importe, medio, referencia, desde, hasta, opcional(b.nota, 500), a.id, isoAhora(), clave);
     // El período pagado solo extiende la vigencia; un pago atrasado no acorta un período ya registrado.
     const nuevoHasta = !s.periodo_hasta || hasta > s.periodo_hasta ? hasta : s.periodo_hasta;
     ejecutar(ctx.db, "UPDATE suscripciones SET estado = 'activa', periodo_desde = COALESCE(periodo_desde, ?), periodo_hasta = ?, gracia_hasta = NULL, version = version + 1, actualizado_at = ? WHERE id = ?",
       desde, nuevoHasta, isoAhora(), s.id);
+    if (solicitud) {
+      if (solicitud.tipo === 'cambio_plan' && solicitud.plan_id !== s.plan_id) ejecutar(ctx.db, 'UPDATE suscripciones SET plan_id = ? WHERE id = ?', solicitud.plan_id, s.id);
+      ejecutar(ctx.db, "UPDATE solicitudes_servicio SET estado = 'confirmada', resuelta_por = ?, resuelta_at = ?, resolucion = ?, pago_id = ? WHERE id = ?",
+        a.id, isoAhora(), `Pago acreditado, ref. ${referencia}`, id, solicitud.id);
+    }
     auditarPlataforma(ctx.db, a.id, t.id, 'Pago de suscripción conciliado manualmente', `${(importe / 100).toLocaleString('es-AR')} ${medio}, ref. ${referencia}, cubre ${desde} a ${hasta}; vigencia hasta ${nuevoHasta}`);
     return { pago: uno(ctx.db, 'SELECT * FROM pagos_suscripcion WHERE id = ?', id), servicio: resumenServicio(ctx.db, t.id) };
+  }, SIN);
+
+  // Rechazar una solicitud del taller (por ejemplo, el pago no se acreditó). No cambia el período.
+  r.post('/api/plataforma/talleres/:id/solicitudes/:sid/rechazar', (ctx) => {
+    const a = admin(ctx);
+    const t = tallerDe(ctx.db, ctx.params.id);
+    const q = uno(ctx.db, 'SELECT * FROM solicitudes_servicio WHERE id = ? AND taller_id = ?', idEntero(ctx.params.sid), t.id) || falla('Esa solicitud no es de este taller.');
+    if (q.estado !== 'pendiente') throw new ErrorUsuario(409, 'Esa solicitud ya no está pendiente. Recargá para ver su estado.');
+    const motivo = requerido(ctx.cuerpo.motivo, 'Escribí el motivo: el taller lo ve en «Mi plan».', 'motivo', 300);
+    ejecutar(ctx.db, "UPDATE solicitudes_servicio SET estado = 'rechazada', resuelta_por = ?, resuelta_at = ?, resolucion = ? WHERE id = ? AND estado = 'pendiente'", a.id, isoAhora(), motivo, q.id);
+    auditarPlataforma(ctx.db, a.id, t.id, 'Solicitud del taller rechazada', `#${q.id}. Motivo: ${motivo}`);
+    return { ok: true };
   }, SIN);
 
   r.get('/api/plataforma/registro', (ctx) => {

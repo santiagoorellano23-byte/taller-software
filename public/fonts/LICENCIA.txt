@@ -1,3 +1,9 @@
+Geist Sans
+Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
+Licencia SIL Open Font License 1.1; texto completo en OFL-Geist.txt.
+Origen en este proyecto: geist-latin.woff2 (variable, subconjunto latino) sin modificar, tal como lo distribuye
+el paquete oficial next 16.3.8 de Vercel. SHA-256 1B5EBFB3A01A97343AC96873E6D59A8CB285C66012B6A1AC509CB2765E995BA8.
+
 Barlow y Barlow Condensed
 Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
 

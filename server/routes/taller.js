@@ -14,7 +14,7 @@ import path from 'node:path';
 import { config } from '../config.js';
 import { estadoRespaldo } from '../respaldo.js';
 import { aparienciaEfectiva, problemaApariencia, normalizarHex } from '../../public/js/marca.js';
-import { exigirLimite, resumenServicio } from '../planes.js';
+import { exigirLimite, miPlan, suscripcionDe, periodoRenovacion, PERIODOS_MESES } from '../planes.js';
 
 function guardarConfig(ctx, cambios) {
   const t = uno(ctx.db, 'SELECT config, version FROM talleres WHERE id = ?', ctx.taller.id);
@@ -36,10 +36,43 @@ const TABLAS_EXPORT = ['contactos', 'vehiculos', 'vehiculo_contactos', 'lecturas
   'movimientos_stock', 'compras', 'compra_lineas', 'compra_documentos', 'pagos_proveedor', 'ventas', 'venta_lineas', 'cuenta_movimientos', 'documentos', 'adjuntos', 'biblioteca', 'auditoria'];
 
 export default function rutas(r) {
-  // Plan contratado y consumo frente a sus límites (solo lectura: lo administra Growth Labs).
+  // Mi plan: plan contratado, período, uso, pagos confirmados por Growth Labs y solicitudes del taller.
   r.get('/api/plan', (ctx) => {
-    exigir(ctx.usuario, 'config.taller');
-    return resumenServicio(ctx.db, ctx.taller.id);
+    exigir(ctx.usuario, 'servicio.gestionar');
+    return miPlan(ctx.db, ctx.taller.id);
+  });
+
+  // Pedir la renovación o consultar un cambio de plan. No habilita nada: queda pendiente hasta que
+  // Growth Labs confirme la acreditación y registre el pago. El período se calcula en el servidor.
+  r.post('/api/plan/solicitudes', (ctx) => {
+    exigir(ctx.usuario, 'servicio.gestionar');
+    const b = ctx.cuerpo;
+    const s = suscripcionDe(ctx.db, ctx.taller.id) || falla('El taller no tiene un plan asignado. Contactá a Growth Labs.');
+    const tipo = enLista(b.tipo || 'renovacion', ['renovacion', 'cambio_plan'], 'Elegí renovar o cambiar de plan.', 'tipo');
+    const meses = Number(b.meses);
+    if (!PERIODOS_MESES.includes(meses)) falla('Elegí un período de la lista.', 'meses');
+    const planId = tipo === 'renovacion' ? s.plan_id : idEntero(b.planId);
+    const plan = uno(ctx.db, 'SELECT * FROM planes WHERE id = ? AND activo = 1', planId);
+    if (!plan) falla('Ese plan no está disponible.', 'planId');
+    if (tipo === 'cambio_plan' && plan.id === s.plan_id) falla('Ese ya es el plan del taller. Para seguir con él, elegí «Renovar acceso».', 'planId');
+    if (uno(ctx.db, "SELECT id FROM solicitudes_servicio WHERE taller_id = ? AND estado = 'pendiente'", ctx.taller.id)) {
+      throw new ErrorUsuario(409, 'Ya hay una solicitud pendiente de confirmación. Esperá la respuesta de Growth Labs o anulala para pedir otra.');
+    }
+    const p = periodoRenovacion(s, meses);
+    const importe = plan.precio_centavos == null ? null : plan.precio_centavos * meses;
+    const id = insertar(ctx.db, `INSERT INTO solicitudes_servicio (taller_id, tipo, plan_id, meses, periodo_desde, periodo_hasta, importe_centavos, moneda, aviso_pago, nota, creado_por, creado_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, ctx.taller.id, tipo, plan.id, meses, p.desde, p.hasta, importe, plan.moneda, opcional(b.avisoPago, 200), opcional(b.nota, 500), ctx.usuario.id, isoAhora());
+    ctx.auditar(tipo === 'renovacion' ? 'Renovación del servicio pedida a Growth Labs (pendiente de confirmación)' : 'Cambio de plan consultado a Growth Labs (pendiente)', 'taller', ctx.taller.id, `${plan.nombre}, ${p.desde} a ${p.hasta}`);
+    return { id, estado: 'pendiente', plan: miPlan(ctx.db, ctx.taller.id) };
+  });
+
+  r.post('/api/plan/solicitudes/:id/anular', (ctx) => {
+    exigir(ctx.usuario, 'servicio.gestionar');
+    const q = uno(ctx.db, 'SELECT * FROM solicitudes_servicio WHERE taller_id = ? AND id = ?', ctx.taller.id, idEntero(ctx.params.id)) || falla('No encontramos esa solicitud.');
+    if (q.estado !== 'pendiente') throw new ErrorUsuario(409, 'Esa solicitud ya fue resuelta por Growth Labs; no se puede anular.');
+    ejecutar(ctx.db, "UPDATE solicitudes_servicio SET estado = 'anulada', resuelta_at = ?, resolucion = ? WHERE id = ? AND estado = 'pendiente'", isoAhora(), 'Anulada por el taller', q.id);
+    ctx.auditar('Solicitud a Growth Labs anulada', 'taller', ctx.taller.id, String(q.id));
+    return { plan: miPlan(ctx.db, ctx.taller.id) };
   });
 
   // ----- Perfil, página pública y preferencias -----

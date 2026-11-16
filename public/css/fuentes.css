@@ -1,5 +1,8 @@
-/* Barlow y Barlow Condensed (Jeremy Tribby, SIL Open Font License 1.1), subconjunto latino.
-   Extraídas del diseño exportado de Claude Design aportado por el usuario. Ver /fonts/LICENCIA.txt */
+/* Geist Sans (The Geist Project Authors, SIL Open Font License 1.1): tipografía principal del software.
+   Un solo archivo variable, subconjunto latino, cubre los pesos 400 a 700. Ver /fonts/LICENCIA.txt */
+@font-face { font-family: 'Geist'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('/fonts/geist-latin.woff2') format('woff2'); }
+/* Barlow Condensed: patentes y nombre del taller. Barlow queda declarada para los documentos ya emitidos;
+   el navegador solo la descarga si un documento la usa. (Jeremy Tribby, SIL Open Font License 1.1) */
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/barlow-400-latin.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/barlow-500-latin.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/barlow-600-latin.woff2') format('woff2'); }

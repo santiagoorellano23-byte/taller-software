@@ -107,4 +107,4 @@ Abrir http://127.0.0.1:3160. Usuarios en `scripts/seed.js`. `demo-data/` ya est�
 
 ## 7. Diseño
 
-Dirección A «Paso a paso»; la pantalla Más usa la variante B. Conservar Barlow local, selector sol/luna, foco visible, áreas táctiles de al menos 44 px y movimiento reducido. Los estados se nombran con palabras, no solo con color. Sin sesión se muestra la marca Growth Labs Talleres; dentro del espacio de un taller, su nombre y su logo. Un color de marca nunca reemplaza un color semántico (error, deuda, acción destructiva). No rediseñar pantallas fuera de la tarea.
+Dirección A «Paso a paso»; la pantalla Más usa la variante B. Conservar Geist local (Barlow Condensed en patentes), selector sol/luna, foco visible, áreas táctiles de al menos 44 px y movimiento reducido. Los estados se nombran con palabras, no solo con color. Sin sesión se muestra la marca Growth Labs Talleres; dentro del espacio de un taller, su nombre y su logo. Un color de marca nunca reemplaza un color semántico (error, deuda, acción destructiva). No rediseñar pantallas fuera de la tarea.

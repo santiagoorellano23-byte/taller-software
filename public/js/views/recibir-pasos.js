@@ -78,7 +78,7 @@ export default async function recibir({app,query}){
           ${campo({nombre:'responsableId',etiqueta:'Responsable',tipo:'select',opciones:[['','Sin asignar'],...usuarios.filter(u=>u.activo).map(u=>[u.id,u.nombre])],valor:relacionada?.responsable_id||''})}
           ${campo({nombre:'retiro',etiqueta:'Retiro acordado',tipo:'datetime-local',ayuda:'Vacío significa a confirmar.'})}${casilla('urgente','Marcar como urgente')}${campo({nombre:'retiroNota',etiqueta:'Nota de retiro',attrs:'maxlength="300"',placeholder:'Ej.: lo retira la hija'})}
         </section>
-        <section data-paso="6" class="rec-etapa" hidden><h2 tabindex="-1">Revisá y recibí</h2><p class="rec-explica">El auto queda recibido recién cuando tocás Recibir. Podés cambiar cualquier dato.</p><div class="rec-revision" data-revision-final></div></section>
+        <section data-paso="6" class="rec-etapa" hidden><h2 tabindex="-1">Revisá y confirmá el ingreso</h2><p class="rec-explica">El auto queda recibido recién cuando tocás «Confirmar el ingreso» y el servidor lo guarda. Podés cambiar cualquier dato.</p><div class="rec-revision" data-revision-final></div></section>
       </div>
       <aside class="rec-contexto"><h2>Recepción en preparación</h2><div data-resumen></div><ol>${PASOS.map((p,i)=>`<li data-indice="${i}">${p}</li>`).join('')}</ol><p class="small muted">Todavía no es una orden. Revisión, autorización, cobro y entrega son registros distintos.</p></aside>
       <footer class="rec-action"><p data-estado-borrador role="status">Completá los datos para continuar.</p><div class="acciones"><button type="button" class="btn btn-texto" data-omitir hidden>Omitir</button><button type="submit" class="btn btn-primario" data-continuar>Continuar ${icono('der')}</button></div></footer>
@@ -147,7 +147,7 @@ export default async function recibir({app,query}){
       const anterior=paso;detenerMovimiento(f);
       paso=i;limpiarErrores(f);f.querySelectorAll('[data-paso]').forEach(s=>s.hidden=+s.dataset.paso!==i);
       raiz.querySelectorAll('[data-progreso]').forEach(s=>s.classList.toggle('completo',+s.dataset.progreso<=i));raiz.querySelector('.rec-progreso').setAttribute('aria-valuenow',i+1);raiz.querySelector('.rec-progreso').setAttribute('aria-valuetext',PASOS[i]);raiz.querySelector('[data-paso-label]').textContent=`Paso ${i+1} de ${PASOS.length} · ${PASOS[i]}`;
-      f.querySelectorAll('[data-indice]').forEach(li=>li.toggleAttribute('aria-current',+li.dataset.indice===i));f.querySelector('[data-omitir]').hidden=i!==5||volverRevision;f.querySelector('[data-continuar]').type=i===6?'submit':'button';f.querySelector('[data-continuar]').innerHTML=i===6?`Recibir ${icono('check')}`:volverRevision?'Volver a revisión':`Continuar ${icono('der')}`;
+      f.querySelectorAll('[data-indice]').forEach(li=>li.toggleAttribute('aria-current',+li.dataset.indice===i));f.querySelector('[data-omitir]').hidden=i!==5||volverRevision;f.querySelector('[data-continuar]').type=i===6?'submit':'button';f.querySelector('[data-continuar]').innerHTML=i===6?`Confirmar el ingreso ${icono('check')}`:volverRevision?'Volver a revisión':`Continuar ${icono('der')}`;
       vistaDatos();if(i===6)revisar();if(enfocar){window.scrollTo(0,0);f.querySelector(`[data-paso="${i}"] h2`).focus({preventScroll:true});}guardar();
       if(enfocar&&i!==anterior)entrada(f.querySelector(`[data-paso="${i}"]`),{tipo:'paso',direccion:i-anterior});
     };

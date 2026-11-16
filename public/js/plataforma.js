@@ -123,6 +123,8 @@ async function cargarDetalle() {
   const cont = main.querySelector('[data-detalle]');
   const d = await get(`/api/plataforma/talleres/${elegido}`);
   const s = d.suscripcion, sv = d.servicio;
+  const q = (d.solicitudes || []).find((x) => x.estado === 'pendiente');
+  const pesosAr = (c) => (c / 100).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
   const opcionesPlan = planes.filter((p) => p.activo || p.id === s?.planId).map((p) => [String(p.id), `${p.nombre} · v${p.version}${p.precio_centavos == null ? ' · sin precio' : ''}`]);
   cont.innerHTML = `<div class="panel panel__cuerpo bloque"><h2>${esc(d.taller.nombre)}</h2>
       <p>${chip(sv.estadoTexto, COLOR[sv.estado], sv.soloLectura ? 'ban' : 'check')}</p>
@@ -137,12 +139,17 @@ async function cargarDetalle() {
         ${casilla('cancelaAlCierre', 'Cancelar al cierre del período (mantiene el acceso hasta esa fecha)', s.cancelaAlCierre)}
         ${campo({ nombre: 'motivo', etiqueta: 'Motivo del cambio', requerido: true, ayuda: 'Queda en el registro con tu nombre.' })}
         <button class="btn btn-primario" type="submit">Guardar suscripción</button></form></div>
-    <div class="panel panel__cuerpo bloque"><h2>Registrar pago confirmado</h2>
+    ${q ? `<div class="panel panel__cuerpo bloque plan-pendiente"><h2>Solicitud del taller pendiente</h2>
+      <p>${q.tipo === 'cambio_plan' ? 'Cambio a ' : 'Renovación de '}<strong>${esc(q.plan)}</strong> por ${q.meses} mes${q.meses === 1 ? '' : 'es'}: del <strong>${f(q.periodo_desde)}</strong> al <strong>${f(q.periodo_hasta)}</strong>. Importe: <strong>${q.importe_centavos == null ? 'sin precio cargado: informalo al taller' : esc(pesosAr(q.importe_centavos))}</strong>.</p>
+      <p class="small muted">Pidió ${esc(q.por || '—')} el ${esc(fechaHora(q.creado_at))}${q.aviso_pago ? ` · informó: ${esc(q.aviso_pago)}` : ''}. Avisar «ya pagué» no prueba el pago: confirmá la acreditación antes de registrarla abajo.</p>
+      <form class="form" id="f-rechazo" novalidate>${campo({ nombre: 'motivo', etiqueta: 'Motivo para no confirmarla', requerido: true, ayuda: 'El taller lo ve en «Mi plan». El período no cambia.' })}<button class="btn btn-peligro btn-chico" type="submit">No confirmar la solicitud</button></form></div>` : ''}
+    <div class="panel panel__cuerpo bloque"><h2>${q ? 'Confirmar la acreditación de la solicitud' : 'Registrar pago confirmado'}</h2>
       <p class="muted small">Conciliación manual: registrá solo pagos que ya verificaste (por ejemplo, una transferencia acreditada). No cobra nada ni consulta a ningún banco.</p>
       <form class="form" id="f-pago" novalidate>
-        <div class="fila-campos">${campo({ nombre: 'importe', etiqueta: 'Importe recibido', requerido: true, attrs: 'inputmode="decimal"' })}${campo({ nombre: 'medio', etiqueta: 'Medio', requerido: true, valor: 'transferencia' })}${campo({ nombre: 'referencia', etiqueta: 'Referencia del comprobante', requerido: true })}</div>
-        <div class="fila-campos">${campo({ nombre: 'periodoDesde', etiqueta: 'Cubre desde', tipo: 'date', requerido: true })}${campo({ nombre: 'periodoHasta', etiqueta: 'Cubre hasta (incluido)', tipo: 'date', requerido: true })}${campo({ nombre: 'nota', etiqueta: 'Nota' })}</div>
-        <button class="btn" type="submit">Registrar pago</button></form>
+        ${q ? `<input type="hidden" name="solicitudId" value="${q.id}">` : ''}
+        <div class="fila-campos">${campo({ nombre: 'importe', etiqueta: 'Importe recibido', requerido: true, attrs: 'inputmode="decimal"', valor: q?.importe_centavos != null ? String(q.importe_centavos / 100).replace('.', ',') : '' })}${campo({ nombre: 'medio', etiqueta: 'Medio', requerido: true, valor: 'transferencia' })}${campo({ nombre: 'referencia', etiqueta: 'Referencia del comprobante', requerido: true })}</div>
+        <div class="fila-campos">${campo({ nombre: 'periodoDesde', etiqueta: 'Cubre desde', tipo: 'date', requerido: true, valor: q?.periodo_desde || '' })}${campo({ nombre: 'periodoHasta', etiqueta: 'Cubre hasta (incluido)', tipo: 'date', requerido: true, valor: q?.periodo_hasta || '' })}${campo({ nombre: 'nota', etiqueta: 'Nota' })}</div>
+        <button class="btn ${q ? 'btn-primario' : ''}" type="submit">${q ? 'Confirmar acreditación y habilitar el período' : 'Registrar pago'}</button></form>
       ${d.pagos.length ? `<h3>Pagos registrados</h3><ul class="lista">${d.pagos.map((p) => `<li class="fila"><span>${(p.importe_centavos / 100).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })} · ${esc(p.medio)} · ref. ${esc(p.referencia)}<br><span class="small muted">cubre ${f(p.periodo_desde)} a ${f(p.periodo_hasta)} · registró ${esc(p.por)} el ${esc(fechaHora(p.registrado_at))}</span></span></li>`).join('')}</ul>` : ''}</div>
     <div class="panel panel__cuerpo bloque"><h2>Historial del taller</h2><ul class="lista">${d.registro.map((r) => `<li><span class="small muted">${esc(fechaHora(r.fecha))} · ${esc(r.por || 'Proceso automático')}</span><br>${esc(r.accion)}${r.detalle ? `<br><span class="small muted">${esc(r.detalle)}</span>` : ''}</li>`).join('') || '<li class="muted">Sin acciones.</li>'}</ul></div>`;
   alEnviar(cont.querySelector('#f-sus'), async (v) => {
@@ -154,6 +161,11 @@ async function cargarDetalle() {
     const r = await post(`/api/plataforma/talleres/${elegido}/pagos`, v, { idempotencia: claveDeEnvio(fp) });
     toast(r.repetido ? 'Ese pago ya estaba registrado: no se duplicó.' : 'Pago registrado y vigencia actualizada.');
     cargarDetalle(); cargarLista(main.querySelector('input[name="q"]').value); cargarRegistro();
+  });
+  const fr = cont.querySelector('#f-rechazo');
+  if (fr) alEnviar(fr, async (v) => {
+    await post(`/api/plataforma/talleres/${elegido}/solicitudes/${q.id}/rechazar`, v);
+    toast('Solicitud no confirmada. El taller ve el motivo en «Mi plan».'); cargarDetalle(); cargarRegistro();
   });
   cont.querySelector('[data-reinvitar]')?.addEventListener('click', async () => {
     try { const r = await post(`/api/plataforma/talleres/${elegido}/invitacion`, {}); mostrarEnlace(cont.querySelector('[data-enlace-re]'), r, 'el responsable'); cargarRegistro(); }

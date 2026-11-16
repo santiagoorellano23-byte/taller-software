@@ -13,7 +13,8 @@ export function resumenMotivos(motivos=[],otro='') {
   return motivos.map(x=>{const m=MOTIVOS.find(m=>m.id===x.id);return !m?'':m.id==='otro'?`Otro: ${otro}`:m.nombre+(x.detalles?.length?` (${x.detalles.join(', ')})`:'');}).filter(Boolean).join(' · ');
 }
 export function material(nombre) {
-  return `<img class="material-icon" src="/iconos-material/${nombre}.svg" width="24" height="24" alt="" aria-hidden="true">`;
+  // Máscara pintada con currentColor: el icono toma el color del texto (marca, estado, tema) sin filtros.
+  return `<span class="material-icon" style="--icono:url('/iconos-material/${nombre}.svg')" aria-hidden="true"></span>`;
 }
 export const claveBorrador = app => `talleres-recepcion:${app.sesion.taller.id}:${app.sesion.usuario.id}`;
 export function leerBorrador(app) {

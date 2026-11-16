@@ -21,7 +21,7 @@ Abrir http://127.0.0.1:3000. La demostración usa exclusivamente datos ficticios
 npm test
 ```
 
-98 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
+102 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
 
 ## Funciones
 
@@ -32,11 +32,14 @@ npm test
 - Perfiles y permisos comprobados en el servidor. Datos separados por taller.
 - Nombre, logo, colores y página pública configurables por taller.
 - Planes con módulos y cupos comprobados en el servidor; suscripción con vencimiento y gracia por fecha.
+- «Mi plan» para el dueño: plan, «Activo hasta…», qué incluye, pagos confirmados y «Renovar acceso». Pedir la renovación queda pendiente hasta que Growth Labs confirma la acreditación; no hay débito automático.
 - No es un sistema fiscal: ARCA y Libro IVA están excluidos. Mensajería automática e IA no están activas; no se simulan envíos.
 
 Lo que falta para ofrecerlo como servicio pago está en `docs/HOJA-DE-RUTA.md`.
 
 ## Instalación
+
+Opcional: `TALLERES_TRANSFERENCIA` con los datos comerciales aprobados para transferir; si falta, «Mi plan» no muestra ninguna cuenta.
 
 Definir `TALLERES_DATOS` con una ruta absoluta fuera del código y de cualquier carpeta que el despliegue reemplace. Configurar `NODE_ENV=production`, `TALLERES_SEGURO=1` y `TALLERES_URL_PUBLICA` con la URL HTTPS. Usar `TALLERES_PROXY=1` solo detrás del proxy del alojamiento.
 

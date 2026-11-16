@@ -23,7 +23,7 @@ Estado al 12/11/2026, versión 0.1.0. Ordenada por dependencias. Cada paso: prue
 2. ~~Planes y capacidades.~~ Hecho con valores de prueba (ver DECISIONES 19 y 21).
 3. ~~Suscripciones manuales auditadas.~~ Hecho (DECISIONES 20 y 22).
 4. ~~Panel central de Growth Labs.~~ Hecho (DECISIONES 23). Pendiente: segundo factor para las cuentas del panel y más de un nivel de permiso si el equipo crece.
-5. **Cobro recurrente.** Integración independiente con verificación del proveedor, idempotencia, eventos atrasados y conciliación. Nunca activar por el retorno del navegador.
+5. **Cobro recurrente.** Hecho el recorrido manual (16/11/2026): «Mi plan», solicitud pendiente, confirmación de Growth Labs y período por mes calendario (DECISIONES 25 a 28). Falta la integración independiente con verificación del proveedor, idempotencia, eventos atrasados y conciliación. Nunca activar por el retorno del navegador.
 6. **Operación.** Restauración aislada de un solo taller, exportación completa con archivos, cuotas de almacenamiento, monitoreo, y medición de carga antes de fijar cuántos talleres admite una instalación.
 7. **Piloto** con talleres autorizados, y recién después lanzamiento comercial con funciones verificadas.
 

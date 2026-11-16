@@ -1,9 +1,11 @@
-import {esc,icono,fecha,km} from './ui.js?v=0.1.0';
+import {esc,icono,fecha,km,pesos} from './ui.js?v=0.1.0';
 import {resumenMotivos} from './recepcion-modelo.js?v=0.1.0';
 import {vistaEstadoIngreso} from './estado-ingreso.js?v=0.1.0';
 export const grupoHoy=v=>v.lista_at?'listas':v.operacion?.autorizacion||v.operacion?.repuestos?'bloqueadas':'hacer';
 export const puedeOfrecerCobro=v=>!v.anulada_at&&!!v.totales&&(v.totales.saldo>0||!v.totales.liquidado&&v.totales.autorizado>v.totales.cobrado);
 export function estadoDimension(k,t){const color=/Esperando|parcial|Saldo pendiente/.test(t)?'ambar':/Aprobado|Pagado|Completo|Terminado|Listo/.test(t)?'verde':/revisión|Revisado|trabajo|Control/i.test(t)?'teal':'';return `<span class="estado ${color?'estado--'+color:''}" title="${esc(k)}">${esc(t)}</span>`;}
+// Cinco dimensiones de dinero que nunca se mezclan. El saldo solo existe después de liquidar lo realizado.
+export function dineroHTML(t,href){if(!t||!t.presupuestado&&!t.cobrado)return '';const saldo=!t.liquidado?['Saldo','Se fija al liquidar']:t.aFavor?['Saldo a favor',pesos(t.aFavor)]:['Saldo',pesos(t.saldo)];return `<section class="orden-dinero" aria-label="Dinero de esta orden"><dl>${[['Presupuestado',pesos(t.presupuestado)],['Autorizado',pesos(t.autorizado)],['Realizado',pesos(t.realizado)],['Cobrado',pesos(t.cobrado)],saldo].map(([k,x],i)=>`<div${i===4&&t.liquidado&&t.saldo>0?' class="orden-dinero__saldo"':''}><dt>${k}</dt><dd class="num">${esc(x)}</dd></div>`).join('')}</dl>${href?`<a class="small" href="${href}">Ver liquidación y cobros</a>`:''}</section>`;}
 export function dimensionesHTML(v){return `<dl class="orden-dimensiones">${(v.dimensiones||[]).map(([k,t])=>`<div><dt>${esc(k)}</dt><dd>${estadoDimension(k,t)}</dd></div>`).join('')}</dl>`;}
 export function resumenOrden(v,app){
  const ingreso=v.lecturas[0];

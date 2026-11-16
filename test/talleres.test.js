@@ -175,3 +175,12 @@ test('Puesta en marcha: el dueño ve lo que falta configurar; recepción no', as
   assert.ok(hn.configurar.some((x) => x.ruta === 'ajustes/usuarios'));
   assert.equal((await recepcion.get('/api/hoy')).configurar, null);
 });
+
+test('Mi plan: cada taller ve solo su servicio y no puede anular la solicitud de otro', async () => {
+  const q = await dueno.post('/api/plan/solicitudes', { tipo: 'renovacion', meses: 1 });
+  assert.equal((await norte.pedir('POST', `/api/plan/solicitudes/${q.id}/anular`, {})).estado, 400);
+  assert.ok(!(await norte.get('/api/plan')).solicitudes.some((x) => x.id === q.id));
+  assert.equal((await dueno.get('/api/plan')).solicitudes.find((x) => x.id === q.id).estado, 'pendiente');
+  assert.equal((await mecanico.pedir('GET', '/api/plan')).estado, 403);
+  await dueno.post(`/api/plan/solicitudes/${q.id}/anular`, {});
+});

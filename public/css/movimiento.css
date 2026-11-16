@@ -33,13 +33,16 @@
     transform: none;
   }
   .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
-    transform: translateY(1px);
-    box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+    transform: scale(.97);
+    box-shadow: none;
+    transition-duration: 60ms;
   }
   .btn-texto:not(:disabled):not([aria-disabled="true"]):active {
-    transform: none;
+    transform: scale(.97);
     box-shadow: none;
   }
+  .hoy-segmentos a { transition: background-color var(--respuesta-rapida), color var(--respuesta-rapida), border-color var(--respuesta-rapida), box-shadow var(--respuesta-rapida), transform var(--respuesta-rapida) var(--respuesta-curva); }
+  .hoy-segmentos a:active { transform: scale(.97); }
   :is(.btn:disabled, .btn[aria-disabled="true"], .btn.cargando) {
     transform: none;
     box-shadow: none;
@@ -189,15 +192,15 @@
 
 /* Hover existe solo con ratón/trackpad preciso. Los destinos de lectura quedan fijos. */
 @media screen and (hover: hover) and (pointer: fine) {
+  /* Hover: solo color y borde. Un control que se usa decenas de veces al día no se eleva. */
   .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):not(.btn-texto):not(.btn-peligro):hover {
-    transform: translateY(-1px);
+    transform: none;
     box-shadow: var(--sombra-control);
   }
-  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):not(.btn-texto):not(.btn-peligro):active {
-    transform: translateY(1px);
-    box-shadow: inset 0 1px 2px rgb(20 20 20 / .12);
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.cargando):active {
+    transform: scale(.97);
+    box-shadow: none;
   }
-  .btn-texto:not(:disabled):not([aria-disabled="true"]):active { transform: none; box-shadow: none; }
   .btn:focus-visible:hover { transform: none; }
   :is(.mas-tarjeta a, .rec-review-row, .area, .grupo-menu a):hover {
     background-color: var(--surface-2);
@@ -255,7 +258,7 @@
   :is(.nav a, .tabbar a, .grupo-menu a, .area, .volver) > .i,
   .tabbar--isla .isla-icono,
   .mas-tarjeta a > .material-icon:last-child,
-  .rec-motivo, .rec-marca, .mas-tarjeta a {
+  .rec-motivo, .rec-marca, .mas-tarjeta a, .hoy-segmentos a {
     transform: none !important;
   }
   .grupo-menu a::after { transform: rotate(45deg) !important; }

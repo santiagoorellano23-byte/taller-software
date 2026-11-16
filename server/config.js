@@ -14,7 +14,10 @@ export const config = {
   // true cuando hay un proxy propio delante (Hostinger, Nginx, etc.) que agrega X-Forwarded-For
   proxy: process.env.TALLERES_PROXY === '1',
   // Dirección pública para enlaces y QR (por ejemplo https://panel.ejemplo.com). Si falta, se usa la del navegador.
-  urlPublica: (process.env.TALLERES_URL_PUBLICA || '').replace(/\/$/, '')
+  urlPublica: (process.env.TALLERES_URL_PUBLICA || '').replace(/\/$/, ''),
+  // Datos comerciales aprobados por Growth Labs para transferir (titular, CBU/alias, CUIT), en texto.
+  // Si falta, «Mi plan» no muestra ninguna cuenta: Growth Labs envía los datos por su canal habitual.
+  transferencia: (process.env.TALLERES_TRANSFERENCIA || '').trim().slice(0, 600)
 };
 
 // En un alojamiento la carpeta del código se reemplaza en cada despliegue (en Hostinger, hbuilds/ y public_html/).

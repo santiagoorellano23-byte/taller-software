@@ -26,7 +26,7 @@ function proximoHabil(fecha, diasLibres = [0]) {
   return d.toISOString().slice(0, 10);
 }
 
-export async function sembrar({ db, base }) {
+export async function sembrar({ db, base, demo = false }) {
   const real = new Date();
   const hace = (h) => new Date(real.getTime() - h * 3600e3);
   const hoy = local(real).slice(0, 10);
@@ -219,6 +219,17 @@ export async function sembrar({ db, base }) {
   await norte.recibir({ vehiculoId: vn.id, tipo: 'revision', motivo: 'Revisión general (taller Norte).', km: '20000' });
 
   delete process.env.TALLERES_RELOJ;
+
+  // ---------- Solo la demostración (no las pruebas automáticas, que fijan sus propias fechas) ----------
+  if (demo) {
+    // Un auto por recibir hoy: turno en el próximo horario libre. Fuera del horario de la agenda queda el de mañana.
+    try {
+      await carla.post('/api/turnos', { nombre: 'Rocío Quiroga (ficticio)', telefono: '2622 15-55-0155', patente: 'AF 204 RT', vehiculo: 'Renault Kangoo', motivo: 'Revisar ruido en el tren delantero', servicioId: cat.servicios.find((s) => s.nombre.startsWith('Revisión de ruido')).id, puestoId: cat.puestos[2].id, inicio: local(redondear(new Date(real.getTime() + 90 * 60e3))) });
+    } catch { /* fuera del horario: la demostración sigue con los turnos de mañana */ }
+    // Período de prueba con fecha: «Mi plan» muestra hasta cuándo está habilitado y el aviso de vencimiento.
+    const masDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    db.prepare("UPDATE suscripciones SET estado = 'prueba', periodo_desde = ?, periodo_hasta = ?, version = version + 1 WHERE taller_id = ?").run(masDias(hoy, -25), masDias(hoy, 5), A.tallerId);
+  }
   return { tallerA: A.tallerId, tallerB: B.tallerId, etios: { vehiculo: etios.id, visitaActual: e3 }, articulos: art };
 }
 
@@ -253,7 +264,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
   const base = `http://127.0.0.1:${servidor.address().port}`;
   try {
-    await sembrar({ db: servidor.db, base });
+    await sembrar({ db: servidor.db, base, demo: true });
     console.log('Datos de prueba cargados en', path.relative(process.cwd(), archivo) || archivo);
     console.log('Usuarios de prueba (contraseña en scripts/seed.js o en TALLERES_CLAVE_PRUEBA):');
     for (const [k, v] of Object.entries(USUARIOS_PRUEBA)) console.log(`  ${k.padEnd(10)} ${v}`);

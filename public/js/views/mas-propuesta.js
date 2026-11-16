@@ -17,6 +17,7 @@ export const GRUPOS_MAS=[
   ['calculadora','calculate','Calculadora de mano de obra','calculadora.usar'],
   ['qr','qr_code_scanner','Leer o generar QR',null]]],
  ['Administración',[
+  ['ajustes/plan','handshake','Mi plan','servicio.gestionar'],
   ['ajustes','settings','Ajustes, servicios y plantillas','config.taller'],
   ['ajustes/usuarios','manage_accounts','Usuarios y permisos','usuarios.gestionar'],
   ['ajustes/integraciones','link','Conexiones externas','config.taller'],

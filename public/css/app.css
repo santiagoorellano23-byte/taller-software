@@ -16,8 +16,8 @@
   --r-sm: 4px; --r: 6px; --r-lg: 8px;
   --sombra: 0 1px 2px rgba(20, 20, 20, .06), 0 4px 14px rgba(20, 20, 20, .06);
   --sombra-alta: 0 10px 30px rgba(20, 20, 20, .18);
-  --f: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --fc: 'Barlow Condensed', 'Barlow', 'Arial Narrow', system-ui, sans-serif;
+  --f: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fc: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
   --rail: 216px; --contexto: 300px; --tabbar: 64px;
   color-scheme: light;
 }
@@ -444,11 +444,41 @@ dialog.dialogo::backdrop { background: rgba(20, 20, 20, .5); }
 
 /* Suscripción y plan del taller. */
 .aviso-servicio { margin-bottom: 16px; }
+/* Recibiendo un auto o dentro de una orden (modo enfoque) el recordatorio no compite con la tarea. */
+.app[data-modo="enfoque"] .aviso-servicio--recordatorio { display: none; }
 .datos-plan { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 12px 0 0; }
 .datos-plan dt { font-size: 13px; color: var(--muted); }
 .datos-plan dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .uso-barra { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; margin-top: 6px; }
 .uso-barra span { display: block; height: 100%; border-radius: inherit; background: var(--marca); }
+.mi-plan { display: grid; gap: 16px; max-width: 760px; }
+.mi-plan > .panel { margin: 0; border-radius: 16px; }
+.mi-plan h2 { font-size: 1.15rem; }
+.mi-plan h3 { margin-top: 16px; font-size: 1rem; }
+.mi-plan h4 { margin: 0 0 4px; font-size: .95rem; }
+.mi-plan .panel__cuerpo { display: grid; gap: 12px; }
+.plan-resumen__cab { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; }
+.plan-resumen__cab h2 { font-size: 1.6rem; letter-spacing: -.01em; }
+.plan-resumen .datos-plan { margin: 0; }
+.plan-acciones { margin-top: 4px; }
+.plan-pendiente { border-color: var(--amber-line); background: var(--amber-bg); }
+.plan-pendiente p { overflow-wrap: anywhere; }
+.plan-detalle { display: grid; margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.plan-detalle > div { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 2fr); gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line-2); }
+.plan-detalle > div:last-child { border-bottom: 0; }
+.plan-detalle dt { color: var(--muted); font-size: 14px; }
+.plan-detalle dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.plan-transferencia { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.plan-transferencia__datos { white-space: pre-line; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.plan-modulos .fila { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-modulos .fila > span:first-child { min-width: 0; }
+.plan-modulos .estado { flex: none; width: auto; }
+.tabla-envoltura { overflow-x: auto; }
+.mi-plan .lista .btn { justify-self: start; align-self: start; }
+@media (max-width: 480px) {
+  .plan-detalle > div { grid-template-columns: 1fr; gap: 2px; }
+  .plan-detalle dd { text-align: left; }
+}
 
 /* Panel central de Growth Labs (plataforma.html). */
 .panel-gl { background: var(--bg); color: var(--ink); min-height: 100vh; }

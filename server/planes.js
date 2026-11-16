@@ -2,6 +2,7 @@
 // Es independiente de los permisos del usuario (server/permisos.js): una acción necesita las dos cosas.
 import { uno, todos, ejecutar, insertar } from './db.js';
 import { ErrorUsuario, json, hoyLocal, isoAhora } from './util.js';
+import { config } from './config.js';
 
 export const MODULOS = { stock: 'Repuestos, compras, proveedores y mostrador', cuentas: 'Cuentas corrientes', reportes: 'Reportes' };
 export const LIMITES = { usuarios_activos: 'Usuarios activos', almacenamiento_mb: 'Almacenamiento (MB)' };
@@ -19,8 +20,36 @@ const RUTAS_MODULO = [
   { re: /^\/api\/cuentas(\/|$)/, modulo: 'cuentas', alcance: 'todo' },
   { re: /^\/api\/reportes(\/|$)/, modulo: 'reportes', alcance: 'todo' }
 ];
-// Con la suscripción suspendida o cancelada solo se permite salir, cambiar la propia contraseña y consultar.
-const PERMITIDAS_SIN_SERVICIO = [/^\/api\/sesion\//, /^\/api\/acceso\//];
+// Con la suscripción suspendida o cancelada solo se permite salir, cambiar la propia contraseña, consultar
+// y pedir la renovación (pedirla no habilita nada: Growth Labs confirma el pago).
+const PERMITIDAS_SIN_SERVICIO = [/^\/api\/sesion\//, /^\/api\/acceso\//, /^\/api\/plan\/solicitudes(\/|$)/];
+
+// Períodos que el taller puede pedir, en meses calendario. Otros (3, 6, 12) se agregan acá cuando Growth Labs
+// los apruebe; el importe es siempre precio mensual × meses, sin descuentos que no estén cargados.
+export const PERIODOS_MESES = [1];
+
+// Último día incluido de un período de `meses` meses calendario que empieza en `desde` (AAAA-MM-DD).
+// 17/11 + 1 mes → 16/12. Si el mes de destino no tiene ese día (31/01 + 1 mes), termina el último día de ese mes.
+export function finDePeriodo(desde, meses) {
+  const [a, m, d] = desde.split('-').map(Number);
+  const indice = a * 12 + (m - 1) + meses;
+  const anio = Math.floor(indice / 12), mes = indice % 12;
+  const diasMes = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
+  if (d > diasMes) return `${anio}-${String(mes + 1).padStart(2, '0')}-${String(diasMes).padStart(2, '0')}`;
+  const fin = new Date(Date.UTC(anio, mes, d - 1));
+  return fin.toISOString().slice(0, 10);
+}
+const diaSiguiente = (f) => new Date(Date.parse(f + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
+
+// Próximo período al renovar: si quedan días pagados (o de prueba), empieza al día siguiente del vencimiento
+// y los conserva; si ya venció, empieza hoy.
+export function periodoRenovacion(s, meses, hoy = hoyLocal(ZONA)) {
+  const desde = s?.periodo_hasta && s.periodo_hasta >= hoy ? diaSiguiente(s.periodo_hasta) : hoy;
+  return { desde, hasta: finDePeriodo(desde, meses) };
+}
+const diasEntre = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5);
+// Aviso al responsable cuando faltan 7 días o menos.
+export const DIAS_AVISO_VENCIMIENTO = 7;
 
 // Estado según las fechas, sin depender de que alguien abra una pantalla. `hoy` es AAAA-MM-DD local.
 export function estadoEfectivo(s, hoy) {
@@ -54,7 +83,30 @@ export function resumenServicio(db, tallerId, hoy = hoyLocal(ZONA)) {
     estado, estadoTexto: ESTADOS[estado], soloLectura: !conServicio(estado),
     plan: s ? { clave: s.plan_clave, version: s.plan_version, nombre: s.plan_nombre, dePrueba: !!s.de_prueba } : null,
     periodoHasta: s?.periodo_hasta || null, graciaHasta: s?.gracia_hasta || null, cancelaAlCierre: !!s?.cancela_al_cierre,
+    diasRestantes: s?.periodo_hasta && conServicio(estado) && s.periodo_hasta >= hoy ? diasEntre(hoy, s.periodo_hasta) : null,
     modulos: s?.capacidades.modulos || {}, limites: s?.capacidades.limites || {}, uso: usoDe(db, tallerId)
+  };
+}
+
+// «Mi plan» del taller: servicio, pagos confirmados por Growth Labs, solicitud pendiente y opciones para renovar.
+// Solo datos del servicio de Growth Labs; nunca se mezclan con los cobros del taller a sus clientes.
+export function miPlan(db, tallerId, hoy = hoyLocal(ZONA)) {
+  const servicio = resumenServicio(db, tallerId, hoy);
+  const s = suscripcionDe(db, tallerId);
+  const plan = s && uno(db, 'SELECT id, clave, nombre, precio_centavos, moneda FROM planes WHERE id = ?', s.plan_id);
+  const opciones = s ? PERIODOS_MESES.map((meses) => {
+    const p = periodoRenovacion(s, meses, hoy);
+    return { meses, desde: p.desde, hasta: p.hasta, importe: plan.precio_centavos == null ? null : plan.precio_centavos * meses, moneda: plan.moneda };
+  }) : [];
+  const planes = todos(db, 'SELECT id, clave, nombre, capacidades, precio_centavos, moneda, de_prueba FROM planes WHERE activo = 1 ORDER BY clave, version')
+    .map((p) => ({ id: p.id, clave: p.clave, nombre: p.nombre, capacidades: json(p.capacidades, {}), precio: p.precio_centavos, moneda: p.moneda, dePrueba: !!p.de_prueba, actual: p.id === s?.plan_id }));
+  return {
+    servicio, planId: s?.plan_id ?? null, precio: plan?.precio_centavos ?? null, moneda: plan?.moneda || 'ARS', opciones, planes,
+    renovacionAutomatica: false, modalidad: s?.modalidad || 'manual', avisarDesde: DIAS_AVISO_VENCIMIENTO,
+    datosTransferencia: config.transferencia || null,
+    pagos: todos(db, 'SELECT id, importe_centavos, medio, referencia, periodo_desde, periodo_hasta, registrado_at FROM pagos_suscripcion WHERE taller_id = ? ORDER BY periodo_hasta DESC, id DESC', tallerId),
+    solicitudes: todos(db, `SELECT q.id, q.tipo, q.meses, q.periodo_desde, q.periodo_hasta, q.importe_centavos, q.moneda, q.aviso_pago, q.estado, q.creado_at, q.resuelta_at, q.resolucion, p.nombre AS plan
+      FROM solicitudes_servicio q JOIN planes p ON p.id = q.plan_id WHERE q.taller_id = ? ORDER BY q.id DESC LIMIT 20`, tallerId)
   };
 }
 

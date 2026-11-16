@@ -69,7 +69,7 @@ test('Service como motivo no autoriza; revisión con costo y service explícitos
 });
 test('Más respeta orden exacto y roles; no muestra grupos vacíos ni accesos sin permiso',()=>{
  assert.deepEqual(GRUPOS_MAS.map(x=>x[0]),['Agenda y clientes','Repuestos y compras','Dinero','Consulta','Administración']);
- assert.deepEqual(GRUPOS_MAS.flatMap(x=>x[1].map(i=>i[2])),['Agenda de turnos','Cuentas de clientes','Stock y reservas','Compras y proveedores','Mostrador','Caja','Reportes','Documentos','Biblioteca técnica','Calculadora de mano de obra','Leer o generar QR','Ajustes, servicios y plantillas','Usuarios y permisos','Conexiones externas','Registro de acciones','Exportación y respaldo']);
+ assert.deepEqual(GRUPOS_MAS.flatMap(x=>x[1].map(i=>i[2])),['Agenda de turnos','Cuentas de clientes','Stock y reservas','Compras y proveedores','Mostrador','Caja','Reportes','Documentos','Biblioteca técnica','Calculadora de mano de obra','Leer o generar QR','Mi plan','Ajustes, servicios y plantillas','Usuarios y permisos','Conexiones externas','Registro de acciones','Exportación y respaldo']);
  for(const rol of ['dueno','recepcion','mecanico']){const permisos=new Set(permisosDe(rol));const grupos=gruposPermitidos({puede:p=>permisos.has(p)});assert.ok(grupos.every(([,items])=>items.length&&items.every(i=>!i[3]||permisos.has(i[3]))));if(rol==='mecanico')assert.ok(!grupos.some(([t])=>['Dinero','Administración'].includes(t)));}
  const relato='Chilla al frenar';assert.equal(resumenMotivos([]),'');assert.equal(relato,'Chilla al frenar');
 });

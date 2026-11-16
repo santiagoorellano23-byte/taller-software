@@ -2,7 +2,7 @@
 import { get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
 import { esc, icono, patente, nombreAuto, chipSituacion, chip, cuando, fecha, fechaHora, km, pesos, campo, alEnviar, toast, confirmar, aviso } from '../ui.js?v=0.1.0';
 import { seccionRevision, seccionPresupuesto, seccionTrabajo, seccionControl, seccionCobros, seccionArchivos } from './visita-partes.js?v=0.1.0';
-import {dimensionesHTML,resumenOrden,puedeOfrecerCobro} from '../orden-presentacion.js?v=0.1.0';
+import {dimensionesHTML,dineroHTML,resumenOrden,puedeOfrecerCobro} from '../orden-presentacion.js?v=0.1.0';
 import {vistaEstadoIngreso} from '../estado-ingreso.js?v=0.1.0';
 
 const resp = (l) => l.respuesta?.respuesta || (l.autorizada_ingreso ? 'autoriza' : null);
@@ -77,6 +77,7 @@ export default async function visita({ params, app }) {
         <nav class="pestanas orden-tabs" aria-label="Áreas de la orden">${principales.map(([k,t])=>`<a href="#/visitas/${v.id}/${k}" ${k===sec?'aria-current="page"':''}><strong>${t}</strong></a>`).join('')}</nav>
         ${dimensionesHTML(v)}
         <div class="orden-siguiente"><span>${esc(v.situacion.paso)}</span><div class="acciones">${dinero&&puedeOfrecerCobro(v)&&sec!=='cobros'?`<a class="btn btn-chico" href="#/visitas/${v.id}/cobros">${icono('dinero')}Cobrar</a>`:''}${paso&&paso.href&&!paso.href.endsWith('/'+sec)?`<a class="btn btn-chico btn-primario" href="${paso.href}">${esc(paso.texto)}</a>`:''}${paso?.accion?`<button class="btn btn-primario btn-chico" data-paso="${paso.accion}">${esc(paso.texto)}</button>`:''}</div></div>
+        ${dinero&&!['presupuesto','cobros'].includes(sec)?dineroHTML(v.totales,`#/visitas/${v.id}/cobros`):''}
         ${sec!=='resumen'?`<details class="mas orden-otras"><summary>Presupuesto, cierre y archivos</summary><nav class="orden-accesos" aria-label="Presupuesto, cierre y archivos"><a class="btn btn-chico" href="#/visitas/${v.id}/presupuesto" ${sec==='presupuesto'?'aria-current="page"':''}>Presupuesto y respuesta</a><a class="btn btn-chico" href="#/visitas/${v.id}/control" ${sec==='control'?'aria-current="page"':''}>Control y entrega</a>${dinero?`<a class="btn btn-chico" href="#/visitas/${v.id}/cobros" ${sec==='cobros'?'aria-current="page"':''}>Liquidación y cobros</a>`:''}<a class="btn btn-chico" href="#/visitas/${v.id}/archivos" ${sec==='archivos'?'aria-current="page"':''}>Archivos y mensajes</a></nav></details>`:''}
         <div data-seccion-cuerpo class="pagina__cuerpo">${parte?parte.html:''}${['archivos','historial'].includes(sec)?actividad:''}</div>
         <details class="mas orden-datos"><summary>Datos de ingreso y planificación</summary><div class="mas__cuerpo bloque"><p><strong>Motivo:</strong> ${esc(v.motivo)}</p><p class="small muted">Ingreso ${esc(fecha(v.ingreso_at))} · ${ingreso?esc(km(ingreso.km)):'Sin lectura'}</p>${v.autorizacion_ingreso?`<p>${esc(v.autorizacion_ingreso)}</p>`:''}${v.relacionada?`<a href="#/visitas/${v.relacionada.id}">Vuelve por la orden N.º ${esc(v.relacionada.numero)}. La garantía la decide el taller.</a>`:''}${v.relacionadas.map(x=>`<a href="#/visitas/${x.id}">Orden posterior vinculada N.º ${esc(x.numero)}</a>`).join('')}${v.turno?`<p>Turno ${esc(v.turno.codigo)}</p>`:''}${editar}</div></details>

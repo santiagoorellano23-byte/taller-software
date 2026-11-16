@@ -85,7 +85,7 @@ export function resumenVisita(db, tallerId, v, { conDinero = true } = {}) {
   return {
     id: completa.id, numero: completa.numero, tipo: completa.tipo, motivo: completa.motivo,
     vehiculo: { id: completa.vehiculo.id, patente: completa.vehiculo.patente, marca: completa.vehiculo.marca, modelo: completa.vehiculo.modelo, version_txt: completa.vehiculo.version_txt },
-    contacto: completa.contacto_nombre, responsable: completa.responsable, responsable_id: completa.responsable_id,
+    contacto: completa.contacto_nombre, telefono: completa.contacto_telefono || null, responsable: completa.responsable, responsable_id: completa.responsable_id,
     retiro_acordado: completa.retiro_acordado, ingreso_at: completa.ingreso_at, prioridad: completa.prioridad,
     lista_at: completa.lista_at, entregada_at: completa.entregada_at, anulada_at: completa.anulada_at,
     situacion: completa.situacion,

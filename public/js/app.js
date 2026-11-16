@@ -111,11 +111,19 @@ function interpretar() {
 // Estado de la suscripción del taller a Growth Labs. Lo decide el servidor; este aviso solo lo explica.
 const fechaLarga = (f) => f ? f.split('-').reverse().join('/') : '';
 function avisoServicio(s) {
-  if (!s || s.estado === 'activa' || s.estado === 'prueba') return '';
+  if (!s) return '';
+  const responsable = app.puede('servicio.gestionar');
+  const renovar = responsable ? ' <a href="#/ajustes/plan">Renovar acceso</a>' : ' Avisale al dueño del taller.';
+  if (s.estado === 'activa' || s.estado === 'prueba') {
+    // Aviso discreto, solo para quien administra el servicio, cuando faltan pocos días.
+    if (!responsable || s.diasRestantes == null || s.diasRestantes > 7) return '';
+    const cuando = s.diasRestantes === 0 ? 'hoy es el último día' : `quedan ${s.diasRestantes} día${s.diasRestantes === 1 ? '' : 's'}`;
+    return `<div class="aviso aviso--gris aviso-servicio aviso-servicio--recordatorio" role="status">${icono('calendario')}<div>Acceso activo hasta el ${fechaLarga(s.periodoHasta)}: ${cuando}. No hay renovación automática.${renovar}</div></div>`;
+  }
   const texto = s.estado === 'vencida'
-    ? `La suscripción venció el ${fechaLarga(s.periodoHasta)}. El acceso completo sigue ${s.graciaHasta ? 'hasta el ' + fechaLarga(s.graciaHasta) : 'por ahora'}; después solo se podrá consultar y exportar.`
-    : `${esc(s.estadoTexto)}. No se pueden registrar cambios; todo lo cargado se conserva y se puede consultar y exportar desde Ajustes.`;
-  return `<div class="aviso aviso--${s.estado === 'vencida' ? 'ambar' : 'gris'} aviso-servicio" role="status">${icono('info')}<div><strong>Suscripción del taller.</strong> ${texto} ${app.puede('config.taller') ? 'Para regularizarla, contactá a Growth Labs.' : 'Avisale al dueño del taller.'}</div></div>`;
+    ? `El período venció el ${fechaLarga(s.periodoHasta)}. El acceso completo sigue hasta el ${fechaLarga(s.graciaHasta)}; después solo se podrá consultar y exportar.`
+    : `${esc(s.estadoTexto)}. No se pueden registrar cambios; todo lo cargado se conserva y se puede consultar y exportar.`;
+  return `<div class="aviso aviso--${s.estado === 'vencida' ? 'ambar' : 'gris'} aviso-servicio" role="status">${icono('info')}<div><strong>Servicio del taller.</strong> ${texto}${renovar}</div></div>`;
 }
 
 function marcaHTML(t) {
