@@ -24,7 +24,7 @@ const AREAS = [
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 // Ancho del contenedor desde el que el índice queda al costado (igual que la consulta de contenedor en propuesta-a.css).
-const ANCHO_INDICE = 720;
+const ANCHO_INDICE = 960;
 
 // Cambios sin guardar de cada área mientras se recorre Ajustes. Viven en memoria: se descartan al salir de Ajustes
 // (con la confirmación habitual) o al recargar. `base` es el estado del servidor cuando se empezó a escribir.
@@ -314,7 +314,7 @@ async function vPublica(app) {
 
 // ---------- Logo y colores ----------
 // Vista previa con los tokens calculados para cada tema. No depende del tema de la pantalla actual.
-const SUPERFICIE = { claro: { fondo: '#f3f3f2', hoja: '#ffffff', tinta: '#292929', suave: '#555555', linea: '#e0e0de', rojo: '#ae040f', rojoFondo: '#fcebec' }, oscuro: { fondo: '#161b21', hoja: '#1d242c', tinta: '#edf1f5', suave: '#b2bfcc', linea: '#41505e', rojo: '#ff9aa4', rojoFondo: '#442630' } };
+const SUPERFICIE = { claro: { fondo: '#f3f3f2', hoja: '#ffffff', tinta: '#292929', suave: '#555555', linea: '#e0e0de', rojo: '#ae040f', rojoFondo: '#fcebec' }, oscuro: { fondo: '#111214', hoja: '#191b1f', tinta: '#f5f6f7', suave: '#959ca6', linea: '#383c43', rojo: '#ff9aa4', rojoFondo: '#442630' } };
 function muestra(tema, k, nombre, logo) {
   const s = SUPERFICIE[tema];
   return `<figure class="vp" style="background:${s.fondo};color:${s.tinta};border-color:${s.linea}"><figcaption class="vp__tema">${tema === 'claro' ? 'Modo claro' : 'Modo oscuro'}</figcaption>
@@ -660,8 +660,8 @@ async function vDatos() {
   ];
   const mensaje = 'Hola: el panel del taller no detecta un respaldo completo reciente. ¿Podés revisar la frecuencia de la tarea de respaldo, la copia fuera del servidor y hacer una prueba de recuperación en una carpeta aparte?';
   return {
-    html: `${sec('Qué incluye cada opción', 'Son tres cosas distintas.', `<div class="ajg-desborde"><table class="ajg-tabla ajg-tabla--fija"><caption class="sr">Qué incluye cada opción</caption><thead><tr><th scope="col">Incluye</th><th scope="col">Exportación (JSON y CSV)</th><th scope="col">Archivos adjuntos</th><th scope="col">Respaldo completo</th></tr></thead>
-        <tbody>${INCLUYE.map((r) => `<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table></div>`)}
+    html: `${sec('Qué incluye cada opción', 'Son tres cosas distintas.', `<div class="ajg-desborde"><table class="ajg-tabla ajg-tabla--fija ajg-tabla--apilable"><caption class="sr">Qué incluye cada opción</caption><thead><tr><th scope="col">Incluye</th><th scope="col">Exportación (JSON y CSV)</th><th scope="col">Archivos adjuntos</th><th scope="col">Respaldo completo</th></tr></thead>
+        <tbody>${INCLUYE.map((r) => `<tr><th scope="row">${r[0]}</th><td data-etq="Exportación">${r[1]}</td><td data-etq="Archivos adjuntos">${r[2]}</td><td data-etq="Respaldo completo">${r[3]}</td></tr>`).join('')}</tbody></table></div>`)}
       ${sec('1. Exportar datos', 'Datos estructurados, para planillas u otro sistema.', `<p>Incluye solo los datos de este taller, sin contraseñas ni sesiones. <strong>No incluye fotos ni PDF.</strong></p>
         <div class="acciones"><a class="btn btn-primario" href="/api/exportar">${icono('descargar')}Datos del taller (JSON)</a></div>
         <p class="ajg-dato__k">Planillas (CSV) por tema</p><div class="acciones">${TABLAS.map(([t, n]) => `<a class="btn btn-chico" href="/api/exportar?formato=csv&entidad=${t}">${icono('descargar', 'i-sm')}${esc(n)}</a>`).join('')}</div>`)}
@@ -702,7 +702,7 @@ async function vRegistro() {
           && (!texto || `${a.accion} ${a.por || SIN_AUTOR} ${a.detalle || ''}`.toLowerCase().includes(texto)));
         const filtrado = filas.length < acciones.length;
         resultado.innerHTML = `<span>Mostrando ${filas.length} de ${acciones.length} acciones cargadas</span>${filtrado ? '<button type="button" class="enlace" data-quitar-filtros>Quitar filtros</button>' : ''}`;
-        lista.innerHTML = filas.length ? `<table class="ajg-tabla ajg-tabla--apilable"><caption class="sr">Registro de acciones</caption><thead><tr><th scope="col">Momento</th><th scope="col">Acción</th><th scope="col">Persona</th><th scope="col">Referencia</th></tr></thead>
+        lista.innerHTML = filas.length ? `<table class="ajg-tabla ajg-tabla--apilable ajg-registro"><caption class="sr">Registro de acciones</caption><thead><tr><th scope="col">Momento</th><th scope="col">Acción</th><th scope="col">Persona</th><th scope="col">Referencia</th></tr></thead>
           <tbody>${filas.map((a) => `<tr><td data-etq="Momento" class="num ajg-nowrap">${esc(fechaHora(a.fecha))}</td><td data-etq="Acción"><strong>${esc(a.accion)}</strong></td><td data-etq="Persona">${esc(a.por || SIN_AUTOR)}</td>
             <td data-etq="Referencia" class="ajg-tenue">${a.entidad ? esc(TIPOS_REGISTRO[a.entidad] || a.entidad) : ''}${a.entidad === 'visita' ? ` · <a href="#/visitas/${Number(a.entidad_id)}">ver la orden</a>` : ''}${a.detalle ? ' · ' + esc(a.detalle.length > 200 ? a.detalle.slice(0, 200) + '…' : a.detalle) : ''}</td></tr>`).join('')}</tbody></table>`
           : `<p class="ajg-vacio">${acciones.length ? 'Ninguna acción coincide con estos filtros.' : 'Todavía no hay acciones registradas.'}</p>`;

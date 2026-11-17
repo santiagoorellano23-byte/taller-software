@@ -59,25 +59,26 @@
 /* ===== Ajustes · Consola Grafito =====
    Todo bajo .ajg (pantalla) y .ajg-dlg (diálogos y paneles de Ajustes, fuera de la raíz). Los confirmar() que se abren
    con Ajustes en pantalla toman el mismo alcance. La isla, el lateral, el encabezado y las demás pantallas no se tocan.
-   Oscuro: valores de la propuesta A. Claro: variante grafito clara con los mismos roles y contrastes AA. */
+   Oscuro: el grafito global de tema.css (un solo sistema, sin valores propios). Claro: variante grafito clara con los
+   mismos roles y contrastes AA. En los dos, las acciones usan el azul de la propuesta A. */
 .ajg,.ajg-dlg,body:has(.ajg)>dialog.dialogo{
-  --ajg-bg:#F4F5F7;--ajg-s1:#FFFFFF;--ajg-s2:#F1F2F4;--ajg-s3:#E7E9ED;--ajg-linea:#E1E4E8;--ajg-borde:#7D8590;
-  --ajg-tx:#16181C;--ajg-tx2:#3F4650;--ajg-tx3:#5A616B;--ajg-acc:#4652FF;--ajg-acc-hover:#3440E8;--ajg-acc-tx:#3440E8;--ajg-acc-suave:#ECEEFF;--ajg-inp:#FFFFFF;
-  --ajg-sombra:0 12px 40px rgba(20,24,40,.16);
-  --bg:var(--ajg-bg);--surface:var(--ajg-s1);--surface-2:var(--ajg-s2);--surface-3:var(--ajg-s3);--line:var(--ajg-linea);--line-2:var(--ajg-linea);--line-strong:var(--ajg-borde);
-  --ink:var(--ajg-tx);--ink-2:var(--ajg-tx2);--muted:var(--ajg-tx3);
+  --ajg-acc:#4652FF;--ajg-acc-hover:#3440E8;--ajg-acc-tx:#3440E8;--ajg-acc-suave:#ECEEFF;
   --marca:var(--ajg-acc);--marca-hover:var(--ajg-acc-hover);--sobre-marca:#fff;--marca-texto:var(--ajg-acc-tx);--marca-tinte:var(--ajg-acc-suave);--marca-linea:var(--ajg-acc);
   --accion:var(--ajg-acc);--accion-hover:var(--ajg-acc-hover);--sobre-accion:#fff;
   color:var(--ajg-tx);
 }
+html:not([data-tema-efectivo="oscuro"]) :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialogo){
+  --ajg-bg:#F4F5F7;--ajg-s1:#FFFFFF;--ajg-s2:#F1F2F4;--ajg-s3:#E7E9ED;--ajg-linea:#E1E4E8;--ajg-borde:#7D8590;
+  --ajg-tx:#16181C;--ajg-tx2:#3F4650;--ajg-tx3:#5A616B;--ajg-inp:#FFFFFF;
+  --ajg-sombra:0 12px 40px rgba(20,24,40,.16);
+  --bg:var(--ajg-bg);--surface:var(--ajg-s1);--surface-2:var(--ajg-s2);--surface-3:var(--ajg-s3);--line:var(--ajg-linea);--line-2:var(--ajg-linea);--line-strong:var(--ajg-borde);
+  --ink:var(--ajg-tx);--ink-2:var(--ajg-tx2);--muted:var(--ajg-tx3);
+}
 html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialogo){
-  --ajg-bg:#111214;--ajg-s1:#191B1F;--ajg-s2:#22252A;--ajg-s3:#2B2F35;--ajg-linea:#2E3238;--ajg-borde:#6B727D;
-  --ajg-tx:#F5F6F7;--ajg-tx2:#BCC1C8;--ajg-tx3:#959CA6;--ajg-acc:#4652FF;--ajg-acc-hover:#3A45E6;--ajg-acc-tx:#A3AAFF;--ajg-acc-suave:rgba(110,120,255,.16);--ajg-inp:#141518;
+  --ajg-bg:var(--bg);--ajg-s1:var(--surface);--ajg-s2:var(--surface-2);--ajg-s3:var(--surface-3);--ajg-linea:var(--line-2);--ajg-borde:var(--line-strong);
+  --ajg-tx:var(--ink);--ajg-tx2:var(--ink-2);--ajg-tx3:var(--muted);--ajg-inp:var(--bg);
+  --ajg-acc-hover:#3A45E6;--ajg-acc-tx:#A3AAFF;--ajg-acc-suave:rgba(110,120,255,.16);
   --ajg-sombra:0 16px 48px rgba(0,0,0,.55);
-  --red:#FF9A90;--red-dark:#FFC0B9;--red-tint:rgba(255,99,88,.12);--red-line:rgba(255,120,110,.45);
-  --amber:#F2C46D;--amber-bg:rgba(242,196,109,.10);--amber-line:rgba(242,196,109,.45);
-  --green:#7EDCA8;--green-bg:rgba(116,214,160,.10);--green-line:rgba(116,214,160,.4);
-  color-scheme:dark;
 }
 /* La raíz ocupa el área de contenido de borde a borde, sin cambiar su caja ni su posición. */
 .ajg{container:ajg/inline-size;background:var(--ajg-bg);margin:0 -16px;font-size:15px;line-height:1.45}
@@ -91,7 +92,7 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 /* Índice: lista agrupada en poco ancho; columna lateral cuando el contenedor tiene lugar. */
 .ajg-indice{display:none;min-width:0}
 .ajg-indice__cuerpo{padding:16px}
-.ajg-indice__titulo{margin:0;font-size:24px;font-weight:700;line-height:1.2;color:var(--ajg-tx)}
+.ajg-indice__titulo{margin:0;font-size:22px;font-weight:700;line-height:1.2;color:var(--ajg-tx)}
 .ajg-indice__intro{margin:6px 0 4px;color:var(--ajg-tx2);font-size:14px}
 .ajg-indice__grupo{margin:20px 4px 8px;font-size:12px;font-weight:600;color:var(--ajg-tx3)}
 .ajg-indice ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -101,10 +102,13 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 .ajg-indice__txt>span{font-weight:600}
 .ajg-indice__txt small{color:var(--ajg-tx3);font-size:13px;line-height:1.35}
 .ajg-indice__ir{color:var(--ajg-tx3)}
-.ajg-pendiente{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid var(--amber-line);border-radius:999px;background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:700;line-height:18px;vertical-align:1px}
+.ajg-pendiente{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid var(--amber-line);border-radius:999px;background:var(--amber-bg);color:var(--amber);font-size:12px;font-weight:700;line-height:18px;vertical-align:1px}
 .ajg[data-lista] .ajg-indice{display:block}
 .ajg[data-lista] .ajg-area{display:none}
-@container ajg (min-width:720px){
+/* Ancho medio (tablet, o escritorio angosto con el lateral global): sin índice al costado, que dejaba el formulario en
+   ~550 px. Lista en dos columnas y vista dedicada de cada área con «← Ajustes». */
+@container ajg (min-width:560px) and (max-width:959.98px){.ajg-indice__cuerpo{padding:24px}.ajg-indice ul{grid-template-columns:repeat(2,minmax(0,1fr))}.ajg-indice__titulo{font-size:24px}}
+@container ajg (min-width:960px){
   .ajg__marco{grid-template-columns:208px minmax(0,1fr)}
   .ajg .ajg-indice{display:block;background:var(--ajg-s1);border-right:1px solid var(--ajg-linea)}
   .ajg[data-lista] .ajg-area{display:block}
@@ -123,7 +127,7 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
   .ajg .ajg-volver{display:none}
 }
 @container ajg (min-width:1080px){.ajg__marco{grid-template-columns:240px minmax(0,1fr)}.ajg-indice__cuerpo{padding-inline:12px}}
-@media (max-width:1023px){@container ajg (min-width:720px){.ajg-indice__cuerpo{top:61px;max-height:calc(100dvh - 61px - var(--isla-reserva,0px))}}}
+@media (max-width:1023px){@container ajg (min-width:960px){.ajg-indice__cuerpo{top:61px;max-height:calc(100dvh - 61px - var(--isla-reserva,0px))}}}
 
 /* Área */
 .ajg-area{container:ajg-area/inline-size;min-width:0;padding:16px 16px 32px}
@@ -137,14 +141,14 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 .ajg-cab p{margin:6px 0 0;color:var(--ajg-tx2);max-width:640px}
 .ajg-cab__acciones{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 @container ajg-area (min-width:560px){.ajg-titulo{font-size:24px}}
-@container ajg-area (max-width:559.98px){.ajg-cab__acciones{width:100%}.ajg-cab__acciones .btn-primario{flex:1}}
+@container ajg-area (max-width:559.98px){.ajg-cab__acciones{width:100%}.ajg-cab__acciones .btn-primario{flex:1 0 auto;white-space:nowrap}}
 
 /* Secciones: título y explicación junto a los campos cuando hay lugar. */
 .ajg-sec{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:24px 0;border-top:1px solid var(--ajg-linea)}
 .ajg-cab+.ajg-sec,.ajg-form>.ajg-sec:first-child,.ajg-form-aparte>.ajg-sec:first-child{border-top:0;padding-top:0}
 .ajg-form-aparte>.ajg-sec:first-child{border-top:1px solid var(--ajg-linea);padding-top:24px}
 .ajg-sec>header h2{margin:0;font-size:16px;line-height:1.3}
-.ajg-sec>header p{margin:6px 0 0;color:var(--ajg-tx3);font-size:13.5px}
+.ajg-sec>header p{margin:6px 0 0;color:var(--ajg-tx3);font-size:13px}
 .ajg-sec:focus{outline:none}
 @container ajg-area (min-width:760px){.ajg-sec{grid-template-columns:200px minmax(0,1fr);gap:24px}}
 @container ajg-area (min-width:940px){.ajg-sec{grid-template-columns:232px minmax(0,1fr)}}
@@ -169,25 +173,27 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 
 /* Campos y botones del producto, con la piel grafito solo aquí. */
 :is(.ajg,.ajg-dlg) .campo{display:grid;gap:6px;margin:0;align-content:start}
-:is(.ajg,.ajg-dlg) .campo>label{font-size:13px;font-weight:600;color:var(--ajg-tx);margin:0}
+:is(.ajg,.ajg-dlg) .campo>label{font-size:14px;font-weight:600;color:var(--ajg-tx);margin:0}
 :is(.ajg,.ajg-dlg) .campo>label .muted{font-weight:500;color:var(--ajg-tx3)}
-:is(.ajg,.ajg-dlg) .campo .ayuda{margin:0;order:0}
+/* La ayuda va debajo del control: así los campos vecinos de una misma fila arrancan a la misma altura. */
+:is(.ajg,.ajg-dlg) .campo>.ayuda{margin:0;order:1}
+:is(.ajg,.ajg-dlg) .campo>.campo__error{order:2}
 :is(.ajg,.ajg-dlg) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea){width:100%;padding:8px 12px;border:1px solid var(--ajg-borde);border-radius:6px;background-color:var(--ajg-inp);color:var(--ajg-tx)}
-:is(.ajg,.ajg-dlg) textarea{min-height:88px;line-height:1.5;resize:vertical}
+:is(.ajg,.ajg-dlg) textarea{min-height:88px;max-height:320px;field-sizing:content;line-height:1.5;resize:vertical}
 :is(.ajg,.ajg-dlg) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea):hover{border-color:var(--ajg-tx3)}
 :is(.ajg,.ajg-dlg) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea):focus{outline:none;border-color:var(--ajg-acc-tx);box-shadow:0 0 0 3px var(--ajg-acc-suave)}
 :is(.ajg,.ajg-dlg) [aria-invalid="true"]{border-color:var(--red)!important;box-shadow:0 0 0 1px var(--red)}
 :is(.ajg,.ajg-dlg) input[type=file]{max-width:100%;font-size:14px}
 :is(.ajg,.ajg-dlg) input[type=file]::file-selector-button{min-height:44px;margin-inline-end:10px;padding:0 12px;border:1px solid var(--ajg-borde);border-radius:6px;background:transparent;color:var(--ajg-tx);font:inherit;font-weight:600;cursor:pointer}
 :is(.ajg,.ajg-dlg) .btn{border-radius:6px;padding-block:0;font-size:14px;font-weight:600;border-color:var(--ajg-borde)}
-:is(.ajg,.ajg-dlg) .btn-chico{font-size:13.5px}
+:is(.ajg,.ajg-dlg) .btn-chico{font-size:14px}
 :is(.ajg,.ajg-dlg) .btn-texto{border-color:transparent;background:transparent}
 :is(.ajg,.ajg-dlg) .btn-primario{border-color:var(--ajg-acc)}
 :is(.ajg,.ajg-dlg) .btn-icono{width:44px;min-width:44px;padding:0}
 .ajg .acciones{display:flex;flex-wrap:wrap;gap:8px;margin:0}
 .ajg .estado{border-radius:999px}
 .ajg-insignias{display:flex;flex-wrap:wrap;gap:8px}
-.ajg-insignia{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--ajg-borde);border-radius:999px;color:var(--ajg-tx3);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:1px}
+.ajg-insignia{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--ajg-borde);border-radius:999px;color:var(--ajg-tx3);font-size:12px;font-weight:600;line-height:18px;vertical-align:1px}
 .ajg-sufijo{position:relative;display:flex;align-items:center}
 .ajg-sufijo>input{padding-right:84px!important}
 .ajg-sufijo>span{position:absolute;right:12px;color:var(--ajg-tx3);font-size:13px;pointer-events:none}
@@ -259,7 +265,7 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 .ajg-desborde{overflow-x:auto;min-width:0}
 .ajg-tabla{width:100%;border-collapse:collapse;font-size:14px}
 .ajg-tabla th{text-align:left;font-size:12px;font-weight:600;color:var(--ajg-tx3);padding:10px 12px;border-bottom:1px solid var(--ajg-linea);white-space:nowrap}
-.ajg-tabla tbody th{white-space:normal;color:var(--ajg-tx);font-size:13.5px;font-weight:500}
+.ajg-tabla tbody th{white-space:normal;color:var(--ajg-tx);font-size:14px;font-weight:500}
 .ajg-tabla td{padding:12px;border-bottom:1px solid var(--ajg-linea);vertical-align:middle;overflow-wrap:anywhere}
 .ajg-tabla tr:last-child>*{border-bottom:0}
 .ajg-tabla .n{text-align:right;font-variant-numeric:tabular-nums}
@@ -278,6 +284,10 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
   .ajg-tabla--apilable td[data-etq]:not(.ajg-persona):not(:first-child)::before{content:attr(data-etq) " · ";color:var(--ajg-tx3);font-size:12px;font-weight:600}
   .ajg-tabla--apilable .ajg-tabla__accion{margin-top:4px}
   .ajg-tabla--apilable .n{text-align:left}
+  .ajg-tabla--apilable.ajg-tabla--fija{min-width:0}
+  .ajg-tabla--apilable tbody th{font-weight:600}
+  .ajg-tarjeta .ajg-tabla--apilable tr{padding-inline:0}
+  .ajg-tarjeta .ajg-tabla--apilable tr:first-child{padding-top:0}
 }
 .ajg-perfiles{display:grid;gap:12px;margin:0}
 .ajg-perfiles>div{display:grid;gap:2px}
@@ -310,7 +320,6 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 .ajg-filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:0 0 12px}
 .ajg-filtros>.campo{flex:1 1 150px}
 .ajg-filtros>.ajg-filtros__q{flex:2 1 220px}
-.ajg-filtros label{font-size:12px!important}
 @container ajg-area (max-width:559.98px){.ajg-filtros>.campo{flex-basis:calc(50% - 4px)}.ajg-filtros>.ajg-filtros__q{flex-basis:100%}}
 .ajg-resultado-linea{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-height:32px;margin-bottom:8px;color:var(--ajg-tx3);font-size:13px}
 .ajg-resultado-linea .enlace{color:var(--ajg-acc-tx);font-weight:600;min-height:32px}
@@ -318,6 +327,11 @@ html[data-tema-efectivo="oscuro"] :is(.ajg,.ajg-dlg,body:has(.ajg)>dialog.dialog
 .ajg-catalogo>li{padding:12px 0;border-color:var(--ajg-linea)}
 .ajg-catalogo>li:first-child{padding-top:0}
 .ajg-agregar>summary{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ajg-acc-tx)}
+/* Cerrados, «Editar» y «Agregar…» ocupan lo que su texto: antes eran barras de todo el ancho, vacías. «Agregar» usa solo el ⊕/– del producto, que indica si está abierto. */
+:is(.ajg-catalogo details.mas,.ajg-agregar):not([open]){width:fit-content;max-width:100%}
+.ajg-agregar>summary>.i{display:none}
+/* Registro: la acción y la persona tienen lugar para leerse en una o dos líneas; la referencia toma el resto. */
+.ajg-registro thead th:nth-child(2){width:30%}.ajg-registro thead th:nth-child(3){width:18%}
 
 /* Barra de cambios pendientes: fija sobre el borde inferior del área visible, por encima de la isla en celular. */
 .ajg-barra-envoltura{position:sticky;bottom:16px;height:0;z-index:6}

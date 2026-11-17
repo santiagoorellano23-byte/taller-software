@@ -48,3 +48,8 @@ Heredadas de la base operativa original y vigentes en Growth Labs Talleres 0.1.0
 ## Demostración sin contraseña (17/11/2026)
 
 31. **Las demos entran solas como dueño.** `TALLERES_DEMO_SIN_INGRESO=1` (demo local y demo de Vercel) habilita `POST /api/sesion/demo`, que crea una sesión normal del dueño del primer taller. El servidor se niega si la base tiene algún taller sin `demo: true`, así que la variable puesta por error en una instalación real no abre ninguna cuenta. «Salir» muestra la pantalla de ingreso en esa pestaña para probar recepción o mecánico. Queda registrado en el registro de acciones.
+
+## Oscuro grafito en toda la aplicación (17/11/2026)
+
+32. **Un solo oscuro: el grafito de Ajustes.** Reemplaza los grises azulados anteriores en `tema.css`; Ajustes deja de tener valores propios y toma los globales, así no hay salto al entrar. Solo cambian colores: la isla, la navegación y las demás pantallas conservan forma y comportamiento. Los colores de estado no se tocaron. El borde de tarjetas (`#383c43`) queda entre el divisor y el borde de controles de la referencia, para que una tarjeta se separe del fondo. `marca.js` mide los contrastes de la marca de cada taller contra el nuevo fondo y la nueva superficie (la prueba de identidad comprueba ambos); los documentos emitidos conservan sus colores.
+33. **Índice de Ajustes al costado solo con lugar.** Con el lateral global, a 1024 px el índice dejaba los formularios en ~550 px. Desde ahora queda al costado cuando el contenedor mide 960 px o más; por debajo se usa la lista de áreas y la vista dedicada, como en el celular.

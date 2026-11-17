@@ -16,7 +16,7 @@ export const PALETAS = [
 
 // Superficies de referencia de cada tema (app.css y tema.css).
 const CLARO = { fondo: '#f3f3f2', superficie: '#ffffff' };
-const OSCURO = { fondo: '#161b21', superficie: '#1d242c' };
+const OSCURO = { fondo: '#111214', superficie: '#191b1f' }; // los mismos de tema.css
 export const CONTRASTE_TEXTO = 4.5; // texto normal (WCAG AA)
 export const CONTRASTE_ACENTO = 3; // elementos gráficos que no son texto
 

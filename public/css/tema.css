@@ -1,18 +1,21 @@
 /* Colores de operación: tinta y acción separadas para conservar contraste. */
 :root {--accion:var(--marca);--accion-hover:var(--marca-hover);--sobre-accion:var(--sobre-marca)}
+/* Oscuro «grafito» (propuesta A de Ajustes, extendida a toda la aplicación): grises neutros, sin tinte azul.
+   Fondo < superficie < superficie-2 < superficie-3. Línea-2 separa sin pesar; línea marca el borde de tarjetas y tablas;
+   línea fuerte delimita controles (3:1 sobre la superficie). La marca del taller llega aparte, desde marca.js. */
 html[data-tema-efectivo="oscuro"] {
-  color-scheme:dark;background:#161b21;color:#edf1f5;
-  --bg:#161b21;--surface:#1d242c;--surface-2:#242e38;--surface-3:#303c48;
-  --ink:#edf1f5;--ink-2:#d0d9e2;--muted:#b2bfcc;
-  --line:#41505e;--line-2:#34424f;--line-strong:#74899b;
+  color-scheme:dark;background:#111214;color:#f5f6f7;
+  --bg:#111214;--surface:#191b1f;--surface-2:#22252a;--surface-3:#2b2f35;
+  --ink:#f5f6f7;--ink-2:#bcc1c8;--muted:#959ca6;
+  --line:#383c43;--line-2:#2e3238;--line-strong:#6b727d;
   --red:#ff9aa4;--red-dark:#ffc2c8;--red-tint:#442630;--red-line:#a65c69;
-  --marca-texto:#7982ff;--marca-tinte:#222a67;--marca-linea:#3e47b5;--acento:#4f5aff;
+  --marca-texto:#a3aaff;--marca-tinte:#262a4d;--marca-linea:#4a52b8;--acento:#4f5aff;
   --amber:#ffd089;--amber-bg:#3d3022;--amber-line:#8f7046;
   --teal:#96d4e6;--teal-bg:#203740;--teal-line:#4e8799;
   --purple:#d0b9f3;--purple-bg:#342b45;--purple-line:#88709f;
   --blue:#accff1;--blue-bg:#263647;--blue-line:#63809c;
   --green:#9bdfb5;--green-bg:#233b2d;--green-line:#5c9670;
-  --graphite:#161b21;--graphite-2:#242e38;--graphite-3:#41505e;--silver:#c0cbd6;--on-dark-2:#e1e8ee;
+  --graphite:#111214;--graphite-2:#22252a;--graphite-3:#383c43;--silver:#bcc1c8;--on-dark-2:#e6e8eb;
   --sombra:none;--sombra-alta:0 12px 36px #0006;
 }
 .btn-primario {background:var(--accion);border-color:var(--accion);color:var(--sobre-accion)}
@@ -33,7 +36,7 @@ html[data-tema-efectivo="oscuro"] .qr-caja .muted {color:#5d6871}
 .workspacebar>.selector-tema,.topbar .selector-tema {margin-left:auto}
 .patente {color:#22282e;background:#fff}
 html[data-tema-efectivo="oscuro"] .nav a[aria-current=page],html[data-tema-efectivo="oscuro"] .usuario .avatar {background:var(--surface-3)}
-html[data-tema-efectivo="oscuro"] :is(input,select,textarea) {background-color:var(--surface);border-color:var(--line-strong)}
+html[data-tema-efectivo="oscuro"] :is(input,select,textarea) {background-color:var(--bg);border-color:var(--line-strong)}
 html[data-tema-efectivo="oscuro"] :is(input,textarea)::placeholder {color:var(--muted);opacity:1}
 html[data-tema-efectivo="oscuro"] .dialogo::backdrop {background:#0009}
 html[data-tema-efectivo="oscuro"] .toast {background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}

@@ -21,8 +21,10 @@ test('Paletas sugeridas: el texto de marca se lee en claro y en oscuro, y el roj
     assert.ok(contraste(claro.sobreMarca, claro.marca) >= CONTRASTE_TEXTO, `${p.clave}: botón claro`);
     assert.ok(contraste(oscuro.sobreMarca, oscuro.marca) >= CONTRASTE_TEXTO, `${p.clave}: botón oscuro`);
     assert.ok(contraste(claro.marcaTexto, '#f3f3f2') >= CONTRASTE_TEXTO, `${p.clave}: texto de marca en claro`);
-    assert.ok(contraste(oscuro.marcaTexto, '#1d242c') >= CONTRASTE_TEXTO, `${p.clave}: texto de marca en oscuro`);
-    assert.ok(contraste(oscuro.acento, '#1d242c') >= CONTRASTE_ACENTO, `${p.clave}: acento en oscuro`);
+    for (const fondo of ['#191b1f', '#111214']) { // superficie y fondo grafito de tema.css
+      assert.ok(contraste(oscuro.marcaTexto, fondo) >= CONTRASTE_TEXTO, `${p.clave}: texto de marca en oscuro (${fondo})`);
+      assert.ok(contraste(oscuro.acento, fondo) >= CONTRASTE_ACENTO, `${p.clave}: acento en oscuro (${fondo})`);
+    }
     assert.doesNotMatch(cssApariencia(p), /--red/, 'la marca nunca redefine el rojo semántico');
   }
   // La hoja generada solo contiene nombres de variable y colores calculados.

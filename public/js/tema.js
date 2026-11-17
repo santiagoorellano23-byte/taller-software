@@ -10,7 +10,7 @@ export function aplicarTema(modo) {
   document.documentElement.dataset.tema=modo;
   document.documentElement.dataset.temaEfectivo=oscuro?'oscuro':'claro';
   document.documentElement.style.colorScheme=oscuro?'dark':'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',oscuro?'#161b21':'#f4f5f6');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',oscuro?'#111214':'#f4f5f6');
   document.querySelectorAll('[data-tema-selector]').forEach(s=>{
     const accion=oscuro?'Activar modo claro':'Activar modo oscuro';
     s.setAttribute('aria-label',accion);

@@ -20,9 +20,9 @@ colors:
   warning-background: "#FCEFDD"
   success: "#1E6B3C"
   success-background: "#E5F3EA"
-  dark-background: "#161b21"
-  dark-surface: "#1d242c"
-  dark-ink: "#edf1f5"
+  dark-background: "#111214"
+  dark-surface: "#191b1f"
+  dark-ink: "#f5f6f7"
   dark-action: "#ae2034"
 typography:
   headline:
@@ -155,6 +155,8 @@ Tokens en `app.css` (claro) y `tema.css` (oscuro) con el azul Growth Labs `#2e3b
 
 El selector sol/luna existente gobierna el tema. La variante oscura usa sus variables de `tema.css`, incluidos bordes, estados y texto secundario; los tokens oscuros del frontmatter son las anclas de esa variante, no una segunda paleta a mezclar con la clara. Las tarjetas de logos mantienen el blanco para la identificación de marca.
 
+**Oscuro grafito (17/11/2026).** Toda la aplicación usa el grafito de la propuesta A de Ajustes, definido una sola vez en `tema.css`: fondo `--bg #111214`; superficies `--surface #191b1f`, `--surface-2 #22252a`, `--surface-3 #2b2f35`; divisor `--line-2 #2e3238`, borde de tarjetas y tablas `--line #383c43` (intermedio, para que una tarjeta se distinga del fondo), borde de controles `--line-strong #6b727d` (≥ 3:1); texto `--ink #f5f6f7`, `--ink-2 #bcc1c8`, `--muted #959ca6` (≥ 4,8:1 hasta sobre `--surface-3`). Los campos van hundidos sobre `--bg`. El azul es acento (acciones y enlaces, desde `marca.js` con la marca de cada taller), nunca superficie. Verde, rojo, ámbar, azul, teal y violeta de estado no cambiaron. `marca.js` calcula los contrastes de la marca contra estas mismas superficies.
+
 **The Estado con palabras Rule.** Ningún color sustituye el nombre del estado, el icono o la explicación de un bloqueo.
 
 ## Typography
@@ -268,9 +270,10 @@ Mostrador conserva categorías con iconos, grilla/lista y disponibilidad/precios
 
 ### Ajustes · Consola Grafito (17/11/2026)
 
-- **Alcance:** solo el área de contenido de Ajustes (`.ajg`) y sus diálogos (`.ajg-dlg`). La isla, el lateral, el encabezado y las demás pantallas no cambian.
-- **Tokens:** oscuro con los valores de la propuesta A (fondo `#111214`, superficies `#191B1F` / `#22252A` / `#2B2F35`, divisor `#2E3238`, borde de controles `#6B727D`, texto `#F5F6F7` / `#BCC1C8` / `#959CA6`, acción `#4652FF`, enlaces `#A3AAFF`). En claro, variante grafito clara con los mismos roles y contraste AA. Radios 8 px en paneles y 6 px en controles. Tipografía Geist del producto; campos y botones conservan 44 px.
-- **Navegación interna:** índice agrupado (El taller, Presencia e imagen, Equipo, Cuenta y datos) al costado cuando el contenedor mide 720 px o más; debajo, lista de áreas y una sola área abierta con «← Ajustes». Lo decide el ancho del contenedor, no el del dispositivo.
-- **Secciones:** título y explicación a la izquierda de la tarjeta de campos desde 760 px de área; apiladas debajo. Las tablas pasan a filas apiladas bajo 640 px de área.
+- **Alcance:** la estructura vive en el área de contenido de Ajustes (`.ajg`) y sus diálogos (`.ajg-dlg`). La isla, el lateral, el encabezado y las demás pantallas no cambian de forma.
+- **Tokens:** en oscuro, los mismos del grafito global (`tema.css`); Ajustes no define valores propios. Acción `#4652FF`, enlaces `#A3AAFF`. En claro, variante grafito clara con los mismos roles y contraste AA. Radios 8 px en paneles y 6 px en controles. Tipografía Geist del producto; campos y botones conservan 44 px.
+- **Escala:** título de página 24 px (22 en área angosta), título de sección 16, texto 15, etiquetas, botones y tablas 14, entradas 16, ayudas y metadatos 12–13. Pesos 400, 600 y 700. La ayuda de cada campo va debajo del control, para que los campos de una misma fila empiecen a la misma altura.
+- **Navegación interna:** índice agrupado (El taller, Presencia e imagen, Equipo, Cuenta y datos) al costado cuando el contenedor mide 960 px o más. Por debajo (tablet y escritorio angosto con el lateral global, donde el índice dejaba el formulario en ~550 px), lista de áreas —en dos columnas desde 560 px— y una sola área abierta con «← Ajustes». Lo decide el ancho del contenedor, no el del dispositivo.
+- **Secciones:** título y explicación a la izquierda de la tarjeta de campos desde 760 px de área; apiladas debajo. Las tablas (usuarios, registro, pagos, «Qué incluye cada opción») pasan a filas apiladas con su etiqueta bajo 640 px de área. «Editar» y «Agregar…» cerrados ocupan lo que su texto; los textos largos agrandan su caja hasta 320 px.
 - **Barra de cambios pendientes:** aparece al modificar; Guardar/Descartar; estados de guardado y de error; éxito solo tras la respuesta del servidor. Se apoya sobre la isla en celular. Lo escrito en un área queda como borrador al moverse dentro de Ajustes; salir de Ajustes o recargar pide confirmación.
 - **Movimiento:** botones 120 ms, selecciones y barra 160 ms, diálogos 220 ms, paneles 280 ms; curvas `cubic-bezier(.23,1,.32,1)` y `(.32,.72,0,1)` para paneles. Sin movimiento con `prefers-reduced-motion`.
