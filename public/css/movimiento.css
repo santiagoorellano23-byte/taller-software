@@ -266,6 +266,46 @@
   .btn.cargando::after { animation: none !important; }
 }
 
+/* Ajustes (Consola Grafito): botones 120 ms, menús y selecciones 160 ms, diálogos 220 ms, paneles 280 ms.
+   Solo opacidad y transformaciones; sin cascadas ni rebotes. Con movimiento reducido, la regla anterior lo apaga todo. */
+.ajg, .ajg-dlg {
+  --ajg-t-boton: 120ms; --ajg-t-menu: 160ms; --ajg-t-dialogo: 220ms; --ajg-t-panel: 280ms;
+  --ajg-curva: cubic-bezier(0.23, 1, 0.32, 1); --ajg-curva-panel: cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media screen and (prefers-reduced-motion: no-preference) {
+  :is(.ajg, .ajg-dlg) .btn {
+    transition: background-color var(--ajg-t-boton) var(--ajg-curva), border-color var(--ajg-t-boton) var(--ajg-curva),
+      color var(--ajg-t-boton) var(--ajg-curva), transform var(--ajg-t-boton) var(--ajg-curva);
+  }
+  .ajg :is(.ajg-indice a, .ajg-opt, .ajg-dia, .ajg-paleta, .ajg-lista tbody tr) {
+    transition: background-color var(--ajg-t-menu) var(--ajg-curva), border-color var(--ajg-t-menu) var(--ajg-curva),
+      color var(--ajg-t-menu) var(--ajg-curva), box-shadow var(--ajg-t-menu) var(--ajg-curva);
+  }
+  .ajg :is(.ajg-sw__pista, .ajg-sw__pista::after, .ajg-opt__punto::after) {
+    transition: transform var(--ajg-t-menu) var(--ajg-curva), background-color var(--ajg-t-menu) var(--ajg-curva), border-color var(--ajg-t-menu) var(--ajg-curva);
+  }
+  .ajg-barra {
+    transition: transform var(--ajg-t-menu) var(--ajg-curva), opacity var(--ajg-t-menu) var(--ajg-curva), visibility 0s linear var(--ajg-t-menu);
+  }
+  .ajg-barra--visible {
+    transition: transform var(--ajg-t-menu) var(--ajg-curva), opacity var(--ajg-t-menu) var(--ajg-curva), visibility 0s;
+  }
+  .ajg-panel[open] { transition: transform var(--ajg-t-panel) var(--ajg-curva-panel); }
+  .ajg-dlg--centro[open] { transition: opacity var(--ajg-t-dialogo) var(--ajg-curva), transform var(--ajg-t-dialogo) var(--ajg-curva); }
+  .ajg-dlg[open]::backdrop { transition: opacity var(--ajg-t-dialogo) var(--ajg-curva); }
+  @starting-style {
+    .ajg-panel[open] { transform: translateX(100%); }
+    .ajg-dlg--centro[open] { opacity: 0; transform: scale(0.97); }
+    .ajg-dlg[open]::backdrop { opacity: 0; }
+  }
+}
+@media screen and (prefers-reduced-motion: no-preference) and (max-width: 759.98px) {
+  @starting-style { .ajg-panel[open] { transform: translateY(100%); } }
+}
+@media screen and (hover: hover) and (pointer: fine) {
+  :is(.ajg, .ajg-dlg) .btn:not(.btn-primario):not(:disabled):hover { background-color: var(--ajg-s2); }
+}
+
 @media print {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

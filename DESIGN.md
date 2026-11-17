@@ -265,3 +265,12 @@ Mostrador conserva categorías con iconos, grilla/lista y disponibilidad/precios
 - **Selector segmentado** (Hoy: Todo el taller / Asignado a mí): pista gris, segmento activo con superficie elevada, peso 600 y cantidad en tinte de marca; `aria-current` además del aspecto.
 - **Iconos Material:** máscara pintada con `currentColor`; toman el color del texto (marca en el activo, claro/oscuro) sin filtros.
 - **Dinero de una orden:** presupuestado, autorizado, realizado, cobrado y saldo en una tira propia, nunca animada; el saldo se fija al liquidar.
+
+### Ajustes · Consola Grafito (17/11/2026)
+
+- **Alcance:** solo el área de contenido de Ajustes (`.ajg`) y sus diálogos (`.ajg-dlg`). La isla, el lateral, el encabezado y las demás pantallas no cambian.
+- **Tokens:** oscuro con los valores de la propuesta A (fondo `#111214`, superficies `#191B1F` / `#22252A` / `#2B2F35`, divisor `#2E3238`, borde de controles `#6B727D`, texto `#F5F6F7` / `#BCC1C8` / `#959CA6`, acción `#4652FF`, enlaces `#A3AAFF`). En claro, variante grafito clara con los mismos roles y contraste AA. Radios 8 px en paneles y 6 px en controles. Tipografía Geist del producto; campos y botones conservan 44 px.
+- **Navegación interna:** índice agrupado (El taller, Presencia e imagen, Equipo, Cuenta y datos) al costado cuando el contenedor mide 720 px o más; debajo, lista de áreas y una sola área abierta con «← Ajustes». Lo decide el ancho del contenedor, no el del dispositivo.
+- **Secciones:** título y explicación a la izquierda de la tarjeta de campos desde 760 px de área; apiladas debajo. Las tablas pasan a filas apiladas bajo 640 px de área.
+- **Barra de cambios pendientes:** aparece al modificar; Guardar/Descartar; estados de guardado y de error; éxito solo tras la respuesta del servidor. Se apoya sobre la isla en celular. Lo escrito en un área queda como borrador al moverse dentro de Ajustes; salir de Ajustes o recargar pide confirmación.
+- **Movimiento:** botones 120 ms, selecciones y barra 160 ms, diálogos 220 ms, paneles 280 ms; curvas `cubic-bezier(.23,1,.32,1)` y `(.32,.72,0,1)` para paneles. Sin movimiento con `prefers-reduced-motion`.
