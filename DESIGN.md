@@ -56,7 +56,7 @@ rounded:
   panel: "8px"
   receiving-control: "12px"
   receiving-card: "16px"
-  island: "30px"
+  island: "22px"
 spacing:
   xs: "4px"
   sm: "8px"
@@ -186,11 +186,11 @@ Recepción usa un contenedor máximo de (1080px), contenido flexible, contexto d
 
 Más usa dos columnas de grupos y máximo de (850px); en móvil, una columna y máximo de (560px). Hoy conserva sus tres grupos en todos los tamaños: tarjetas en móvil y tabla con desplazamiento horizontal local cuando sea necesario. El documento no impone convertir todos los módulos en tarjetas.
 
-La isla móvil sólida alcanza (430px), reserva espacio inferior y respeta áreas seguras. Recibir ocupa el centro cuando el permiso lo habilita; sus otros destinos son Hoy, Taller, Clientes y Más. Al recibir y dentro de la orden, se oculta por modo enfoque. Si falta permiso de recepción, quedan cuatro destinos. El estado activo usa color, sin el círculo elevado de la versión anterior.
+La isla móvil es la variante C «Deslizador invertido» con Recibir en lengüeta (17/11/2026; `public/js/isla.js` y `isla.css`). Cuerpo de 64 px, a 12 px de los bordes, hasta 440 px de ancho y centrada, radio 22 px, superficie `--surface` con borde `--line-2`. Una superficie clara (`--ink`, radio 16 px) se desliza en 150 ms hasta el destino actual, cuyo texto pasa a `--bg`; en oscuro son exactamente #191b1f, #2e3238, #f5f6f7 y #111214. Hoy, Taller, Clientes y Más son enlaces a sus pantallas reales; las pantallas secundarias (agenda, caja, ajustes…) marcan Más. Recibir es un botón que abre la recepción guiada: nunca queda seleccionado y sube 14 px sobre la isla como lengüeta, con el ícono en el color de acción del taller. Se oculta en modo enfoque (recepción y orden, que tienen su barra), en escritorio desde 1024 px y al escribir con poco alto. Si falta permiso de recepción, quedan cuatro destinos. El contenido reserva 64 + 14 px, la separación del borde (12 px o el área segura más 6) y 16 px de lectura. La primera ubicación del indicador no se anima; con movimiento reducido no se anima nunca.
 
 ## Elevation & Depth
 
-La hoja y las tarjetas son planas, con bordes y cambios tonales. Las sombras se reservan para navegación flotante y superposiciones existentes. La isla conserva una sombra ambiente; Recibir tiene un anillo de superficie, no un resplandor. Los valores exactos y las transiciones se registran en `.impeccable/design.json`.
+La hoja y las tarjetas son planas, con bordes y cambios tonales. Las sombras se reservan para navegación flotante y superposiciones existentes. La isla conserva una sombra ambiente; Recibir es una lengüeta de la misma superficie, no un resplandor. Los valores exactos y las transiciones se registran en `.impeccable/design.json`.
 
 Feedback breve, entre (120–180ms), sin retrasar acciones. La presión de motivo, marca y enlace de Más reduce la escala a (.985); con movimiento reducido se elimina. Los avisos entran en (180ms), salvo movimiento reducido. No hay motor de animación nuevo.
 

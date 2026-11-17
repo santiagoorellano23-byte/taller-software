@@ -3,9 +3,10 @@ import { api, get, post, configurarApi } from './api.js?v=0.1.0';
 import { esc, icono, toast, confirmar, hayCambiosSinGuardar, fijarZona, campo, alEnviar } from './ui.js?v=0.1.0';
 import { abrirAyuda } from './ayuda.js?v=0.1.0';
 import { selectorTema, enlazarTema } from './tema.js?v=0.1.0';
-import {material,borrarBorrador} from './recepcion-modelo.js?v=0.1.0';
+import { borrarBorrador } from './recepcion-modelo.js?v=0.1.0';
 import { entrada, detenerMovimiento } from './movimiento.js?v=0.1.0';
 import { cssApariencia } from './marca.js?v=0.1.0';
+import { islaHTML, enlazarIsla, colocarIndicador } from './isla.js?v=0.1.0';
 
 // Colores del taller sobre los tokens de marca. La hoja solo contiene colores calculados por marca.js.
 function aplicarApariencia(apariencia) {
@@ -164,11 +165,10 @@ function armarEsqueleto() {
     ${s.taller.demo ? '<p class="demo-movil">Demostración · datos ficticios</p>' : ''}
     <div class="workspacebar"><span>Panel del taller <span class="muted">/</span> <strong data-ruta-titulo>Hoy</strong></span>${s.taller.demo ? '<span class="preview-label">Demostración · datos ficticios</span>' : ''}${selectorTema()}<a href="#/ayuda">${icono('ayuda')}Ayuda</a></div>
     <main class="principal" id="contenido" tabindex="-1"></main>
-    <nav class="tabbar tabbar--isla" aria-label="Navegación principal móvil">
-      ${[['hoy','Hoy','home'],['trabajos','Taller','garage'],...(app.puede('visita.recibir')?[['recibir','Recibir','add']]:[]),['autos','Clientes','group'],['mas','Más','apps']].map(([r,t,i])=>`<a href="#/${r}" data-seccion="${r}" ${r==='recibir'?'class="isla-recibir"':''}><span class="isla-icono" aria-hidden="true">${material(i)}</span><span>${t}</span></a>`).join('')}
-    </nav>`;
+    ${islaHTML({ recibir: app.puede('visita.recibir') })}`;
   raiz.removeAttribute('aria-busy');
   enlazarTema();
+  enlazarIsla(raiz.querySelector('[data-isla]'));
   raiz.querySelector('[data-salir]').addEventListener('click', () => salir());
 }
 
@@ -235,12 +235,13 @@ async function mostrar({ conservarScroll = false } = {}) {
     : ['autos','ficha'].includes(r.modulo) ? 'autos'
     : 'mas';
   raiz.querySelectorAll('[data-seccion]').forEach(a=>{
-    const seleccionado = a.closest('.tabbar') ? movil : activo;
+    const seleccionado = a.closest('[data-isla]') ? movil : activo;
     if(a.dataset.seccion===seleccionado)a.setAttribute('aria-current','page');
     else a.removeAttribute('aria-current');
   });
   app.pantalla = r.modulo;
   raiz.dataset.modo=['recibir','visita'].includes(r.modulo)?'enfoque':'general';
+  colocarIndicador(raiz.querySelector('[data-isla]'));
   if (r.permiso && !app.puede(r.permiso)) {
     main.removeAttribute('aria-busy');
     document.title = `Sin acceso · ${app.sesion.taller.nombre}`;

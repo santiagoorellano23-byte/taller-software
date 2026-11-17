@@ -70,10 +70,6 @@
       transform var(--respuesta-rapida) var(--respuesta-curva);
   }
   .mas-tarjeta a > .material-icon:last-child { transform: none; }
-  .tabbar--isla .isla-icono {
-    transition: transform var(--respuesta-rapida) var(--respuesta-curva);
-  }
-  .tabbar--isla a:active .isla-icono { transform: scale(.96); }
   .rec-progreso span {
     transition: background-color var(--respuesta) var(--respuesta-curva);
   }
@@ -174,8 +170,7 @@
     outline-offset: -3px;
   }
   :is(.nav a, .grupo-menu a, .volver):focus-visible > .i,
-  .mas-tarjeta a:focus-visible > .material-icon:last-child,
-  .tabbar--isla a:focus-visible .isla-icono {
+  .mas-tarjeta a:focus-visible > .material-icon:last-child {
     transition: none;
     transform: none !important;
   }
@@ -256,7 +251,6 @@
   }
   .btn,
   :is(.nav a, .tabbar a, .grupo-menu a, .area, .volver) > .i,
-  .tabbar--isla .isla-icono,
   .mas-tarjeta a > .material-icon:last-child,
   .rec-motivo, .rec-marca, .mas-tarjeta a, .hoy-segmentos a {
     transform: none !important;
