@@ -44,3 +44,7 @@ Heredadas de la base operativa original y vigentes en Growth Labs Talleres 0.1.0
 
 29. **Ajustes adopta la propuesta A dentro de la estructura actual.** El prototipo reemplazaba la barra principal y agregaba «Volver al taller»; eso no se trasladó: la isla y el lateral siguen igual y el índice de Ajustes vive dentro del área de contenido. Las once áreas conservan las rutas anteriores (`#/ajustes/taller`, `/catalogos`, `/integraciones`, `/datos`…) y suman `presupuestos`, `horario` y `publica`. Cada área guarda solo sus campos con el mismo `PUT /api/taller`, que ya era parcial.
 30. **Lo que el prototipo simulaba no se simula.** Renovar sigue siendo una solicitud pendiente, las conexiones siguen inactivas, las descargas son las reales y el registro filtra en pantalla las últimas 300 acciones del servidor. La matriz de permisos del prototipo no se copió: se muestran los textos de cada perfil que ya usaba el producto.
+
+## Demostración sin contraseña (17/11/2026)
+
+31. **Las demos entran solas como dueño.** `TALLERES_DEMO_SIN_INGRESO=1` (demo local y demo de Vercel) habilita `POST /api/sesion/demo`, que crea una sesión normal del dueño del primer taller. El servidor se niega si la base tiene algún taller sin `demo: true`, así que la variable puesta por error en una instalación real no abre ninguna cuenta. «Salir» muestra la pantalla de ingreso en esa pestaña para probar recepción o mecánico. Queda registrado en el registro de acciones.

@@ -21,7 +21,7 @@ Abrir http://127.0.0.1:3000. La demostración usa exclusivamente datos ficticios
 npm test
 ```
 
-103 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
+106 pruebas automáticas sobre la API real con base temporal: permisos, aislamiento por taller, identidad, planes y suscripciones, panel central, recepción, idempotencia, presupuestos, cobros, stock, archivos, migraciones y respaldo/restauración.
 
 ## Funciones
 
@@ -40,6 +40,8 @@ Lo que falta para ofrecerlo como servicio pago está en `docs/HOJA-DE-RUTA.md`.
 ## Instalación
 
 Opcional: `TALLERES_TRANSFERENCIA` con los datos comerciales aprobados para transferir; si falta, «Mi plan» no muestra ninguna cuenta.
+
+Solo para demostraciones: `TALLERES_DEMO_SIN_INGRESO=1` hace entrar como dueño del taller ficticio sin contraseña. El servidor lo ignora si la base tiene algún taller que no sea de demostración. No se define en una instalación real.
 
 Definir `TALLERES_DATOS` con una ruta absoluta fuera del código y de cualquier carpeta que el despliegue reemplace. Configurar `NODE_ENV=production`, `TALLERES_SEGURO=1` y `TALLERES_URL_PUBLICA` con la URL HTTPS. Usar `TALLERES_PROXY=1` solo detrás del proxy del alojamiento.
 

@@ -1,5 +1,6 @@
-import { uno } from '../db.js';
+import { uno, todos } from '../db.js';
 import { ErrorUsuario, texto, json } from '../util.js';
+import { config } from '../config.js';
 import {
   verificarClave, crearSesion, cerrarSesion, cerrarSesionesDe, controlarIntentos, registrarIntentoFallido, limpiarIntentos,
   leerTokenAcceso, usarTokenAcceso, hashClave
@@ -32,6 +33,22 @@ export default function rutas(r) {
     ctx.taller = { id: u.taller_id };
     ctx.usuario = { id: u.id };
     ctx.auditar('Ingreso al sistema', 'usuario', u.id);
+    return { ok: true };
+  }, { auth: false });
+
+  // Demostración sin contraseña (TALLERES_DEMO_SIN_INGRESO=1). Se niega si la base tiene algún taller que no sea
+  // de demostración: así la variable puesta por error en una instalación real no abre ninguna cuenta.
+  r.post('/api/sesion/demo', (ctx) => {
+    if (!config.demoSinIngreso) return { ok: false };
+    const talleres = todos(ctx.db, 'SELECT config FROM talleres');
+    if (!talleres.length || talleres.some((t) => json(t.config, {})?.demo !== true)) return { ok: false };
+    const u = uno(ctx.db, "SELECT u.id, u.taller_id FROM usuarios u JOIN talleres t ON t.id = u.taller_id WHERE u.rol = 'dueno' AND u.activo = 1 AND t.activo = 1 ORDER BY t.id, u.id LIMIT 1");
+    if (!u) return { ok: false };
+    const s = crearSesion(ctx.db, u.id);
+    ctx.cookie = cookieSesion(s.token, s.expira, ctx.seguro);
+    ctx.taller = { id: u.taller_id };
+    ctx.usuario = { id: u.id };
+    ctx.auditar('Ingreso a la demostración sin contraseña', 'usuario', u.id);
     return { ok: true };
   }, { auth: false });
 

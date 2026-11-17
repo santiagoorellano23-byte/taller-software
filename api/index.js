@@ -6,6 +6,8 @@ import path from 'node:path';
 process.env.TALLERES_DATOS = path.join('/tmp', 'talleres-demo');
 process.env.TALLERES_PROXY = '1';
 process.env.TALLERES_SEGURO = '1';
+// Demostración pública con datos ficticios: se entra como dueño sin contraseña (el servidor lo niega si hubiera un taller real).
+process.env.TALLERES_DEMO_SIN_INGRESO = '1';
 
 const { config, archivoBase } = await import('../server/config.js');
 const { crearServidor } = await import('../server/index.js');

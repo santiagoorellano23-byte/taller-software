@@ -91,11 +91,12 @@ Solo aditivas: archivo nuevo `server/migrations/NNN_nombre.sql` con el número s
 ```powershell
 $env:TALLERES_DATOS = Join-Path $PWD 'demo-data'
 $env:TALLERES_PUERTO = '3160'
+$env:TALLERES_DEMO_SIN_INGRESO = '1'
 npm run seed
 npm start
 ```
 
-Abrir http://127.0.0.1:3160. Usuarios en `scripts/seed.js`. `demo-data/` ya está en `.gitignore`.
+Abrir http://127.0.0.1:3160: entra solo como dueño del taller ficticio. «Salir» muestra el ingreso para probar otro perfil (usuarios en `scripts/seed.js`). `TALLERES_DEMO_SIN_INGRESO` no hace nada si la base tiene algún taller que no es de demostración; igual, nunca se define en una instalación real. `demo-data/` ya está en `.gitignore`.
 
 ## 6. Cuándo una tarea está terminada
 

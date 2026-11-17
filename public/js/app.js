@@ -172,6 +172,10 @@ function armarEsqueleto() {
   raiz.querySelector('[data-salir]').addEventListener('click', () => salir());
 }
 
+// Recuerda en esta pestaña que la persona salió de la demostración, para no volver a entrar sola.
+function demoSalio() { try { return sessionStorage.getItem('talleres-demo-salio') === '1'; } catch { return false; } }
+function marcarDemoSalio(si) { try { if (si) sessionStorage.setItem('talleres-demo-salio', '1'); else sessionStorage.removeItem('talleres-demo-salio'); } catch { /* sin almacenamiento: no importa */ } }
+
 async function salir(todas = false) {
   if (hayCambiosSinGuardar()) {
     const r = await confirmar({ titulo: 'Tenés cambios sin guardar', texto: 'Si salís ahora, lo que escribiste en el formulario abierto se pierde.', aceptar: 'Salir igual', peligro: true });
@@ -182,6 +186,7 @@ async function salir(todas = false) {
     /* sin conexión: igual se limpia la pantalla */
   }
   borrarBorrador(app);
+  marcarDemoSalio(true);
   app.sesion = null;
   location.hash = '#/hoy';
   location.reload();
@@ -206,6 +211,7 @@ function pantallaIngreso(mensaje) {
   f.querySelector('input').setAttribute('autocomplete', 'username');
   alEnviar(f, async (d) => {
     await api('POST', '/api/sesion/ingresar', { email: d.email, clave: d.clave });
+    marcarDemoSalio(false);
     await iniciar();
   });
   f.querySelector('input').focus();
@@ -301,11 +307,16 @@ document.addEventListener('click', (e) => {
   if (a) { e.preventDefault(); app.ayuda(a.dataset.ayuda); }
 });
 
-async function iniciar() {
+async function iniciar(probarDemo = true) {
   try {
     app.sesion = await get('/api/sesion');
   } catch (e) {
-    if (e.estado === 401) return pantallaIngreso();
+    if (e.estado === 401) {
+      // Demostración sin contraseña: el servidor decide si corresponde. Después de «Salir» se muestra el ingreso
+      // para poder entrar con otro perfil (recepción, mecánico) en esta pestaña.
+      if (probarDemo && !demoSalio() && (await api('POST', '/api/sesion/demo', {}).catch(() => null))?.ok) return iniciar(false);
+      return pantallaIngreso();
+    }
     raiz.innerHTML = `<main class="principal" id="contenido"><h1>No se pudo conectar con el servidor</h1><p>${esc(e.message)}</p><p><button class="btn btn-primario" type="button" data-recargar>Probar de nuevo</button></p></main>`;
     raiz.querySelector('[data-recargar]').addEventListener('click', () => location.reload());
     return;

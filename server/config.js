@@ -17,7 +17,10 @@ export const config = {
   urlPublica: (process.env.TALLERES_URL_PUBLICA || '').replace(/\/$/, ''),
   // Datos comerciales aprobados por Growth Labs para transferir (titular, CBU/alias, CUIT), en texto.
   // Si falta, «Mi plan» no muestra ninguna cuenta: Growth Labs envía los datos por su canal habitual.
-  transferencia: (process.env.TALLERES_TRANSFERENCIA || '').trim().slice(0, 600)
+  transferencia: (process.env.TALLERES_TRANSFERENCIA || '').trim().slice(0, 600),
+  // Solo para demostraciones: entrar como dueño del taller ficticio sin contraseña. Además exige que todos
+  // los talleres de la base sean de demostración; en una instalación real no hace nada.
+  demoSinIngreso: process.env.TALLERES_DEMO_SIN_INGRESO === '1'
 };
 
 // En un alojamiento la carpeta del código se reemplaza en cada despliegue (en Hostinger, hbuilds/ y public_html/).
