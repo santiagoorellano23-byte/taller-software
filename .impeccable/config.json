@@ -23,6 +23,14 @@
         ],
         "createdAt": "2026-11-17T03:55:30.105Z",
         "reason": "Indicador del área activa del índice de Ajustes, definido en la propuesta A «Consola Grafito» elegida por el usuario: barra de 3 px en un ítem de navegación, no en una tarjeta"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "public/css/propuesta-a.css"
+        ],
+        "createdAt": "2026-11-18T21:09:43.204Z"
       }
     ]
   }
