@@ -1,10 +1,10 @@
 /* Isla de navegación móvil · variante C «Deslizador invertido» con Recibir en lengüeta (17/11/2026).
    Estilos propios bajo .isla: no comparten reglas con .tabbar, .nav ni los botones del producto.
    Valores de la propuesta: cuerpo 64 px, márgenes 12 px, ancho máximo 440 px, radio 22 px, indicador con radio 16 px
-   que se desliza en 150 ms. En oscuro los tokens valen lo mismo que la referencia (superficie #191b1f, borde #2e3238,
-   indicador #f5f6f7, texto elegido #111214); en claro, el mismo deslizador invertido con los tokens claros. */
+   que se desliza en 150 ms. Es grafito en los dos temas, como en el diseño final (superficie #191b1f, borde #2e3238,
+   indicador #f5f6f7, texto elegido #111214, destinos #a9afb6). Se muestra debajo de 768 px; arriba va la columna lateral. */
 .isla {display:none}
-@media screen and (max-width:1023px) {
+@media screen and (max-width:767px) {
   /* Lo que ocupa la isla desde el borde: cuerpo (64) + lengüeta que sobresale (14) + separación y área segura. */
   :root {
     --isla-borde:max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px));
@@ -19,13 +19,12 @@
     display:block;position:fixed;z-index:30;
     left:max(12px, env(safe-area-inset-left, 0px));right:max(12px, env(safe-area-inset-right, 0px));bottom:var(--isla-borde);
     max-width:440px;height:64px;margin:0 auto;padding:6px;
-    border:1px solid var(--line-2);border-radius:22px;background:var(--surface);
-    box-shadow:0 6px 24px rgb(0 0 0 / .1);
+    border:1px solid #2e3238;border-radius:22px;background:#191b1f;
+    box-shadow:0 10px 30px rgb(17 18 20 / .28);
   }
-  html[data-tema-efectivo="oscuro"] .isla {box-shadow:0 8px 24px rgb(0 0 0 / .45)}
   .isla__indicador {
     position:absolute;top:6px;bottom:6px;left:0;width:0;border-radius:16px;
-    background:var(--ink);pointer-events:none;
+    background:#f5f6f7;pointer-events:none;
   }
   .isla[data-listo] .isla__indicador {transition:transform .15s ease,width .15s ease}
   .isla__lista {position:relative;z-index:1;display:flex;height:100%;margin:0;padding:0;list-style:none}
@@ -33,7 +32,7 @@
   .isla__tab {
     position:relative;flex:1;min-width:44px;min-height:50px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;
-    margin:0;border:0;border-radius:16px;background:none;color:var(--ink-2);font:inherit;text-decoration:none;cursor:pointer;
+    margin:0;border:0;border-radius:16px;background:none;color:#a9afb6;font:inherit;text-decoration:none;cursor:pointer;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
     transition:color .14s ease,transform .12s ease;
   }
@@ -41,13 +40,13 @@
   .isla__ic svg {width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .isla__ic svg .punto {fill:currentColor;stroke:none}
   .isla__tx {font-size:11.5px;line-height:1.1;font-weight:500;white-space:nowrap;letter-spacing:.005em}
-  .isla__tab[aria-current="page"] {color:var(--bg)}
+  .isla__tab[aria-current="page"] {color:#111214}
   .isla__tab[aria-current="page"] svg {stroke-width:2.2}
   .isla__tab[aria-current="page"] svg .f {fill:currentColor;fill-opacity:.14}
   .isla__tab[aria-current="page"] .isla__tx {font-weight:650}
   .isla__tab:active {transform:scale(.96)}
   /* Foco: el lila de enlaces sobre la isla; sobre el indicador claro no se vería, ahí va el color de acción. */
-  .isla__tab:focus-visible {outline:2px solid var(--marca-texto);outline-offset:-2px}
+  .isla__tab:focus-visible {outline:2px solid #a3aaff;outline-offset:-2px}
   .isla__tab[aria-current="page"]:focus-visible {outline-color:var(--accion)}
 
   /* Recibir: acción, nunca seleccionada. Lengüeta que sube 14 px sobre la isla, como en la B. */
@@ -55,11 +54,11 @@
   .isla__rec {margin-top:-21px;min-height:71px;justify-content:flex-end;padding-bottom:6px;gap:4px;border-radius:16px 16px 14px 14px}
   .isla__rec::before {
     content:"";position:absolute;z-index:-1;top:0;left:2px;right:2px;height:22px;
-    background:var(--surface);border:1px solid var(--line-2);border-bottom:0;border-radius:18px 18px 0 0;
+    background:#191b1f;border:1px solid #2e3238;border-bottom:0;border-radius:18px 18px 0 0;
   }
   .isla__rec .isla__ic {width:40px;height:36px;border-radius:12px;background:var(--accion);color:var(--sobre-accion)}
   .isla__rec .isla__ic svg {width:20px;height:20px;stroke-width:2.4}
-  .isla__rec .isla__tx {color:var(--ink)}
+  .isla__rec .isla__tx {color:#fff;font-weight:700}
 
   /* Recepción y orden traen su propia barra de acción: la isla no se apila con ella. */
   .app[data-modo=enfoque] .isla {display:none}

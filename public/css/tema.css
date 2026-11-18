@@ -8,13 +8,15 @@ html[data-tema-efectivo="oscuro"] {
   --bg:#111214;--surface:#191b1f;--surface-2:#22252a;--surface-3:#2b2f35;
   --ink:#f5f6f7;--ink-2:#bcc1c8;--muted:#959ca6;
   --line:#383c43;--line-2:#2e3238;--line-strong:#6b727d;
-  --red:#ff9aa4;--red-dark:#ffc2c8;--red-tint:#442630;--red-line:#a65c69;
+  --red:#f4a3ad;--red-dark:#ffc2c8;--red-tint:#3a1a1e;--red-line:#a65c69;
   --marca-texto:#a3aaff;--marca-tinte:#262a4d;--marca-linea:#4a52b8;--acento:#4f5aff;
-  --amber:#ffd089;--amber-bg:#3d3022;--amber-line:#8f7046;
-  --teal:#96d4e6;--teal-bg:#203740;--teal-line:#4e8799;
-  --purple:#d0b9f3;--purple-bg:#342b45;--purple-line:#88709f;
-  --blue:#accff1;--blue-bg:#263647;--blue-line:#63809c;
-  --green:#9bdfb5;--green-bg:#233b2d;--green-line:#5c9670;
+  /* Estados del diseño final en oscuro. */
+  --amber:#f2c27a;--amber-bg:#33240f;--amber-line:#8f7046;
+  --teal:#a9c6e4;--teal-bg:#1c2733;--teal-line:#4e6f8f;
+  --purple:#bcc1c8;--purple-bg:#2b2f35;--purple-line:#4a5058;
+  --blue:#a9c6e4;--blue-bg:#1c2733;--blue-line:#4e6f8f;
+  --green:#8fd3a8;--green-bg:#14261b;--green-line:#4f8a64;
+  --grafito:#22252a;--grafito-2:#2b2f35;--sobre-grafito:#f5f6f7;--sobre-grafito-2:#bcc1c8;
   --graphite:#111214;--graphite-2:#22252a;--graphite-3:#383c43;--silver:#bcc1c8;--on-dark-2:#e6e8eb;
   --sombra:none;--sombra-alta:0 12px 36px #0006;
 }

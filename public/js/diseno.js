@@ -42,4 +42,4 @@ export function etapas(e, { entregada = false } = {}) {
   return `<span class="etapas" aria-hidden="true">${ETAPAS_ORDEN.map((_, i) => `<i class="${entregada || i < e ? 'h' : i === e ? 'a' : ''}"></i>`).join('')}</span>`;
 }
 
-export const vacioD = (icono, titulo, texto = '', accion = '') => `<div class="vacio">${ic(icono)}<p class="vt">${esc(titulo)}</p>${texto ? `<p class="vx">${texto}</p>` : ''}${accion}</div>`;
+export const vacioD = (icono, titulo, texto = '', accion = '') => `<div class="vacio-d">${ic(icono)}<p class="vt">${esc(titulo)}</p>${texto ? `<p class="vx">${texto}</p>` : ''}${accion}</div>`;

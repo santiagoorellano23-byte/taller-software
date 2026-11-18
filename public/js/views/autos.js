@@ -1,6 +1,7 @@
 // Autos y clientes: búsqueda por patente, nombre o teléfono; alta de auto con datos mínimos.
 import { get, post } from '../api.js?v=0.1.0';
-import { esc, icono, patente, nombreAuto, fecha, campo, alEnviar, toast, confirmar } from '../ui.js?v=0.1.0';
+import { esc, fecha, campo, alEnviar, toast, confirmar } from '../ui.js?v=0.1.0';
+import { ic, placa, logoMarca, ibtn, vacioD } from '../diseno.js?v=0.1.0';
 
 export function opcionesMarcas() {
   const c = window.TALLERES_CATALOGOS || { marcas: [], modelos: {} };
@@ -30,48 +31,46 @@ export function camposVehiculo(v = {}) {
     </div>${campo({ nombre: 'notas', etiqueta: 'Notas del auto', tipo: 'textarea', valor: v.notas || '' })}</div></details>`;
 }
 
+const filaAuto = (v) => `<a class="orden-f" href="#/autos/${v.id}">${logoMarca(v.marca)}<span class="t-id">${placa(v.patente)}<span class="t-mod"><b>${esc(v.contacto || 'Sin contacto')}</b><small>${esc([v.marca, v.modelo].filter(Boolean).join(' ') || 'Vehículo sin datos')}${v.telefono ? ' · ' + esc(v.telefono) : ''}</small></span></span>
+  <span class="of-r">${v.visitaAbierta ? `<span class="chip info">En el taller${v.visitaAbierta.numero ? ' · N.º ' + esc(v.visitaAbierta.numero) : ''}</span>` : v.ultima_visita ? `<small>Última visita ${esc(fecha(v.ultima_visita))}</small>` : '<small class="sindato">Sin visitas</small>'}${v.archivado ? '<span class="chip">Archivada</span>' : ''}</span>${ic('chevron_right', 'chev')}</a>`;
+
 export default async function autos({ app, query }) {
   const { vehiculos } = await get(`/api/vehiculos${query.archivados ? '?archivados=1' : ''}`);
   const puedeEditar = app.puede('vehiculos.editar');
+  const lista = query.archivados ? vehiculos : vehiculos.slice().sort((a, b) => Number(!!b.visitaAbierta) - Number(!!a.visitaAbierta));
   return {
     titulo: 'Autos y clientes',
-    html: `<div class="pagina">
-      <div class="cab"><div class="cab__titulo"><h1 tabindex="-1">Autos y clientes</h1></div>
-        <div class="acciones"><button type="button" class="btn btn-chico btn-texto" data-ayuda="buscar">${icono('ayuda')}¿Cómo hago…?</button>
-        ${app.puede('visita.recibir') ? `<a class="btn btn-primario" href="#/recibir">${icono('mas')}Recibir un auto</a>` : ''}</div></div>
-      <section class="bloque" aria-labelledby="t-buscar">
-        <h2 id="t-buscar" class="sr">Buscar</h2>
-        <div class="buscador">${icono('buscar')}<label class="sr" for="autos-q">Buscar por patente, nombre o teléfono</label>
-          <input id="autos-q" type="search" placeholder="Patente, nombre del cliente o teléfono" value="${esc(query.q || '')}" autocomplete="off"></div>
-        <div class="resultados" data-resultados aria-live="polite"></div>
-      </section>
-      ${puedeEditar ? `<details class="mas" data-alta><summary>Agregar un auto sin recibirlo</summary><div class="mas__cuerpo">
+    html: `<header class="a-cab"><div class="a-tit"><h1 tabindex="-1">Autos y clientes</h1></div><div class="a-cab-acc">${ibtn('help', 'Ayuda', { attrs: 'data-ayuda="buscar"' })}</div></header>
+      <div class="buscador-d">${ic('search')}<label class="sr" for="autos-q">Buscar por patente, nombre o teléfono</label><input id="autos-q" type="search" placeholder="Patente, nombre o teléfono" value="${esc(query.q || '')}" autocomplete="off" enterkeyhint="search"></div>
+      <div class="accesos">${app.puede('visita.recibir') ? `<a class="acceso prim" href="#/recibir">${ic('add')}<span>Recibir un auto</span></a>` : ''}${puedeEditar ? `<button type="button" class="acceso" data-abrir-alta aria-controls="alta-auto">${ic('directions_car')}<span>Agregar un auto sin recibirlo</span></button>` : ''}</div>
+      ${puedeEditar ? `<details class="desp" id="alta-auto" data-alta><summary>${ic('directions_car')}Agregar un auto sin recibirlo</summary><div class="desp-c">
         <form class="form" id="f-auto" novalidate>
           ${camposVehiculo()}
           <div class="fila-campos">${campo({ nombre: 'cnombre', etiqueta: 'Persona de contacto', placeholder: 'Nombre y apellido' })}${campo({ nombre: 'ctelefono', etiqueta: 'Teléfono', tipo: 'tel' })}</div>
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar auto</button></div>
+          <div class="form-pie"><button class="btn btn-primario" type="submit">${ic('check')}Guardar auto</button></div>
         </form></div></details>` : ''}
-      <section class="panel" aria-labelledby="t-recientes">
-        <div class="panel__cab"><h2 id="t-recientes">${query.archivados ? 'Fichas archivadas' : 'Últimos autos atendidos'}</h2>
-          ${app.puede('vehiculos.archivar') ? `<a class="small" href="#/autos${query.archivados ? '' : '?archivados=1'}">${query.archivados ? 'Ver fichas activas' : 'Ver fichas archivadas'}</a>` : ''}</div>
-        ${vehiculos.length ? `<ul class="lista" style="margin-top:8px">${vehiculos.map((v) => `<li><a class="fila" href="#/autos/${v.id}" style="text-decoration:none;color:inherit"><span class="fila__izq">${patente(v.patente)}<span><strong>${nombreAuto(v)}</strong><br><span class="muted small">${esc(v.contacto || 'Sin contacto')}</span></span></span>
-          <span class="muted small">${v.ultima_visita ? 'Última visita ' + esc(fecha(v.ultima_visita)) : 'Sin visitas'}</span></a></li>`).join('')}</ul>` : '<div class="panel__cuerpo"><p class="muted">Todavía no hay autos cargados.</p></div>'}
-      </section>
-    </div>`,
+      <section class="grupo-o" data-resultados-grupo hidden aria-live="polite"><h2>Resultados<span data-resultados-n></span></h2><div class="grupo-o" data-resultados></div></section>
+      <section class="grupo-o" data-recientes><h2>${query.archivados ? 'Fichas archivadas' : 'Autos'}<span>${lista.length}</span></h2>
+        ${lista.length ? lista.map(filaAuto).join('') : vacioD('directions_car', 'Todavía no hay autos cargados', 'Cuando recibas un auto, queda su ficha acá.')}</section>
+      ${app.puede('vehiculos.archivar') ? `<p><a class="btn btn-texto" href="#/autos${query.archivados ? '' : '?archivados=1'}">${query.archivados ? 'Ver fichas activas' : 'Ver fichas archivadas'}</a></p>` : ''}`,
     despues(raiz) {
-      const q = raiz.querySelector('#autos-q'), cont = raiz.querySelector('[data-resultados]');
-      let t;
+      const q = raiz.querySelector('#autos-q'), cont = raiz.querySelector('[data-resultados]'), grupo = raiz.querySelector('[data-resultados-grupo]'), recientes = raiz.querySelector('[data-recientes]');
+      let t, turno = 0;
       const buscar = async () => {
-        const v = q.value.trim();
-        if (v.length < 2) { cont.innerHTML = ''; return; }
+        const v = q.value.trim(), mio = ++turno;
+        if (v.length < 2) { grupo.hidden = true; recientes.hidden = false; cont.innerHTML = ''; return; }
         try {
           const r = await get('/api/buscar?q=' + encodeURIComponent(v));
-          cont.innerHTML = r.vehiculos.length ? r.vehiculos.map((x) => `<a class="resultado" href="#/autos/${x.id}">${patente(x.patente)}<span><strong>${nombreAuto(x)}</strong><br><span class="muted small">${esc(x.contacto || 'Sin contacto')}${x.telefono ? ' · ' + esc(x.telefono) : ''}</span></span>${x.visitaAbierta ? '<span class="estado estado--teal" style="margin-left:auto">En el taller</span>' : ''}${x.archivado ? '<span class="estado">Archivada</span>' : ''}</a>`).join('')
-            : `<p class="muted">No encontramos «${esc(v)}». ${app.puede('visita.recibir') ? `<a href="#/recibir?patente=${encodeURIComponent(v)}">Recibir un auto nuevo con esa patente</a>` : ''}</p>`;
-        } catch (e) { cont.innerHTML = `<p class="aviso aviso--rojo">${esc(e.message)}</p>`; }
+          if (mio !== turno) return; // una respuesta vieja no pisa la búsqueda actual
+          grupo.hidden = false; recientes.hidden = true;
+          raiz.querySelector('[data-resultados-n]').textContent = r.vehiculos.length;
+          cont.innerHTML = r.vehiculos.length ? r.vehiculos.map(filaAuto).join('')
+            : vacioD('person_search', `Sin resultados para «${v}»`, 'Probá con la patente, el nombre o el teléfono.', app.puede('visita.recibir') ? `<a class="btn btn-primario" href="#/recibir?patente=${encodeURIComponent(v)}">${ic('add')}Recibir un auto nuevo con esa patente</a>` : '');
+        } catch (e) { cont.innerHTML = `<p class="aviso-in err">${ic('error')}<span>${esc(e.message)}</span></p>`; grupo.hidden = false; }
       };
       q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(buscar, 220); });
       if (q.value) buscar();
+      raiz.querySelector('[data-abrir-alta]')?.addEventListener('click', () => { const d = raiz.querySelector('[data-alta]'); d.open = true; d.querySelector('input')?.focus(); });
       const f = raiz.querySelector('#f-auto');
       if (f) {
         enlazarModelos(f);

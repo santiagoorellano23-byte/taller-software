@@ -1,36 +1,65 @@
-// Visita: cabecera, próximo paso, pestañas por área y columna de contexto (contacto y actividad).
+// Orden (diseño final): cabecera A con la tarjeta grafito (marca, patente, vehículo, cliente, cinco etapas, estado,
+// bloqueos, responsable y retiro) e interior B: «Ahora» con la sección que corresponde atender o la pedida por el
+// enlace, el dinero según permisos y «Toda la orden» con las demás secciones desplegables. Las secciones y sus
+// acciones son las de visita-partes.js: mismos servicios, permisos y validaciones del servidor.
 import { get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
-import { esc, icono, patente, nombreAuto, chipSituacion, chip, cuando, fecha, fechaHora, km, pesos, campo, alEnviar, toast, confirmar, aviso } from '../ui.js?v=0.1.0';
+import { esc, chipSituacion, cuando, fecha, km, pesos, campo, alEnviar, toast, confirmar, hayCambiosSinGuardar } from '../ui.js?v=0.1.0';
 import { seccionRevision, seccionPresupuesto, seccionTrabajo, seccionControl, seccionCobros, seccionArchivos } from './visita-partes.js?v=0.1.0';
-import {dimensionesHTML,dineroHTML,resumenOrden,puedeOfrecerCobro} from '../orden-presentacion.js?v=0.1.0';
-import {vistaEstadoIngreso} from '../estado-ingreso.js?v=0.1.0';
+import { resumenOrden } from '../orden-presentacion.js?v=0.1.0';
+import { vistaEstadoIngreso } from '../estado-ingreso.js?v=0.1.0';
+import { ic, placa, logoMarca, cabecera, ETAPAS_ORDEN } from '../diseno.js?v=0.1.0';
 
-const resp = (l) => l.respuesta?.respuesta || (l.autorizada_ingreso ? 'autoriza' : null);
-const SECCIONES = [
-  ['resumen', 'Resumen'], ['revision', 'Revisión'], ['presupuesto', 'Presupuesto'], ['trabajo', 'Trabajos'], ['repuestos', 'Repuestos'], ['historial', 'Historial'], ['control', 'Control y entrega'], ['cobros', 'Cobros'], ['archivos', 'Archivos']
-];
+// [ruta, título, ícono]. Las rutas son las de siempre (#/visitas/:id/:seccion).
+const SECCIONES = [['resumen', 'Resumen', 'description'], ['revision', 'Revisión', 'search'], ['presupuesto', 'Presupuesto y autorizaciones', 'receipt_long'], ['trabajo', 'Trabajos', 'build'], ['repuestos', 'Repuestos', 'inventory_2'], ['control', 'Control y entrega', 'task_alt'], ['cobros', 'Dinero', 'payments'], ['archivos', 'Archivos y mensajes', 'photo_library'], ['historial', 'Historial', 'history']];
+const ETAPA = { revision: 1, presupuesto: 2, autorizacion: 2, repuesto: 3, trabajo: 3, control: 3, controlada: 3, lista: 4 };
+// Sección abierta en «Toda la orden», por orden: se conserva al guardar y recargar la pantalla.
+const abiertas = new Map();
 
-// Qué hacer ahora: texto del próximo paso + botón que lleva a la sección o hace la acción simple.
+// Próximo paso real: texto, sección y acción simple cuando corresponde. Sin permiso no hay botón.
 function proximoPaso(v, app) {
   const s = v.situacion;
-  const ir = (sec, texto) => ({ texto, href: `#/visitas/${v.id}/${sec}` });
+  const ir = (sec, texto) => ({ texto, sec });
   const mapa = {
     revision: app.puede('revision.registrar') ? ir('revision', 'Registrar la revisión') : null,
     presupuesto: app.puede('presupuesto.preparar') ? ir('presupuesto', 'Preparar presupuesto') : null,
-    autorizacion: app.puede('presupuesto.respuesta') ? ir('presupuesto', 'Registrar respuesta…') : null,
-    repuesto: app.puede('repuestos.gestionar') ? ir('trabajo', 'Ver repuestos') : null,
+    autorizacion: app.puede('presupuesto.respuesta') ? ir('presupuesto', 'Registrar respuesta') : null,
+    repuesto: app.puede('repuestos.gestionar') ? ir('repuestos', 'Ver repuestos') : null,
     trabajo: app.puede('trabajo.ejecutar') ? ir('trabajo', 'Registrar avance') : null,
     control: app.puede('control.registrar') ? ir('control', 'Comprobar el resultado') : null,
-    controlada: app.puede('visita.lista') ? { texto: 'Marcar listo para retirar', accion: 'lista' } : null,
-    lista: /Liquidar|Cobrar/.test(s.paso) && app.puede('caja.registrar') ? ir('cobros', /Liquidar/.test(s.paso) ? 'Liquidar…' : 'Registrar pago…')
-      : app.puede('visita.entregar') ? ir('control', 'Registrar entrega…') : null
+    controlada: app.puede('visita.lista') ? { texto: 'Marcar listo para retirar', accion: 'lista', sec: 'control' } : null,
+    lista: /Liquidar|Cobrar/.test(s.paso) && app.puede('caja.registrar') ? ir('cobros', /Liquidar/.test(s.paso) ? 'Liquidar' : 'Registrar pago')
+      : app.puede('visita.entregar') ? ir('control', 'Registrar entrega') : null
   };
   return mapa[s.clave] || null;
 }
+const seccionNatural = (v, app) => ({ revision: 'revision', presupuesto: 'presupuesto', autorizacion: 'presupuesto', repuesto: 'repuestos', trabajo: 'trabajo', control: 'control', controlada: 'control', lista: /Liquidar|Cobrar/.test(v.situacion.paso) && app.puede('ver.dinero') ? 'cobros' : 'control' })[v.situacion.clave] || 'resumen';
 
-function planificacion(v,app,usuarios) {
-  if(!app.puede('visita.editar')||v.entregada_at||v.anulada_at)return '';
-  return `<details class="mas"><summary>Cambiar responsable, retiro o prioridad</summary><div class="mas__cuerpo"><form class="form" id="f-cabecera" novalidate><div class="fila-campos">
+function resumenDe(v, k, dinero) {
+  const t = v.totales;
+  if (k === 'resumen') return [v.motivo, v.adjuntos.length ? `${v.adjuntos.length} archivo${v.adjuntos.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+  if (k === 'revision') return v.revision ? `${v.hallazgos.length} hallazgo${v.hallazgos.length === 1 ? '' : 's'}` : v.tipo === 'service' ? 'Service: según plantilla' : 'Sin registrar';
+  if (k === 'presupuesto') { const n = v.presupuesto?.lineas?.length || 0; return n ? `${n} línea${n === 1 ? '' : 's'}${dinero && t ? ' · autorizado ' + pesos(t.autorizado) : ''}` : 'Sin presupuesto'; }
+  if (k === 'trabajo') { const h = v.tareas.filter((x) => x.estado === 'hecha').length; return v.tareas.length ? `${h} de ${v.tareas.length} tareas` : 'Sin tareas'; }
+  if (k === 'repuestos') return v.repuestos.length ? `${v.repuestos.length} repuesto${v.repuestos.length === 1 ? '' : 's'}` : 'Sin repuestos';
+  if (k === 'control') return v.entregada_at ? 'Entregado ' + fecha(v.entregada_at) : v.controles.some((c) => c.vigente) ? 'Comprobado' : 'Pendiente';
+  if (k === 'cobros') return !t ? '' : t.liquidado ? (t.saldo > 0 ? 'Saldo ' + pesos(t.saldo) : t.aFavor ? 'A favor ' + pesos(t.aFavor) : 'Sin saldo') : 'Saldo al liquidar';
+  if (k === 'archivos') return `${v.adjuntos.length} archivo${v.adjuntos.length === 1 ? '' : 's'} · ${v.documentos.length} documento${v.documentos.length === 1 ? '' : 's'}`;
+  if (k === 'historial') return `${v.actividad.length} evento${v.actividad.length === 1 ? '' : 's'}`;
+  return '';
+}
+
+// Cinco dimensiones de dinero que nunca se mezclan; el saldo existe recién al liquidar.
+function dineroTira(t) {
+  if (!t) return '';
+  const saldo = !t.liquidado ? '<span class="sindato">Se fija al liquidar</span>' : t.aFavor ? 'A favor ' + esc(pesos(t.aFavor)) : esc(pesos(t.saldo));
+  return `<dl class="dinero-tira" aria-label="Dinero de esta orden"><div class="dc"><dt>Autorizado</dt><dd>${esc(pesos(t.autorizado))}</dd></div><div class="dc"><dt>Realizado</dt><dd>${esc(pesos(t.realizado))}</dd></div>
+    <div class="dc"><dt>Liquidado</dt><dd>${t.liquidado ? esc(pesos(t.liquidado)) : '<span class="sindato">Al liquidar</span>'}</dd></div><div class="dc"><dt>Cobrado</dt><dd>${esc(pesos(t.cobrado))}</dd></div>
+    <div class="dc saldo"><dt>Saldo</dt><dd>${saldo}</dd></div></dl>`;
+}
+
+function planificacion(v, app, usuarios) {
+  if (!app.puede('visita.editar') || v.entregada_at || v.anulada_at) return '';
+  return `<details class="desp" data-planificacion><summary>${ic('edit')}Cambiar responsable, retiro o prioridad</summary><div class="desp-c"><form class="form" id="f-cabecera" novalidate><div class="fila-campos">
       ${campo({ nombre: 'responsableId', etiqueta: 'Responsable', tipo: 'select', valor: v.responsable_id || '', opciones: [['', 'Sin asignar'], ...usuarios.filter((u) => u.activo).map((u) => [u.id, `${u.nombre} · ${u.rolTexto}`])] })}
       ${campo({ nombre: 'retiro', etiqueta: 'Retiro acordado', tipo: 'datetime-local', valor: v.retiro_acordado || '', ayuda: 'Vacío = a confirmar.' })}
       ${campo({ nombre: 'prioridad', etiqueta: 'Prioridad', tipo: 'select', valor: v.prioridad, opciones: [['normal', 'Normal'], ['alta', 'Alta']] })}</div>
@@ -39,78 +68,120 @@ function planificacion(v,app,usuarios) {
 }
 
 export default async function visita({ params, app }) {
-  let sec = SECCIONES.find((s) => s[0] === params.seccion)?.[0] || 'resumen';
   const pedidos = [get(`/api/visitas/${params.id}`), get('/api/catalogos'), app.puede('stock.ver') ? get('/api/articulos') : Promise.resolve({ articulos: [] }), app.puede('stock.ver') ? get('/api/proveedores') : Promise.resolve({ proveedores: [] }), app.puede('avisos.preparar') ? get(`/api/avisos?visitaId=${params.id}`) : Promise.resolve({ avisos: [] }), get('/api/usuarios')];
   const [{ visita: v }, cat, { articulos }, { proveedores }, { avisos }, { usuarios }] = await Promise.all(pedidos);
   cat.proveedores = proveedores;
   const dinero = app.puede('ver.dinero');
-  if(dinero&&app.puede('calculadora.usar')){const calculo=await get('/api/calculadora?horas=1');cat.valorHora=calculo.valorHora;}
-  cat.articulos=articulos;
-  const paso = proximoPaso(v, app);
-  const ingreso = v.lecturas[0];
-  let parte = null;
-  if(sec==='resumen')parte=resumenOrden(v,app);
-  else if (sec === 'revision') parte = seccionRevision(v, app);
-  else if (sec === 'presupuesto') parte = seccionPresupuesto(v, app, cat);
-  else if (sec === 'trabajo'||sec==='repuestos') parte = seccionTrabajo(v, app, cat, articulos.filter((a) => a.activo),{soloRepuestos:sec==='repuestos'});
-  else if (sec === 'control') parte = seccionControl(v, app);
-  else if (sec === 'cobros' && dinero) parte = seccionCobros(v, app);
-  else if (sec === 'archivos') parte = seccionArchivos(v, app, avisos);
-  else if(sec==='historial')parte={html:`${vistaEstadoIngreso(v)}<section class="bloque"><h2>Historial y notas del equipo</h2>${app.puede('adjuntos.subir')&&!v.entregada_at&&!v.anulada_at&&(app.sesion.usuario.rol!=='mecanico'||!v.responsable_id||v.responsable_id===app.sesion.usuario.id)?`<form class="form" id="f-nota" novalidate>${campo({nombre:'texto',etiqueta:'Nota interna',tipo:'textarea',requerido:true,attrs:'maxlength="1000"',ayuda:'Solo para el equipo del taller. No agrega trabajos, cargos ni autorizaciones.'})}<button class="btn btn-primario" type="submit">Guardar nota</button></form>`:''}</section>`,enlazar(raiz){const f=raiz.querySelector('#f-nota');if(f)alEnviar(f,async d=>{await post(`/api/visitas/${v.id}/notas`,d,{idempotencia:claveDeEnvio(f)});delete f.dataset.sucio;toast('Nota guardada en el historial.');app.recargar();});}};
+  if (dinero && app.puede('calculadora.usar')) { const calculo = await get('/api/calculadora?horas=1'); cat.valorHora = calculo.valorHora; }
+  cat.articulos = articulos;
+  const cerrada = !!(v.entregada_at || v.anulada_at);
+  const visibles = SECCIONES.filter(([k]) => k !== 'cobros' || dinero);
+  const pedida = visibles.find((s) => s[0] === params.seccion)?.[0];
+  const natural = cerrada ? 'resumen' : seccionNatural(v, app);
+  const ahora = pedida || natural;
+  const paso = cerrada ? null : proximoPaso(v, app);
 
-  if(['control','archivos'].includes(sec)&&parte)parte.html=vistaEstadoIngreso(v)+parte.html;
-  const principales=[['resumen','Resumen'],['revision','Revisión'],['trabajo','Trabajos'],['repuestos','Repuestos'],['historial','Historial']];
-  const editar=planificacion(v,app,usuarios);
-  const actividad=`<details class="mas"><summary>Actividad de la orden (${v.actividad.length})</summary><div class="mas__cuerpo"><ol class="actividad">${v.actividad.map(a=>`<li><div><time>${esc(cuando(a.fecha))} · ${esc(a.por||'')}</time><p>${esc(a.accion)}</p>${a.detalle?`<p class="small muted">${esc(a.detalle)}</p>`:''}</div></li>`).join('')}</ol></div></details>`;
+  // Cada sección se arma con su función de siempre; la de «Ahora» y la abierta en «Toda la orden».
+  const actividad = `<details class="desp"><summary>${ic('history')}Actividad de la orden (${v.actividad.length})</summary><div class="desp-c"><ol class="tiempo">${v.actividad.map((a) => `<li><time>${esc(cuando(a.fecha))}</time><span class="li-t"><b>${esc(a.accion)}</b><small>${esc(a.por || '')}${a.detalle ? ' · ' + esc(a.detalle) : ''}</small></span></li>`).join('')}</ol></div></details>`;
+  const parteDe = (sec) => {
+    let p = null;
+    if (sec === 'resumen') p = resumenOrden(v, app);
+    else if (sec === 'revision') p = seccionRevision(v, app);
+    else if (sec === 'presupuesto') p = seccionPresupuesto(v, app, cat);
+    else if (sec === 'trabajo' || sec === 'repuestos') p = seccionTrabajo(v, app, cat, articulos.filter((a) => a.activo), { soloRepuestos: sec === 'repuestos' });
+    else if (sec === 'control') p = seccionControl(v, app);
+    else if (sec === 'cobros' && dinero) p = seccionCobros(v, app);
+    else if (sec === 'archivos') p = seccionArchivos(v, app, avisos);
+    else if (sec === 'historial') p = { html: `${vistaEstadoIngreso(v)}<section class="bloque"><h2>Historial y notas del equipo</h2>${app.puede('adjuntos.subir') && !cerrada && (app.sesion.usuario.rol !== 'mecanico' || !v.responsable_id || v.responsable_id === app.sesion.usuario.id) ? `<form class="form" id="f-nota" novalidate>${campo({ nombre: 'texto', etiqueta: 'Nota interna', tipo: 'textarea', requerido: true, attrs: 'maxlength="1000"', ayuda: 'Solo para el equipo del taller. No agrega trabajos, cargos ni autorizaciones.' })}<button class="btn btn-primario" type="submit">Guardar nota</button></form>` : ''}</section>`, enlazar(raiz) { const f = raiz.querySelector('#f-nota'); if (f) alEnviar(f, async (d) => { await post(`/api/visitas/${v.id}/notas`, d, { idempotencia: claveDeEnvio(f) }); delete f.dataset.sucio; toast('Nota guardada en el historial.'); app.recargar(); }); } };
+    if (p && ['control', 'archivos'].includes(sec)) p.html = vistaEstadoIngreso(v) + p.html;
+    if (p && ['archivos', 'historial'].includes(sec)) p.html += actividad;
+    return p;
+  };
+  const parteAhora = parteDe(ahora);
+  // Trabajos y Repuestos comparten formulario: no se muestran los dos a la vez.
+  const comparte = (k) => ['trabajo', 'repuestos'].includes(k) && ['trabajo', 'repuestos'].includes(ahora);
+  const resto = visibles.filter(([k]) => k !== ahora && !comparte(k));
+  const abierta = resto.some(([k]) => k === abiertas.get(v.id)) ? abiertas.get(v.id) : '';
+
+  const e = v.anulada_at ? -1 : v.entregada_at ? 5 : ETAPA[v.situacion.clave] ?? 1;
+  const etapaTxt = v.anulada_at ? 'Orden anulada: el recorrido se interrumpió' : v.entregada_at ? 'Entregado: recorrido completo' : `Etapa actual: ${ETAPAS_ORDEN[e]}, ${e + 1} de 5`;
+  const auto = [v.vehiculo.marca, v.vehiculo.modelo].filter(Boolean).join(' ') || 'Vehículo sin datos';
+  const detalleAuto = [v.vehiculo.version_txt, v.vehiculo.anio].filter(Boolean).join(' · ');
+  const bloqueos = v.operacion?.bloqueos || [];
+  const tituloAhora = cerrada ? (v.anulada_at ? 'Orden anulada' : 'Orden entregada') : ahora === natural ? 'Ahora: ' + (paso?.texto || v.situacion.texto).toLowerCase() : SECCIONES.find((s) => s[0] === ahora)[1];
+  const icAhora = cerrada ? (v.anulada_at ? 'block' : 'history') : SECCIONES.find((s) => s[0] === ahora)[2];
+
   return {
-    titulo: `${v.vehiculo.patente} · Orden ${v.numero}`,
-    html: `<div class="pagina pagina--contexto orden">
-      <div class="pagina__cuerpo">
-        <div class="orden-cab">
-          <a class="volver" href="#/trabajos">${icono('izq')}Taller</a><span class="muted small">Orden N.º ${esc(v.numero)} · ${v.tipo==='service'?'Service':'Revisión / reparación'}</span>
-          <div class="orden-identidad">${patente(v.vehiculo.patente,true)}<h1 tabindex="-1">${nombreAuto(v.vehiculo)}</h1>${chipSituacion(v.situacion)}</div>
-          <div class="orden-meta"><span>${esc(v.responsable||'Sin asignar')}</span><span>Retiro ${v.retiro_acordado?esc(cuando(v.retiro_acordado)):'a confirmar'}</span>${v.prioridad==='alta'?'<strong>Prioridad alta</strong>':''}</div>
-        </div>
-        ${v.anulada_at?aviso(`Orden anulada: ${esc(v.anulada_motivo)}. Solo consulta.`,'rojo','ban'):''}
-        ${v.operacion?.bloqueos.length?`<details class="orden-bloqueos" ${v.operacion.bloqueos.length<=2?'open':''}><summary>${v.operacion.bloqueos.length} pendiente${v.operacion.bloqueos.length===1?'':'s'} para continuar esta orden</summary><ul>${v.operacion.bloqueos.map(b=>`<li>${esc(b.texto)} <a href="#/visitas/${v.id}/${b.seccion}">Ver ${b.seccion==='presupuesto'?'presupuesto':'trabajo'}</a></li>`).join('')}</ul></details>`:''}
-
-        <nav class="pestanas orden-tabs" aria-label="Áreas de la orden">${principales.map(([k,t])=>`<a href="#/visitas/${v.id}/${k}" ${k===sec?'aria-current="page"':''}><strong>${t}</strong></a>`).join('')}</nav>
-        ${dimensionesHTML(v)}
-        <div class="orden-siguiente"><span>${esc(v.situacion.paso)}</span><div class="acciones">${dinero&&puedeOfrecerCobro(v)&&sec!=='cobros'?`<a class="btn btn-chico" href="#/visitas/${v.id}/cobros">${icono('dinero')}Cobrar</a>`:''}${paso&&paso.href&&!paso.href.endsWith('/'+sec)?`<a class="btn btn-chico btn-primario" href="${paso.href}">${esc(paso.texto)}</a>`:''}${paso?.accion?`<button class="btn btn-primario btn-chico" data-paso="${paso.accion}">${esc(paso.texto)}</button>`:''}</div></div>
-        ${dinero&&!['presupuesto','cobros'].includes(sec)?dineroHTML(v.totales,`#/visitas/${v.id}/cobros`):''}
-        ${sec!=='resumen'?`<details class="mas orden-otras"><summary>Presupuesto, cierre y archivos</summary><nav class="orden-accesos" aria-label="Presupuesto, cierre y archivos"><a class="btn btn-chico" href="#/visitas/${v.id}/presupuesto" ${sec==='presupuesto'?'aria-current="page"':''}>Presupuesto y respuesta</a><a class="btn btn-chico" href="#/visitas/${v.id}/control" ${sec==='control'?'aria-current="page"':''}>Control y entrega</a>${dinero?`<a class="btn btn-chico" href="#/visitas/${v.id}/cobros" ${sec==='cobros'?'aria-current="page"':''}>Liquidación y cobros</a>`:''}<a class="btn btn-chico" href="#/visitas/${v.id}/archivos" ${sec==='archivos'?'aria-current="page"':''}>Archivos y mensajes</a></nav></details>`:''}
-        <div data-seccion-cuerpo class="pagina__cuerpo">${parte?parte.html:''}${['archivos','historial'].includes(sec)?actividad:''}</div>
-        <details class="mas orden-datos"><summary>Datos de ingreso y planificación</summary><div class="mas__cuerpo bloque"><p><strong>Motivo:</strong> ${esc(v.motivo)}</p><p class="small muted">Ingreso ${esc(fecha(v.ingreso_at))} · ${ingreso?esc(km(ingreso.km)):'Sin lectura'}</p>${v.autorizacion_ingreso?`<p>${esc(v.autorizacion_ingreso)}</p>`:''}${v.relacionada?`<a href="#/visitas/${v.relacionada.id}">Vuelve por la orden N.º ${esc(v.relacionada.numero)}. La garantía la decide el taller.</a>`:''}${v.relacionadas.map(x=>`<a href="#/visitas/${x.id}">Orden posterior vinculada N.º ${esc(x.numero)}</a>`).join('')}${v.turno?`<p>Turno ${esc(v.turno.codigo)}</p>`:''}${editar}</div></details>
-        ${app.puede('visita.anular')&&!v.entregada_at&&!v.anulada_at?`<p><button class="btn btn-peligro btn-chico" data-anular>${icono('ban')}Anular orden</button></p>`:''}
-      </div>
-      <aside class="contexto" aria-label="Resumen de la orden"><details class="contexto-toggle" open><summary>Resumen y contacto ${icono('abajo')}</summary><div class="contexto-contenido">
-        <section class="bloque"><h2>Esta orden</h2><p>${esc(v.motivo)}</p>${editar?'<button class="btn btn-chico" data-planificar>'+icono('lapiz')+'Responsable y retiro</button>':''}</section>
-        ${dinero&&v.totales?`<section class="bloque"><h2>Importes</h2><dl class="resumen-kv"><div><dt>Autorizado</dt><dd>${pesos(v.totales.autorizado)}</dd></div><div><dt>Liquidado</dt><dd>${v.totales.liquidado?pesos(v.totales.liquidado):'Sin liquidar'}</dd></div><div><dt>${v.totales.liquidado?'Cobrado':'Anticipos'}</dt><dd>${pesos(v.totales.cobrado)}</dd></div><div><dt>${v.totales.aFavor?'A favor':!v.totales.liquidado?'Saldo final':'Saldo pendiente'}</dt><dd>${!v.totales.liquidado?'Por fijar':pesos(v.totales.aFavor||v.totales.saldo)}</dd></div></dl><p class="small muted">Cobrar no registra la entrega.</p></section>`:''}
-        <section class="bloque"><h2>Contacto</h2><strong>${esc(v.contacto_nombre||'Sin contacto')}</strong>${v.contacto_telefono?`<a href="tel:${esc(v.contacto_telefono.replace(/[^\d+]/g,''))}">${icono('telefono')}${esc(v.contacto_telefono)}</a>`:'<p class="muted small">Sin teléfono registrado.</p>'}${app.puede('avisos.preparar')?`<a class="btn btn-chico" href="#/visitas/${v.id}/archivos#t-msj">${icono('mensaje')}Preparar mensaje</a>`:''}<a href="#/autos/${v.vehiculo.id}">Ficha e historial del vehículo</a></section>
-        ${sec!=='archivos'?actividad:''}
-      </div></details></aside>
-      ${!v.entregada_at&&!v.anulada_at?`<footer class="orden-registrar"><button type="button" class="btn btn-primario" data-registrar>${icono('mas')}Registrar…</button></footer>`:''}
-    </div>`,
+    titulo: `${v.vehiculo.patente || 'Sin patente'} · Orden ${v.numero}`,
+    html: `<div class="o-grid"><div class="o-izq">
+      ${cabecera({ titulo: `Orden N.º ${esc(v.numero)}`, sub: v.tipo === 'service' ? 'Service' : 'Revisión / reparación', volver: '#/trabajos', ayuda: 'guia' })}
+      <section class="heroe" aria-label="Vehículo y progreso de la orden">
+        <div class="h-id">${logoMarca(v.vehiculo.marca, { grande: true })}${placa(v.vehiculo.patente, { grande: true })}</div>
+        <div class="h-mod"><b>${esc(auto)}</b>${detalleAuto ? `<small>${esc(detalleAuto)}</small>` : ''}
+          <small>${esc(v.contacto_nombre || 'Sin cliente')}${v.contacto_telefono ? ` · <a href="tel:${esc(v.contacto_telefono.replace(/[^\d+]/g, ''))}">${esc(v.contacto_telefono)}</a>` : ' · <span class="sindato">sin teléfono</span>'}</small></div>
+        <ol class="pasos ${v.anulada_at ? 'anulada' : ''}" aria-label="${esc(etapaTxt)}">${ETAPAS_ORDEN.map((t, i) => { const cls = v.anulada_at ? 'x' : i < e ? 'h' : i === e ? 'a' : '';
+          return `<li class="${cls}" ${i === e ? 'aria-current="step"' : ''}><span>${cls === 'h' ? ic('check') : ''}</span><small>${i === 2 ? '<span class="lg">Presupuesto</span><span class="ct">Presup.</span>' : t}</small></li>`; }).join('')}</ol>
+        <p class="pasos-actual" aria-hidden="true">${esc(v.anulada_at ? 'Orden anulada' : v.entregada_at ? 'Entregado' : `${ETAPAS_ORDEN[e]} · etapa ${e + 1} de 5`)}</p>
+        <div class="t-chips">${v.anulada_at ? `<span class="chip err">${ic('block')}Anulada</span>` : chipSituacion(v.situacion)}${!cerrada ? bloqueos.map((b) => `<span class="chip warn">${ic('hourglass_top')}${esc(b.texto)}</span>`).join('') : ''}${v.prioridad === 'alta' && !cerrada ? `<span class="chip err">${ic('priority_high')}Urgente</span>` : ''}${v.lista_at && !cerrada ? `<span class="chip">${ic('directions_car')}Entrega pendiente</span>` : ''}</div>
+        <div class="o-meta"><span class="o-meta-i">${ic('person')}${v.responsable ? esc(v.responsable) : '<span class="sindato">Sin responsable</span>'}</span><span class="o-meta-i">${ic('schedule')}${v.retiro_acordado ? (v.entregada_at ? 'Retiro acordado ' : 'Retiro ') + esc(cuando(v.retiro_acordado)) : '<span class="sindato">Retiro a confirmar</span>'}</span></div>
+      </section>
+    </div>
+    <div class="o-der">
+      <section class="ahora" aria-labelledby="ahora-t"><h2 id="ahora-t">${ic(icAhora)}${esc(tituloAhora)}</h2>
+        ${v.anulada_at ? `<p class="aviso-in err">${ic('block')}<span>Anulada: ${esc(v.anulada_motivo || '')}. Se conserva todo su historial; solo consulta.</span></p>` : v.entregada_at ? `<p class="aviso-in">${ic('task_alt')}<span>Entregado ${esc(cuando(v.entregada_at))}.</span></p>` : ''}
+        ${!cerrada && ahora === natural ? `<p class="ahora-txt">${esc(v.situacion.paso)}</p>` : ''}
+        ${!cerrada && ahora !== natural ? `<p class="nota">${ic('info')}<span>Lo próximo en esta orden: ${esc((paso?.texto || v.situacion.texto).toLowerCase())}. <a href="#/visitas/${v.id}/${natural}">Ir</a></span></p>` : ''}
+        ${!cerrada && bloqueos.length ? `<ul class="lista-d densa">${bloqueos.map((b) => `<li><a class="li-b" href="#/visitas/${v.id}/${b.seccion}"><span class="li-ic">${ic('hourglass_top')}</span><span class="li-t"><b>${esc(b.texto)}</b></span>${ic('chevron_right')}</a></li>`).join('')}</ul>` : ''}
+        ${paso?.accion ? `<button type="button" class="btn btn-primario btn-full" data-paso="${paso.accion}">${ic('task_alt')}${esc(paso.texto)}</button>` : ''}
+        <div class="ahora-cuerpo"><div class="seccion-orden" data-seccion-cuerpo>${parteAhora ? parteAhora.html : ''}</div></div>
+        ${!cerrada && app.puede('adjuntos.subir') ? `<button type="button" class="btn btn-texto" data-registrar>${ic('add')}Registrar otra cosa…</button>` : ''}
+      </section>
+      ${dinero && ahora !== 'cobros' ? dineroTira(v.totales) : ''}
+      <section class="acordeon" aria-labelledby="toda-t"><h2 id="toda-t">Toda la orden</h2>
+        ${resto.map(([k, t, i]) => `<details class="ac-i" data-sec="${k}" ${k === abierta ? 'open' : ''}><summary><span class="li-ic">${ic(i)}</span><span class="li-t"><b>${t}</b><small>${esc(resumenDe(v, k, dinero))}</small></span>${ic('expand_more', 'giro')}</summary><div class="ac-c" data-cuerpo></div></details>`).join('')}
+      </section>
+    </div>
+    <div class="o-extra">
+      ${planificacion(v, app, usuarios)}
+      <ul class="lista-d">
+        <li><a class="li-b" href="#/autos/${v.vehiculo.id}"><span class="li-ic">${ic('directions_car')}</span><span class="li-t"><b>Ficha e historial del vehículo</b><small>Visitas anteriores y lecturas</small></span>${ic('chevron_right')}</a></li>
+        ${app.puede('avisos.preparar') ? `<li><a class="li-b" href="#/visitas/${v.id}/archivos#t-msj"><span class="li-ic">${ic('sms')}</span><span class="li-t"><b>Preparar mensaje</b><small>Se copia o se abre en WhatsApp; no se envía solo</small></span>${ic('chevron_right')}</a></li>` : ''}
+      </ul>
+      <details class="desp"><summary>${ic('move_to_inbox')}Datos de ingreso</summary><div class="desp-c"><p><b>Motivo:</b> ${esc(v.motivo)}</p><p class="nota">Ingreso ${esc(fecha(v.ingreso_at))} · ${v.lecturas[0] ? esc(km(v.lecturas[0].km)) : 'Sin lectura'}</p>${v.autorizacion_ingreso ? `<p>${esc(v.autorizacion_ingreso)}</p>` : ''}${v.relacionada ? `<a href="#/visitas/${v.relacionada.id}">Vuelve por la orden N.º ${esc(v.relacionada.numero)}. La garantía la decide el taller.</a>` : ''}${v.relacionadas.map((x) => `<a href="#/visitas/${x.id}">Orden posterior vinculada N.º ${esc(x.numero)}</a>`).join('')}${v.turno ? `<p>Turno ${esc(v.turno.codigo)}</p>` : ''}</div></details>
+      ${app.puede('visita.anular') && !cerrada ? `<div><button type="button" class="btn btn-peligro btn-chico" data-anular>${ic('block')}Anular orden</button></div>` : ''}
+    </div></div>`,
     despues(raiz) {
-      parte?.enlazar(raiz.querySelector('[data-seccion-cuerpo]'));
-      raiz.querySelector('[data-registrar]')?.addEventListener('click',async()=>{
-        const {hayCambiosSinGuardar}=await import('../ui.js?v=0.1.0');
-        if(hayCambiosSinGuardar()){toast('Terminá o cancelá el formulario abierto antes de registrar otra cosa.',{error:true});return;}
-        const d=document.createElement('dialog');d.className='dialogo';d.setAttribute('aria-labelledby','registrar-titulo');
-        const opciones=[...(app.puede('revision.registrar')?[['revision','Hallazgo de revisión']]:[]),...(app.puede('repuestos.gestionar')?[['repuestos','Repuesto que falta']]:[]),...(app.puede('adjuntos.subir')?[['historial','Nota interna'],['archivos','Foto o archivo']]:[])];
-        d.innerHTML=`<div class="dialogo__cuerpo bloque"><h2 id="registrar-titulo">¿Qué querés registrar?</h2>${opciones.map(([sec,t])=>`<a class="btn" href="#/visitas/${v.id}/${sec}">${t}${icono('der')}</a>`).join('')}<button class="btn btn-texto" type="button">Volver</button></div>`;
-        document.body.append(d);d.querySelectorAll('a').forEach(a=>a.onclick=()=>d.close());d.querySelector('button').onclick=()=>d.close();d.addEventListener('close',()=>{d.remove();raiz.querySelector('[data-registrar]')?.focus();},{once:true});d.showModal();
+      parteAhora?.enlazar?.(raiz.querySelector('[data-seccion-cuerpo]'));
+      // «Toda la orden»: una sección abierta por vez, armada al abrirla con su función real.
+      const items = [...raiz.querySelectorAll('.ac-i')];
+      const abrir = (det) => {
+        const cuerpo = det.querySelector('[data-cuerpo]');
+        if (!det.open) { cuerpo.innerHTML = ''; if (abiertas.get(v.id) === det.dataset.sec) abiertas.delete(v.id); return; }
+        items.forEach((o) => { if (o !== det && o.open) { o.open = false; o.querySelector('[data-cuerpo]').innerHTML = ''; } });
+        abiertas.set(v.id, det.dataset.sec);
+        const p = parteDe(det.dataset.sec);
+        cuerpo.innerHTML = p ? p.html : '';
+        p?.enlazar?.(cuerpo);
+      };
+      items.forEach((det) => { det.addEventListener('toggle', () => abrir(det)); if (det.open) abrir(det); });
+      raiz.querySelector('[data-registrar]')?.addEventListener('click', () => {
+        if (hayCambiosSinGuardar()) { toast('Terminá o cancelá el formulario abierto antes de registrar otra cosa.', { error: true }); return; }
+        const origen = raiz.querySelector('[data-registrar]');
+        const d = document.createElement('dialog'); d.className = 'dialogo'; d.setAttribute('aria-labelledby', 'registrar-titulo');
+        const opciones = [...(app.puede('revision.registrar') ? [['revision', 'Hallazgo de revisión']] : []), ...(app.puede('repuestos.gestionar') ? [['repuestos', 'Repuesto que falta']] : []), ...(app.puede('adjuntos.subir') ? [['historial', 'Nota interna'], ['archivos', 'Foto o archivo']] : [])];
+        d.innerHTML = `<div class="dialogo__cuerpo bloque"><h2 id="registrar-titulo">¿Qué querés registrar?</h2>${opciones.map(([sec, t]) => `<a class="btn" href="#/visitas/${v.id}/${sec}">${t}${ic('chevron_right')}</a>`).join('')}<button class="btn btn-texto" type="button">Volver</button></div>`;
+        document.body.append(d); d.querySelectorAll('a').forEach((a) => { a.onclick = () => d.close(); }); d.querySelector('button').onclick = () => d.close();
+        d.addEventListener('close', () => { d.remove(); if (origen.isConnected) origen.focus(); }, { once: true }); d.showModal();
       });
       raiz.querySelector('[data-paso="lista"]')?.addEventListener('click', async () => {
-        try { await post(`/api/visitas/${v.id}/lista`, {}); toast('Listo para retirar. Sigue en Hoy hasta la entrega.'); app.recargar(); } catch (e) { toast(e.message, { error: true }); }
+        try { await post(`/api/visitas/${v.id}/lista`, {}); toast('Listo para retirar. Sigue en Hoy hasta la entrega.'); app.recargar(); } catch (err) { toast(err.message, { error: true }); }
       });
-      raiz.querySelector('[data-planificar]')?.addEventListener('click',()=>{const d=raiz.querySelector('.orden-datos');d.open=true;const form=raiz.querySelector('#f-cabecera');form?.closest('details').setAttribute('open','');form?.querySelector('select').focus();});
       const fc = raiz.querySelector('#f-cabecera');
-      if (fc) alEnviar(fc, async (d) => { await put(`/api/visitas/${v.id}`, { ...d, responsableId: d.responsableId || null, retiro: d.retiro || null, version: v.version }); toast('Datos de la visita guardados.'); app.recargar(); });
+      if (fc) alEnviar(fc, async (d) => { await put(`/api/visitas/${v.id}`, { ...d, responsableId: d.responsableId || null, retiro: d.retiro || null, version: v.version }); toast('Datos de la orden guardados.'); app.recargar(); });
       raiz.querySelector('[data-anular]')?.addEventListener('click', async () => {
-        const r = await confirmar({ titulo: 'Anular la visita', texto: 'La visita queda registrada como anulada y solo se puede consultar. No se borra nada.', efecto: 'No se puede anular si tiene cobros o piezas colocadas.', aceptar: 'Anular la visita', peligro: true, pedir: { etiqueta: 'Motivo de la anulación' } });
+        const r = await confirmar({ titulo: 'Anular la orden', texto: 'La orden queda registrada como anulada y solo se puede consultar. No se borra nada.', efecto: 'No se puede anular si tiene cobros o piezas colocadas.', aceptar: 'Anular la orden', peligro: true, pedir: { etiqueta: 'Motivo de la anulación' } });
         if (!r.ok) return;
-        try { await post(`/api/visitas/${v.id}/anular`, { motivo: r.valor }); toast('Visita anulada.'); app.recargar(); } catch (e) { toast(e.message, { error: true }); }
+        try { await post(`/api/visitas/${v.id}/anular`, { motivo: r.valor }); toast('Orden anulada.'); app.recargar(); } catch (err) { toast(err.message, { error: true }); }
       });
       if (location.hash.includes('#t-msj')) raiz.querySelector('#t-msj')?.scrollIntoView();
     }

@@ -2,7 +2,8 @@
 import { api, get, post, configurarApi } from './api.js?v=0.1.0';
 import { esc, icono, toast, confirmar, hayCambiosSinGuardar, fijarZona, campo, alEnviar } from './ui.js?v=0.1.0';
 import { abrirAyuda } from './ayuda.js?v=0.1.0';
-import { selectorTema, enlazarTema } from './tema.js?v=0.1.0';
+import { selectorTema, enlazarTema, aplicarTema } from './tema.js?v=0.1.0';
+import { ic } from './diseno.js?v=0.1.0';
 import { borrarBorrador } from './recepcion-modelo.js?v=0.1.0';
 import { entrada, detenerMovimiento } from './movimiento.js?v=0.1.0';
 import { cssApariencia } from './marca.js?v=0.1.0';
@@ -65,7 +66,7 @@ function grupoRuta(r) {
   return r.modulo==='ajustes'?'ajustes':null;
 }
 function submenu(r) {
-  const g=grupoRuta(r); if(!g || r.modulo==='visita'||r.modulo==='ajustes') return '';
+  const g=grupoRuta(r); if(!g || g==='taller' || r.modulo==='ajustes') return '';
   const actual=location.hash.replace(/^#\//,'').split('?')[0];
   return `<nav class="subnav" aria-label="${g==='taller'?'Taller':g==='caja'?'Caja':g==='ajustes'?'Ajustes':'Repuestos'}">${GRUPOS[g].filter(x=>!x[2]||app.puede(x[2])).map(([ruta,nombre])=>`<a href="#/${ruta}" ${actual===ruta?'aria-current="page"':''}>${nombre}</a>`).join('')}</nav>`;
 }
@@ -111,65 +112,71 @@ function interpretar() {
 
 // Estado de la suscripción del taller a Growth Labs. Lo decide el servidor; este aviso solo lo explica.
 const fechaLarga = (f) => f ? f.split('-').reverse().join('/') : '';
+// Línea discreta de Hoy para quien administra el servicio, cuando faltan 7 días o menos.
+export function lineaPlan() {
+  const s = app.sesion?.taller.servicio;
+  if (!s || !app.puede('servicio.gestionar') || !['activa', 'prueba'].includes(s.estado) || s.diasRestantes == null || s.diasRestantes > 7) return '';
+  const cuando = s.diasRestantes === 0 ? 'hoy es el último día' : `quedan ${s.diasRestantes} día${s.diasRestantes === 1 ? '' : 's'}`;
+  return `<p class="plan-linea">${ic('schedule')}<span title="Acceso hasta el ${fechaLarga(s.periodoHasta)}">Acceso: ${cuando}</span><a href="#/ajustes/plan">Renovar acceso</a></p>`;
+}
 function avisoServicio(s) {
   if (!s) return '';
   const responsable = app.puede('servicio.gestionar');
   const renovar = responsable ? ' <a href="#/ajustes/plan">Renovar acceso</a>' : ' Avisale al dueño del taller.';
-  if (s.estado === 'activa' || s.estado === 'prueba') {
-    // Aviso discreto, solo para quien administra el servicio, cuando faltan pocos días.
-    if (!responsable || s.diasRestantes == null || s.diasRestantes > 7) return '';
-    const cuando = s.diasRestantes === 0 ? 'hoy es el último día' : `quedan ${s.diasRestantes} día${s.diasRestantes === 1 ? '' : 's'}`;
-    return `<div class="aviso aviso--gris aviso-servicio aviso-servicio--recordatorio" role="status">${icono('calendario')}<div>Acceso activo hasta el ${fechaLarga(s.periodoHasta)}: ${cuando}. No hay renovación automática.${renovar}</div></div>`;
-  }
+  if (s.estado === 'activa' || s.estado === 'prueba') return ''; // el recordatorio va en Hoy: lineaPlan()
   const texto = s.estado === 'vencida'
     ? `El período venció el ${fechaLarga(s.periodoHasta)}. El acceso completo sigue hasta el ${fechaLarga(s.graciaHasta)}; después solo se podrá consultar y exportar.`
     : `${esc(s.estadoTexto)}. No se pueden registrar cambios; todo lo cargado se conserva y se puede consultar y exportar.`;
   return `<div class="aviso aviso--${s.estado === 'vencida' ? 'ambar' : 'gris'} aviso-servicio" role="status">${icono('info')}<div><strong>Servicio del taller.</strong> ${texto}${renovar}</div></div>`;
 }
 
-function marcaHTML(t) {
-  const logo = t.logoId ? `<img src="/api/adjuntos/${Number(t.logoId)}" alt="" width="600" height="202">` : '';
-  // Nombre completo: cortarlo en la primera palabra deja «Taller…» o «Mecánica…» sin identificar.
-  return `<a class="marca" href="#/hoy" aria-label="${esc(t.nombre)}, ir a Hoy" title="${esc(t.nombre)}"><span class="marca__nombre${logo ? ' marca__nombre--logo' : ''}" translate="no">${logo || `<span class="marca__texto">${esc(t.nombre)}</span>`}</span></a>`;
+// Marca del taller: su logo si lo cargó; si no, la inicial sobre su color.
+export function marcaTaller(t) {
+  return `<span class="tm" aria-hidden="true">${t.logoId ? `<img src="/api/adjuntos/${Number(t.logoId)}" alt="">` : esc((t.nombre || '·').trim().slice(0, 1).toUpperCase())}</span>`;
 }
+const iniciales = (n) => n.split(/\s+/).filter((x) => /^[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(x)).slice(0, 2).map((x) => x[0].toUpperCase()).join('') || '·';
 
 function armarEsqueleto() {
   const s = app.sesion;
   const u = s.usuario;
-  const iniciales = u.nombre.split(/\s+/).filter((x) => /^[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(x)).slice(0, 2).map((x) => x[0].toUpperCase()).join('');
-  const primerNombre = u.nombre.split(/\s+/)[0];
-  const corto = { dueno: 'Dueño', recepcion: 'Recepción', mecanico: 'Mecánico' }[u.rol] || u.rolTexto;
-  const demo = s.taller.demo ? '<p class="demo-marca" title="Personas, autos e importes inventados para mostrar el sistema">Demostración · datos ficticios</p>' : '';
+  const destinos = [['hoy', 'Hoy', 'home'], ['trabajos', 'Taller', 'garage'], ['autos', 'Clientes', 'group'], ['mas', 'Más', 'apps']];
   raiz.innerHTML = `
-    <aside class="rail" aria-label="Menú principal">
-      ${marcaHTML(s.taller)}${demo}
-      <nav class="nav" aria-label="Apartados">
-        ${MENU.filter(x=>!x[3]||app.puede(x[3])).map(([r, t, i]) => `<a href="#/${r}" data-seccion="${r}">${icono(i)}<span>${t}</span></a>`).join('')}
-        <div class="nav__sep" role="presentation"></div>
-        <a href="#/mas" data-seccion="mas">${icono('mas_funciones')}<span>Más</span></a>
-        ${app.puede('config.taller')?`<a href="#/ajustes" data-seccion="ajustes">${icono('ajustes')}<span>Ajustes</span></a>`:''}
-        <a href="#/ayuda" data-seccion="ayuda">${icono('ayuda')}<span>Ayuda</span></a>
-      </nav>
-      <div class="rail__pie">
-        <div class="usuario"><span class="avatar" aria-hidden="true">${esc(iniciales || '·')}</span><div><strong>${esc(u.nombre)}</strong><span>${esc(u.rolTexto)}</span></div></div>
-        <button type="button" class="btn btn-chico btn-salir" data-salir>${icono('salir')}Salir</button>
-      </div>
+    <aside class="riel" aria-label="Menú principal">
+      <a class="riel-marca" href="#/hoy" aria-label="${esc(s.taller.nombre)}, ir a Hoy">${marcaTaller(s.taller)}<span><b translate="no">${esc(s.taller.nombre)}</b><small>Growth Labs Talleres</small></span></a>
+      ${app.puede('visita.recibir') ? `<a class="btn btn-primario riel-rec" href="#/recibir" aria-label="Recibir un auto">${ic('add')}<span>Recibir un auto</span></a>` : ''}
+      <nav aria-label="Apartados">${destinos.map(([r, t, i]) => `<a class="riel-b" href="#/${r}" data-seccion="${r}">${ic(i)}<span>${t}</span></a>`).join('')}</nav>
+      <button type="button" class="riel-yo" data-sesion aria-label="Tu sesión: ${esc(u.nombre)}"><span class="av">${esc(iniciales(u.nombre).slice(0, 1))}</span><span><b>${esc(u.nombre)}</b><small>${esc(u.rolTexto)}</small></span></button>
     </aside>
-    <header class="topbar">
-      ${marcaHTML(s.taller)}${s.taller.demo ? '<span class="topbar__demo" title="Personas, autos e importes inventados para mostrar el sistema">DEMO<span class="topbar__demo-detalle"> · datos ficticios</span></span>' : ''}
-      <div class="topbar__acciones">
-        ${selectorTema()}<a class="topbar__ayuda" href="#/ayuda" aria-label="Ayuda" title="Ayuda">${icono('ayuda')}</a><span class="topbar__sep" aria-hidden="true"></span>
-        <a class="topbar__usuario" href="#/mas" aria-label="${esc(u.nombre)}, ${esc(u.rolTexto)}. Ver tu sesión y salir"><span class="topbar__quien"><strong>${esc(primerNombre)}</strong><small>${esc(corto !== primerNombre ? corto : s.taller.nombre)}</small></span><span class="avatar" aria-hidden="true">${esc(iniciales || '·')}</span></a>
-      </div>
-    </header>
-    ${s.taller.demo ? '<p class="demo-movil">Demostración · datos ficticios</p>' : ''}
-    <div class="workspacebar"><span>Panel del taller <span class="muted">/</span> <strong data-ruta-titulo>Hoy</strong></span>${s.taller.demo ? '<span class="preview-label">Demostración · datos ficticios</span>' : ''}${selectorTema()}<a href="#/ayuda">${icono('ayuda')}Ayuda</a></div>
     <main class="principal" id="contenido" tabindex="-1"></main>
-    ${islaHTML({ recibir: app.puede('visita.recibir') })}`;
+    ${islaHTML({ recibir: app.puede('visita.recibir') })}
+    <dialog class="hoja-dlg" id="hoja-sesion" aria-labelledby="hoja-sesion-t">
+      <header><h2 id="hoja-sesion-t">Tu sesión</h2><button type="button" class="ibtn" data-cerrar aria-label="Cerrar">${ic('close')}</button></header>
+      <div class="hoja-c">
+        <div class="bloque-d"><div class="li-b" style="padding:0;min-height:0;cursor:default"><span class="av-b" aria-hidden="true">${esc(iniciales(u.nombre).slice(0, 1))}</span><span class="li-t"><b>${esc(u.nombre)}</b><small>${esc(u.rolTexto)} · <span translate="no">${esc(s.taller.nombre)}</span></small></span></div>
+          <p class="nota">${ic('info')}Cada persona usa su propia cuenta. Salí al terminar si compartís el dispositivo.</p></div>
+        <div class="sec-h"><h2 id="tema-t">Tema</h2></div><div class="seg" role="group" aria-labelledby="tema-t">${[['claro', 'Claro', 'light_mode'], ['oscuro', 'Oscuro', 'dark_mode'], ['automatico', 'Automático', 'contrast']].map(([m, t, i]) => `<button type="button" data-tema-modo="${m}">${ic(i)}${t}</button>`).join('')}</div>
+        <a class="btn" href="#/ayuda" data-cerrar>${ic('help')}Ayuda</a>
+        <button type="button" class="btn" data-salir>${ic('logout')}Salir</button>
+        <button type="button" class="btn btn-texto" data-salir-todas>Salir en todos mis dispositivos</button>
+      </div>
+    </dialog>`;
   raiz.removeAttribute('aria-busy');
-  enlazarTema();
   enlazarIsla(raiz.querySelector('[data-isla]'));
-  raiz.querySelector('[data-salir]').addEventListener('click', () => salir());
+  const hoja = raiz.querySelector('#hoja-sesion');
+  let origen = null;
+  const marcarTema = () => hoja.querySelectorAll('[data-tema-modo]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.temaModo === (document.documentElement.dataset.tema || 'automatico'))));
+  document.addEventListener('click', (e) => {
+    const abrir = e.target.closest('[data-sesion]');
+    if (abrir && !hoja.open) { origen = abrir; marcarTema(); hoja.showModal(); }
+  });
+  hoja.addEventListener('click', (e) => {
+    if (e.target === hoja || e.target.closest('[data-cerrar]')) hoja.close();
+    const t = e.target.closest('[data-tema-modo]');
+    if (t) { aplicarTema(t.dataset.temaModo); try { localStorage.setItem('talleres-tema', t.dataset.temaModo); } catch { /* se conserva en esta página */ } marcarTema(); }
+  });
+  hoja.addEventListener('close', () => { if (origen?.isConnected) origen.focus(); });
+  hoja.querySelector('[data-salir]').addEventListener('click', () => { hoja.close(); salir(); });
+  hoja.querySelector('[data-salir-todas]').addEventListener('click', () => { hoja.close(); salir(true); });
 }
 
 // Recuerda en esta pestaña que la persona salió de la demostración, para no volver a entrar sola.
@@ -227,20 +234,18 @@ async function mostrar({ conservarScroll = false } = {}) {
   detenerMovimiento(main);
   const scroll = window.scrollY;
   raiz.querySelectorAll('[data-seccion]').forEach((a) => { if (a.dataset.seccion === r.seccion) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-  const grupo=grupoRuta(r);
-  const activo=grupo==='repuestos'?'stock':grupo==='taller'?'trabajos':grupo==='caja'?'caja':grupo==='ajustes'?'ajustes':['ficha'].includes(r.modulo)?'autos':r.modulo;
-  // La barra móvil agrupa los destinos secundarios en Más; el lateral conserva sus grupos.
+  // La isla y la columna lateral agrupan los destinos secundarios en Más.
   const movil = r.modulo==='recibir'?'recibir':r.modulo==='hoy' ? 'hoy'
     : ['trabajos','visita','pendientes'].includes(r.modulo) ? 'trabajos'
     : ['autos','ficha'].includes(r.modulo) ? 'autos'
     : 'mas';
   raiz.querySelectorAll('[data-seccion]').forEach(a=>{
-    const seleccionado = a.closest('[data-isla]') ? movil : activo;
+    const seleccionado = movil;
     if(a.dataset.seccion===seleccionado)a.setAttribute('aria-current','page');
     else a.removeAttribute('aria-current');
   });
   app.pantalla = r.modulo;
-  raiz.dataset.modo=['recibir','visita'].includes(r.modulo)?'enfoque':'general';
+  raiz.dataset.modo=r.modulo==='recibir'?'enfoque':'general'; // la orden muestra la isla, como en el diseño final
   colocarIndicador(raiz.querySelector('[data-isla]'));
   if (r.permiso && !app.puede(r.permiso)) {
     main.removeAttribute('aria-busy');
@@ -258,7 +263,6 @@ async function mostrar({ conservarScroll = false } = {}) {
     main.innerHTML = avisoServicio(app.sesion.taller.servicio)+submenu(r)+v.html;
     main.dataset.pantalla=r.modulo;
     main.querySelectorAll('.volver[href="#/mas"]').forEach(x=>x.remove());
-    const rt=raiz.querySelector('[data-ruta-titulo]'); if(rt)rt.textContent=v.titulo;
     vistaActual=location.hash;
     document.title = `${v.titulo} · ${app.sesion.taller.nombre}`;
     main.removeAttribute('aria-busy');

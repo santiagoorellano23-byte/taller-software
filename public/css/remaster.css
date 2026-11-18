@@ -1,12 +1,17 @@
 /* Espacio de trabajo. 1440 = 232 lateral + 1208 área;
    área = 24 + 820 centro + 24 + 316 contexto + 24 (ajusta con minmax).
    Sin dependencias externas. Impresión y documentos conservan su hoja original. */
+/* Claro del diseño final (GrowthLabs-Talleres-App-Final): fondo gris cálido, superficies blancas, tinta casi negra,
+   bloques grafito y estados con fondo tenue. --line-strong es el borde de controles (≥ 3:1 en campos). */
 :root {
-  --bg:#f4f5f6; --surface:#fff; --surface-2:#f8f9fa; --surface-3:#eceef0;
-  --line:#e3e6e9; --line-2:#eef0f2; --line-strong:#c5cbd0;
-  --ink:#22282e; --ink-2:#404a53; --muted:#5d6871;
-  --red:#af1927; --red-dark:#8d1320; --red-tint:#fff0f1; --red-line:#e6b6be;
-  --purple:#4b5b69; --purple-bg:#eef2f5; --purple-line:#d6dfe5;
+  --bg:#f2f3f1; --surface:#fff; --surface-2:#f6f7f5; --surface-3:#e9ece8;
+  --line:#e0e3df; --line-2:#e9ece8; --line-strong:#c9cec9;
+  --ink:#15171a; --ink-2:#3b434b; --muted:#56606a;
+  --red:#a3192a; --red-dark:#8d1320; --red-tint:#fce9eb; --red-line:#e6b6be;
+  --purple:#3b434b; --purple-bg:#edefec; --purple-line:#d6dbd5;
+  --amber:#844700; --amber-bg:#fcedd8; --green:#1b6638; --green-bg:#e3f2e8; --blue:#2b4a68; --blue-bg:#e6eef6; --teal:#2b4a68; --teal-bg:#e6eef6;
+  --grafito:#191b1f; --grafito-2:#22252a; --sobre-grafito:#f5f6f7; --sobre-grafito-2:#bcc1c8;
+  --r-ctl:12px; --r-card:16px;
   --r:6px; --r-sm:4px; --r-lg:8px; --rail:232px; --contexto:316px;
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px;
   --sombra:none; --sombra-alta:0 12px 36px #16202b26;
