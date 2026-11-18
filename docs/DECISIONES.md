@@ -57,3 +57,9 @@ Heredadas de la base operativa original y vigentes en Growth Labs Talleres 0.1.0
 ## Isla móvil C (17/11/2026)
 
 34. **Deslizador invertido con Recibir en lengüeta.** Reemplaza la isla anterior solo en celular y tablet (hasta 1023 px). Estilos propios bajo `.isla`, sin heredar las reglas de `.tabbar`. Más sigue siendo la pantalla real `#/mas` (con sus funciones según permisos), así que es un destino y no un panel: no lleva `aria-expanded`. Diferencias con el HTML de referencia, todas por el producto: tipografía Geist en vez de Inter; el azul de Recibir es el color de acción del taller (el del producto es #2e3bff, la referencia usa #4652FF) porque la identidad de cada taller manda en botones y navegación; el foco sobre el indicador claro usa el color de acción, porque el lila de la referencia no se distingue sobre el claro; en modo claro se invierten los mismos tokens. Las pruebas fueron en navegador emulado, no en un teléfono físico.
+
+## Diseño final (18/11/2026)
+
+35. **Se adopta el diseño final del ZIP sobre el software real.** Presentación del ZIP; datos, reglas, permisos y servicios del producto. No se copió su motor de demostración, datos, roles por URL, guardado local ni el selector A/B. Las rutas siguen siendo las del producto (`#/trabajos`, `#/autos`, `#/visitas/…`, `#/recibir`).
+36. **La orden ya no usa modo enfoque:** muestra la isla como en el diseño; solo la recepción oculta la navegación. Más es una pantalla (no un panel) porque así funcionaba; el panel de sesión (avatar) reúne tema y salida, que antes estaban en la barra superior.
+37. **Fotos de ingreso:** elegir un reemplazo ya no borra la foto guardada hasta que el nuevo archivo llega, y una respuesta tardía de una carga reemplazada o quitada se descarta. Formatos y límites siguen siendo los del servidor (JPG, PNG o WEBP de hasta 15 MB).
