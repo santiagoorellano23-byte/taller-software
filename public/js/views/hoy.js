@@ -61,9 +61,9 @@ export default async function hoy({ app, query }) {
   const grupos = [['hacer', 'Para hacer'], ['bloqueadas', 'Bloqueados'], ['listas', 'Listos para retirar']];
   const listos = d.presentes.filter((v) => v.lista_at).length;
 
-  const listaRetiros = d.retiros.length ? `<ul class="lista-d densa">${d.retiros.map((v) => `<li><a class="li-b" href="#/visitas/${v.id}"><span class="monto">${esc(hora(v.retiro_acordado))}</span>${placa(v.vehiculo.patente)}<span class="li-t"><b>${esc([v.vehiculo.marca, v.vehiculo.modelo].join(' '))}</b><small>${v.lista_at ? 'Listo para entregar' : esc(v.situacion.texto)}</small></span>${ic('chevron_right')}</a></li>`).join('')}</ul>` : '<p class="nota">No hay retiros acordados para hoy.</p>';
+  const listaRetiros = d.retiros.length ? `<ul class="lista-d densa">${d.retiros.map((v) => `<li><a class="li-b" href="#/visitas/${v.id}"><span class="monto-d">${esc(hora(v.retiro_acordado))}</span>${placa(v.vehiculo.patente)}<span class="li-t"><b>${esc([v.vehiculo.marca, v.vehiculo.modelo].join(' '))}</b><small>${v.lista_at ? 'Listo para entregar' : esc(v.situacion.texto)}</small></span>${ic('chevron_right')}</a></li>`).join('')}</ul>` : '<p class="nota">No hay retiros acordados para hoy.</p>';
   const listaAtencion = d.atencion.length ? `<ul class="lista-d densa">${d.atencion.map((a) => `<li><a class="li-b" href="#/visitas/${a.visitaId}/${a.tipo === 'autorizacion' ? 'presupuesto' : a.tipo === 'repuesto' ? 'trabajo' : ''}">${placa(a.vehiculo.patente)}<span class="li-t"><b>${esc(a.titulo)}</b><small>${esc(a.detalle)}</small></span>${ic('chevron_right')}</a></li>`).join('')}</ul>` : '<p class="nota">Nada urgente por ahora.</p>';
-  const listaTurnos = d.turnos.length ? `<ul class="lista-d densa">${d.turnos.map((x) => `<li><span class="monto">${esc(x.inicio.slice(11))}</span><span class="li-t"><b>${esc(x.nombre)}</b><small>${esc(x.vehiculo_texto || x.patente || '')}</small></span>${x.estado === 'solicitado' ? '<span class="chip neutro">Sin confirmar</span>' : ''}</li>`).join('')}</ul>` : '<p class="nota">Sin turnos para hoy.</p>';
+  const listaTurnos = d.turnos.length ? `<ul class="lista-d densa">${d.turnos.map((x) => `<li><span class="monto-d">${esc(x.inicio.slice(11))}</span><span class="li-t"><b>${esc(x.nombre)}</b><small>${esc(x.vehiculo_texto || x.patente || '')}</small></span>${x.estado === 'solicitado' ? '<span class="chip neutro">Sin confirmar</span>' : ''}</li>`).join('')}</ul>` : '<p class="nota">Sin turnos para hoy.</p>';
 
   return {
     titulo: 'Hoy',
@@ -84,11 +84,11 @@ export default async function hoy({ app, query }) {
       ${d.configurar?.some((x) => !x.hecho) ? `<details class="desp"><summary>${ic('settings')}Configuración pendiente · ${d.configurar.filter((x) => !x.hecho).length}</summary><div class="desp-c"><ol class="lista-d densa">${d.configurar.map((x) => `<li>${x.hecho ? `${ic('check')}<span class="li-t"><small>${esc(x.texto)}</small></span>` : `<a class="li-b" href="#/${x.ruta}"><span class="li-t"><b>${esc(x.texto)}</b></span>${ic('chevron_right')}</a>`}</li>`).join('')}</ol></div></details>` : ''}
       <details class="desp" data-contexto-hoy><summary>${ic('event_available')}Atención, retiros y turnos</summary><div class="desp-c">
         <div class="sec-h"><h2>Atención requerida</h2></div>${listaAtencion}
-        <div class="sec-h"><h2>Retiros de hoy</h2><span class="monto">${d.retiros.length}</span></div>${listaRetiros}
+        <div class="sec-h"><h2>Retiros de hoy</h2><span class="monto-d">${d.retiros.length}</span></div>${listaRetiros}
         ${d.solicitudes && app.puede('agenda.gestionar') ? `<p class="aviso-in">${ic('calendar_month')}<span><b>${d.solicitudes} solicitud${d.solicitudes > 1 ? 'es' : ''} de turno sin confirmar.</b> <a href="#/agenda">Revisar en la agenda</a></span></p>` : ''}
         ${app.puede('agenda.ver') ? `<div class="sec-h"><h2>Turnos de hoy</h2><a href="#/agenda">Ver agenda</a></div>${listaTurnos}` : ''}
       </div></details>
-      ${responsables.size ? `<details class="desp"><summary>${ic('group')}Órdenes abiertas por responsable</summary><div class="desp-c"><p class="nota">Cantidad de órdenes; no representa horas ni capacidad disponible.</p><ul class="lista-d densa">${[...responsables].map(([nombre, n]) => `<li><span class="li-t"><b>${esc(nombre)}</b></span><span class="monto">${n}</span></li>`).join('')}</ul></div></details>` : ''}`,
+      ${responsables.size ? `<details class="desp"><summary>${ic('group')}Órdenes abiertas por responsable</summary><div class="desp-c"><p class="nota">Cantidad de órdenes; no representa horas ni capacidad disponible.</p><ul class="lista-d densa">${[...responsables].map(([nombre, n]) => `<li><span class="li-t"><b>${esc(nombre)}</b></span><span class="monto-d">${n}</span></li>`).join('')}</ul></div></details>` : ''}`,
     despues(raiz) {
       raiz.querySelector('[data-descartar-borrador]')?.addEventListener('click', () => { borrarBorrador(app); app.recargar(); });
       const q = raiz.querySelector('#hoy-q');

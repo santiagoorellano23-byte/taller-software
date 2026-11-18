@@ -1,30 +1,38 @@
-import {esc,icono} from '../ui.js?v=0.1.0';
-import {material} from '../recepcion-modelo.js?v=0.1.0';
-export const GRUPOS_MAS=[
- ['Agenda y clientes',[
-  ['agenda','calendar_month','Agenda de turnos','agenda.ver'],
-  ['cuentas','account_balance_wallet','Cuentas de clientes','ver.dinero']]],
- ['Repuestos y compras',[
-  ['stock','inventory_2','Stock y reservas','stock.ver'],
-  ['compras','local_shipping','Compras y proveedores','compras.gestionar'],
-  ['mostrador','storefront','Mostrador','ventas.registrar']]],
- ['Dinero',[
-  ['caja','payments','Caja','ver.dinero'],
-  ['reportes','bar_chart','Reportes','reportes.ver']]],
- ['Consulta',[
-  ['archivo','description','Documentos','documentos.emitir'],
-  ['biblioteca','menu_book','Biblioteca técnica','biblioteca.ver'],
-  ['calculadora','calculate','Calculadora de mano de obra','calculadora.usar'],
-  ['qr','qr_code_scanner','Leer o generar QR',null]]],
- ['Administración',[
-  ['ajustes/plan','handshake','Mi plan','servicio.gestionar'],
-  ['ajustes','settings','Ajustes, servicios y plantillas','config.taller'],
-  ['ajustes/usuarios','manage_accounts','Usuarios y permisos','usuarios.gestionar'],
-  ['ajustes/integraciones','link','Conexiones externas','config.taller'],
-  ['ajustes/registro','history','Registro de acciones','auditoria.ver'],
-  ['ajustes/datos','download','Exportación y respaldo','exportar']]]
+// Más (diseño final, B): grupos de funciones según los permisos de cada persona, tu sesión y ayuda.
+import { esc } from '../ui.js?v=0.1.0';
+import { ic, ibtn } from '../diseno.js?v=0.1.0';
+export const GRUPOS_MAS = [
+ ['Agenda y clientes', [
+  ['agenda', 'calendar_month', 'Agenda de turnos', 'agenda.ver'],
+  ['cuentas', 'account_balance_wallet', 'Cuentas de clientes', 'ver.dinero']]],
+ ['Repuestos y compras', [
+  ['stock', 'inventory_2', 'Stock y reservas', 'stock.ver'],
+  ['compras', 'local_shipping', 'Compras y proveedores', 'compras.gestionar'],
+  ['mostrador', 'storefront', 'Mostrador', 'ventas.registrar']]],
+ ['Dinero', [
+  ['caja', 'payments', 'Caja', 'ver.dinero'],
+  ['reportes', 'bar_chart', 'Reportes', 'reportes.ver']]],
+ ['Consulta', [
+  ['archivo', 'description', 'Documentos', 'documentos.emitir'],
+  ['biblioteca', 'menu_book', 'Biblioteca técnica', 'biblioteca.ver'],
+  ['calculadora', 'calculate', 'Calculadora de mano de obra', 'calculadora.usar'],
+  ['qr', 'qr_code_scanner', 'Leer o generar QR', null]]],
+ ['Administración', [
+  ['ajustes/plan', 'handshake', 'Mi plan', 'servicio.gestionar'],
+  ['ajustes', 'settings', 'Ajustes, servicios y plantillas', 'config.taller'],
+  ['ajustes/usuarios', 'manage_accounts', 'Usuarios y permisos', 'usuarios.gestionar'],
+  ['ajustes/integraciones', 'link', 'Conexiones externas', 'config.taller'],
+  ['ajustes/registro', 'history', 'Registro de acciones', 'auditoria.ver'],
+  ['ajustes/datos', 'download', 'Exportación y respaldo', 'exportar']]]
 ];
-export const gruposPermitidos=app=>GRUPOS_MAS.map(([t,items])=>[t,items.filter(i=>!i[3]||app.puede(i[3]))]).filter(([,items])=>items.length);
-export default async function mas({app}){
- return {titulo:'Más',html:`<div class="pagina mas-propuesta"><div class="cab"><h1 tabindex="-1">Más</h1><a class="btn btn-texto" href="#/ayuda">${icono('ayuda')}Ayuda</a></div><div class="mas-grupos">${gruposPermitidos(app).map(([t,items])=>`<section class="mas-seccion"><h2>${t}</h2><ul class="mas-tarjeta">${items.map(([ruta,ic,n])=>`<li><a href="#/${ruta}">${material(ic)}<span>${n}</span>${material('chevron_right')}</a></li>`).join('')}</ul></section>`).join('')}</div><section class="sesion-panel" id="tu-sesion"><h2>Tu sesión</h2><p>${esc(app.sesion.usuario.nombre)} · ${esc(app.sesion.usuario.rolTexto)}</p><p class="small muted">Cada persona usa su propia cuenta. Salí al terminar si compartís el dispositivo.</p><div class="acciones"><button type="button" class="btn" data-salir-aqui>${icono('salir')}Salir</button><button type="button" class="btn btn-texto" data-salir-todas>Salir en todos mis dispositivos</button></div></section></div>`,despues(raiz){raiz.querySelector('[data-salir-aqui]').onclick=()=>app.salir();raiz.querySelector('[data-salir-todas]').onclick=()=>app.salir(true);}};
+export const gruposPermitidos = (app) => GRUPOS_MAS.map(([t, items]) => [t, items.filter((i) => !i[3] || app.puede(i[3]))]).filter(([, items]) => items.length);
+export default async function mas({ app }) {
+  const u = app.sesion.usuario;
+  return {
+    titulo: 'Más',
+    html: `<header class="cab-mod"><div><h1 tabindex="-1">Más</h1></div>${ibtn('help', 'Ayuda', { attrs: 'data-ayuda="guia"' })}</header>
+      <div class="mas-b">${gruposPermitidos(app).map(([t, items], i) => `<section class="mas-g" aria-labelledby="mas-g-${i}"><h2 id="mas-g-${i}">${t}</h2><ul class="lista-d densa mas-l">${items.map(([ruta, icono, n]) => `<li><a class="li-b" href="#/${ruta}"><span class="li-ic">${ic(icono)}</span><span class="li-t"><b>${n}</b></span>${ic('chevron_right')}</a></li>`).join('')}</ul></section>`).join('')}
+        <section class="mas-g" aria-labelledby="mas-sesion" id="tu-sesion"><h2 id="mas-sesion">Tu sesión</h2><ul class="lista-d densa mas-l"><li><button type="button" class="li-b" data-sesion><span class="av" aria-hidden="true">${esc(u.nombre.slice(0, 1).toUpperCase())}</span><span class="li-t"><b>${esc(u.nombre)}</b><small>${esc(u.rolTexto)} · tema y salida</small></span>${ic('chevron_right')}</button></li></ul></section>
+        <p class="mas-ayuda"><a class="btn btn-texto" href="#/ayuda">${ic('help')}Ayuda</a></p></div>`
+  };
 }

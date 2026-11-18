@@ -262,7 +262,16 @@ async function mostrar({ conservarScroll = false } = {}) {
     if (!v) { main.removeAttribute('aria-busy'); return; }
     main.innerHTML = avisoServicio(app.sesion.taller.servicio)+submenu(r)+v.html;
     main.dataset.pantalla=r.modulo;
-    main.querySelectorAll('.volver[href="#/mas"]').forEach(x=>x.remove());
+    // Encabezado de módulo del diseño final: «volver» como ícono junto al título (a Más si el módulo no trae otro).
+    const cab=main.querySelector('.pagina > .cab');
+    if(cab&&r.seccion==='mas'&&r.modulo!=='mas'){
+      const v0=main.querySelector('.pagina > .volver');
+      const href=v0?.getAttribute('href')||'#/mas';
+      v0?.remove();
+      cab.classList.add('cab-modulo');
+      cab.insertAdjacentHTML('afterbegin',`<a class="ibtn" data-volver href="${esc(href)}" aria-label="Volver" title="Volver">${ic('arrow_back')}</a>`);
+      const sub=main.querySelector(':scope > .subnav'); if(sub) cab.after(sub); // los apartados del grupo van debajo del título
+    }
     vistaActual=location.hash;
     document.title = `${v.titulo} · ${app.sesion.taller.nombre}`;
     main.removeAttribute('aria-busy');
