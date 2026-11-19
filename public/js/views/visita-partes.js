@@ -2,7 +2,7 @@
 import { api, get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
 import {
   esc, icono, pesos, cant, km, fecha, fechaHora, cuando, chip, chipRespuesta, chipEtapa, ETAPAS, TIPO_LINEA, MEDIOS, UNIDADES, CANALES, campo, opcionesRadio, casilla,
-  alEnviar, toast, confirmar, aviso, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago
+  alEnviar, toast, confirmar, aviso, leerForm, mostrarError, limpiarErrores, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago
 } from '../ui.js?v=0.1.0';
 import { qrSVG } from '../qr-util.js?v=0.1.0';
 import {catalogoPresupuesto,enlazarCatalogoPresupuesto} from '../presupuesto-pos.js?v=0.1.0';
@@ -12,50 +12,207 @@ import {vistaHallazgos,enlazarHallazgos} from '../hallazgos.js?v=0.1.0';
 const resp = (l) => l.respuesta?.respuesta || (l.autorizada_ingreso ? 'autoriza' : null);
 const RESULTADOS = [['resuelto', 'Resuelto y comprobado', 'check'], ['mejoro', 'Mejoró, pero falta resolver', 'alerta'], ['no_reproducido', 'No se pudo reproducir el problema', 'info'], ['pendiente', 'Sigue pendiente', 'reloj']];
 const RES_TXT = Object.fromEntries(RESULTADOS.map(([k, t]) => [k, t]));
-const ESTADO_REV = { en_revision: ['En revisión', 'teal', 'buscar'], sin_falla: ['Sin falla encontrada', 'azul', 'info'], confirmado: ['Diagnóstico confirmado', 'verde', 'check'] };
 const cerrada = (v) => !!(v.entregada_at || v.anulada_at);
 const acc = async (app, fn, ok) => { try { await fn(); if (ok) toast(ok); app.recargar(); } catch (e) { toast(e.message, { error: true }); } };
 
 // ---------------- Revisión ----------------
+// Diseño de Revisión: estado en tres partes, hallazgos (se guardan uno por uno) y revisión técnica en cuatro grupos que
+// separan relato, hechos, sospecha y conclusión. Las reglas son las del servidor: relato y observaciones (o un hallazgo)
+// para guardar, pruebas para concluir, y diagnóstico con confirmación expresa para «Diagnóstico confirmado».
+const EST_REV = {
+  en_revision: { t: 'Sigue en revisión', c: 'En revisión', d: 'Todavía estás probando. Podés guardar lo que tengas y seguir después.', i: 'pausa', k: 'ambar' },
+  sin_falla: { t: 'Sin falla encontrada', c: 'Sin falla', d: 'Se probó y la falla no apareció.', i: 'info', k: 'azul' },
+  confirmado: { t: 'Diagnóstico confirmado', c: 'Confirmado', d: 'Las pruebas comprobaron la causa. Escribí qué se confirmó.', i: 'escudo', k: 'verde' }
+};
+const CAMPOS_REV = ['relato', 'hallazgos', 'hipotesis', 'pruebas', 'estado', 'diagnostico', 'recomendacion'];
+// Revisión escrita y sin guardar que se conserva en pantalla cuando se guarda un hallazgo y la orden se vuelve a dibujar.
+// Vive solo en memoria: recargar la página o salir de la orden la pierde (la app avisa antes de salir).
+const revisionEnPantalla = new Map();
+
 export function seccionRevision(v, app) {
   const r = v.revision;
   const puede = app.puede('revision.registrar') && !cerrada(v) && !v.controles.some((c) => c.vigente) && (app.sesion.usuario.rol !== 'mecanico' || !v.responsable_id || v.responsable_id === app.sesion.usuario.id);
-  const ver = (t, x) => x ? `<div class="dato"><span>${t}</span><p>${esc(x).replace(/\n/g, '<br>')}</p></div>` : '';
+  const pendiente = puede ? revisionEnPantalla.get(v.id) : null;
+  revisionEnPantalla.delete(v.id);
+  const nH = (v.hallazgos || []).length;
+  const val = (k) => pendiente ? pendiente[k] ?? '' : k === 'relato' ? r?.relato || v.motivo || '' : r?.[k] || (k === 'estado' ? 'en_revision' : '');
+  const est = val('estado');
+  const fila = (cls, ic, rotulo, txt, extra = '', vacio = 'Sin completar') => `<div class="rv-sr ${cls}"><span class="rv-si">${icono(ic)}</span><div class="rv-st"><span class="rv-lbl">${rotulo}${extra}</span><p class="${txt ? '' : 'rv-vac'}">${txt ? esc(txt) : vacio}</p></div></div>`;
+  const tile = (id, k, ic, rotulo, valor, sub, cls) => `<button type="button" class="rv-tile ${cls}" data-ir="${id}" data-tile="${k}"><span class="rv-tl-h"><span class="rv-nd">${icono(ic)}</span>${rotulo}</span><b>${valor}</b><small>${sub}</small></button>`;
+  const e = r ? EST_REV[r.estado] : null;
+  const tiles = `<div class="rv-tiles">${tile('rv-hall', 'h', nH ? 'check' : 'buscar', 'Hallazgos', nH || 'Ninguno', nH ? (nH === 1 ? 'Registrado' : 'Registrados') : 'Opcional', nH ? 'ok' : '')}
+    ${tile('rv-tec', 'r', r ? 'check' : 'portapapeles', 'Revisión', r ? `Versión ${r.version_num}` : 'Pendiente', r ? 'Guardada' : 'Sin registrar', r ? 'ok' : '')}
+    ${tile('rv-tec', 'e', e ? e.i : 'ayuda', 'Estado', e ? e.c : 'Sin elegir', !e ? 'Al registrar' : r.estado === 'en_revision' ? 'Sigue abierta' : 'Concluida', !e ? '' : r.estado === 'en_revision' ? 'wip' : 'ok')}</div>`;
+
+  const guardada = r ? `<div class="rv-edh"><span class="rv-chip rv-chip-ok">${icono('check')}Guardada · versión ${r.version_num}</span><span class="rv-chip">${icono('reloj')}${esc(cuando(r.creado_at))}${r.por ? ' · ' + esc(r.por) : ''}</span></div>
+    <div class="rv-sum">${fila('rv-quote', 'mensaje', 'Lo que cuenta el cliente', r.relato)}${fila('', 'buscar', 'Lo que se observó', r.hallazgos)}${fila('', 'llave', 'Pruebas realizadas', r.pruebas)}</div>
+    <div class="rv-sum"><p class="rv-con-h">Conclusión</p>
+      <div class="rv-sr"><span class="rv-si">${icono(e.i)}</span><div class="rv-st"><span class="rv-lbl">Estado de la revisión</span><span class="rv-est rv-est-${e.k}"><i>${icono(e.i)}</i>${e.t}</span></div></div>
+      ${r.estado === 'confirmado' ? fila('rv-conf', 'escudo', 'Diagnóstico confirmado', r.diagnostico, ' <span class="rv-chip rv-chip-ok">Comprobado</span>') : ''}
+      ${r.hipotesis || r.estado === 'confirmado' ? fila('rv-hipo', 'ayuda', r.estado === 'confirmado' ? 'Posible causa · hipótesis previa' : 'Lo que podría ser', r.hipotesis, ' <span class="rv-chip rv-chip-dash">Sin confirmar</span>', 'Sin hipótesis registrada') : ''}
+      ${fila('', 'documento', 'Recomendación para el presupuesto', r.recomendacion, r.recomendacion ? ' <span class="rv-chip rv-chip-l">No es una autorización</span>' : '', 'Sin recomendación')}
+    </div>` : '';
+  const vacia = !r ? `<div class="rv-vacio"><ul class="rv-incluye" aria-label="Qué incluye la revisión">
+      <li>${icono('mensaje')}<span>Lo que cuenta el cliente</span></li><li>${icono('buscar')}<span>Lo que se observó</span></li><li>${icono('llave')}<span>Pruebas realizadas</span></li>
+      <li>${icono('ayuda')}<span>Posible causa</span></li><li>${icono('escudo')}<span>Estado y diagnóstico</span></li><li>${icono('documento')}<span>Recomendación</span></li></ul>
+      ${v.tipo === 'service' ? '<p class="rv-nota">En un service autorizado no hace falta un diagnóstico extenso.</p>' : ''}
+      ${puede && !pendiente ? `<button type="button" class="btn btn-primario btn-full" data-editar-rev>${icono('portapapeles')}Registrar la revisión</button>` : !puede ? '<p class="rv-nota">Todavía no se registró la revisión.</p>' : ''}</div>` : '';
+
+  const grupo = (n, titulo, chipHTML, cuerpo, cls = '', id = '') => `<div class="rv-grp ${cls}"${id ? ` id="${id}"` : ''}><div class="rv-grp-h"><span class="rv-grp-n">${n}</span><b>${titulo}</b>${chipHTML}</div>${cuerpo}</div>`;
+  const opcion = (k) => `<label class="rv-op"><input type="radio" name="estado" value="${k}"${est === k ? ' checked' : ''} required><span class="rv-op-ic">${icono(EST_REV[k].i)}</span><span class="rv-op-t"><b>${EST_REV[k].t}</b><small>${EST_REV[k].d}</small><span class="rv-op-sel">${icono('check')}Elegido</span></span><span class="rv-op-ind">${icono('check')}</span></label>`;
+  const formulario = puede ? `<form class="form rv-form" id="f-revision" novalidate ${pendiente ? '' : 'hidden'}>
+      <div class="rv-edh"><span class="rv-chip rv-chip-a">${icono('lapiz')}${r ? `Editando la versión ${r.version_num} · al guardar se crea la ${r.version_num + 1}` : 'Sin guardar todavía'}</span><button type="button" class="btn btn-texto btn-chico" data-cancelar-rev>Cancelar</button></div>
+      ${pendiente ? `<p class="rv-aviso rv-aviso-warn" role="status">${icono('alerta')}<span><b>La revisión técnica sigue sin guardar.</b> Se guardó solo el hallazgo. Lo escrito sigue acá: tocá «Guardar revisión» para registrarlo.</span></p>` : ''}
+      ${grupo(1, 'Lo que cuenta el cliente', `<span class="rv-chip">${icono('mensaje')}Relato</span>`, campo({ nombre: 'relato', etiqueta: 'Con sus palabras', tipo: 'textarea', requerido: true, valor: val('relato'), ayuda: 'Anotá lo que dice, aunque no coincida con lo que encuentres.', attrs: 'maxlength="4000" rows="2"' }))}
+      ${grupo(2, 'Lo que observaste y probaste', `<span class="rv-chip">${icono('buscar')}Hechos</span>`,
+        campo({ nombre: 'hallazgos', etiqueta: 'Observaciones generales', tipo: 'textarea', requerido: !nH, valor: val('hallazgos'), ayuda: nH ? 'Los hallazgos de arriba ya se incluyen por separado en el informe; no hace falta repetirlos.' : 'Lo que viste o mediste. Lo puntual podés cargarlo como hallazgo; con un hallazgo, este campo pasa a ser opcional.', attrs: 'maxlength="4000" rows="2"' })
+        + campo({ nombre: 'pruebas', etiqueta: 'Pruebas realizadas', tipo: 'textarea', valor: val('pruebas'), ayuda: 'Solo las pruebas que hiciste, con su resultado. Hacen falta para concluir la revisión.', attrs: 'maxlength="4000" rows="2"' }))}
+      ${grupo(3, 'Lo que podría ser', `<span class="rv-chip rv-chip-dash">${icono('ayuda')}Sin confirmar</span>`, campo({ nombre: 'hipotesis', etiqueta: 'Posible causa', tipo: 'textarea', valor: val('hipotesis'), ayuda: '<span data-ayuda-hip>Una sospecha que todavía no comprobaste. Se guarda marcada como no confirmada.</span>', attrs: 'maxlength="4000" rows="2"' }), 'rv-hip')}
+      ${grupo(4, 'Conclusión', '', `<fieldset class="rv-ops" data-campo="estado"><legend>¿Cómo está la revisión?</legend>${Object.keys(EST_REV).map(opcion).join('')}</fieldset>
+        <div class="rv-diag" data-diag ${est === 'confirmado' ? '' : 'hidden'}>
+          ${campo({ nombre: 'diagnostico', etiqueta: 'Diagnóstico confirmado', tipo: 'textarea', requerido: true, valor: val('diagnostico'), ayuda: 'Qué quedó comprobado y con qué prueba. No es lo mismo que «Posible causa», que se guarda como hipótesis.', attrs: 'maxlength="4000" rows="2"', placeholder: 'Ej.: Batería agotada, no retiene carga' })}
+          <button type="button" class="btn btn-texto btn-chico" data-copiar-hip hidden>${icono('copiar')}Partir del texto de «Posible causa»</button>
+          ${casilla('confirma', 'Confirmo que lo comprobé con las pruebas registradas', !!pendiente?.confirma)}
+        </div>
+        <div class="rv-aviso rv-aviso-warn" data-sobra role="note" hidden>${icono('alerta')}<span><b>Hay un diagnóstico confirmado escrito</b>Con el estado elegido no se guarda como confirmado. El texto se conserva hasta que decidas.
+          <q class="rv-lo" data-sobra-txt></q><span class="rv-lo-a"><button type="button" class="btn btn-texto btn-chico" data-sobra-a="volver">Volver a «Diagnóstico confirmado»</button><button type="button" class="btn btn-texto btn-chico" data-sobra-a="hip">Pasarlo a «Posible causa»</button><button type="button" class="btn btn-texto btn-chico" data-sobra-a="borrar">Borrar el texto</button></span></span></div>
+        <div class="rv-req" data-req></div>
+        ${campo({ nombre: 'recomendacion', etiqueta: 'Recomendación para el presupuesto', tipo: 'textarea', valor: val('recomendacion'), ayuda: 'Una sugerencia para armar el presupuesto. No es un presupuesto ni una autorización del cliente.', attrs: 'maxlength="4000" rows="2"' })}`, '', 'rv-con')}
+      <p class="rv-saves">${icono('info')}<span>«Guardar revisión» guarda los cuatro grupos, no los hallazgos, y crea una versión nueva. Lo que no guardes se pierde al recargar o salir de la orden; la app avisa antes de salir.</span></p>
+      <div class="rv-dock" role="region" aria-label="Guardar la revisión técnica"><span class="rv-dock-t"><b><i class="rv-dot" data-dock-dot></i><span data-dock-t aria-live="polite"></span></b><small data-dock-s></small></span>
+        <button type="button" class="btn" data-verificar-rev hidden>${icono('buscar')}Verificar</button><button type="submit" class="btn btn-primario" data-guardar-rev>${icono('check')}<span data-guardar-txt>Guardar</span></button></div>
+    </form>` : '';
+
   return {
-    html: `${vistaHallazgos(v,app,puede)}<section class="bloque" aria-labelledby="t-rev">
-      <div class="bloque__cab"><h2 id="t-rev">Revisión técnica</h2>${r ? `<p>Versión ${r.version_num} · ${esc(r.por || '')} · ${esc(fechaHora(r.creado_at))}</p>` : ''}</div>
+    html: `${tiles}${vistaHallazgos(v, app, puede)}<section class="rv-sec" id="rv-tec" aria-labelledby="t-rev">
+      <div class="rv-sec-h"><span class="rv-sec-ic">${icono('llave')}</span><div><h2 class="rv-h2" id="t-rev">Revisión técnica</h2><p class="rv-sub">${r || pendiente ? 'Separá lo que dice el cliente, lo que comprobaste y lo que todavía es una sospecha.' : 'Todavía no se registró la revisión.'}</p></div></div>
       ${v.autorizacion_ingreso ? aviso(esc(v.autorizacion_ingreso), 'gris', 'escudo') : ''}
-      ${r ? `<div class="panel panel__cuerpo bloque">${chip(...ESTADO_REV[r.estado])}
-          ${ver('Lo que cuenta el cliente', r.relato)}${ver('Lo que se observó', r.hallazgos)}${ver('Lo que podría ser (sin confirmar)', r.hipotesis)}${ver('Pruebas realizadas', r.pruebas)}${ver('Diagnóstico confirmado', r.diagnostico)}${ver('Recomendación', r.recomendacion)}
-          <p class="muted small">Registrar la revisión no autoriza trabajos.</p></div>`
-        : `<p class="muted">Todavía no se registró la revisión.${v.tipo === 'service' ? ' En un service autorizado no hace falta un diagnóstico extenso.' : ''}</p>`}
-      ${v.revisionesAnteriores.length ? `<details class="mas"><summary>Versiones anteriores (${v.revisionesAnteriores.length})</summary><div class="mas__cuerpo">${v.revisionesAnteriores.slice().reverse().map((x) => `<div class="bloque"><p><strong>Versión ${x.version_num}</strong> · ${esc(x.por || '')} · ${esc(fechaHora(x.creado_at))} · ${esc(ESTADO_REV[x.estado][0])}</p><p class="small">${esc(x.hallazgos)}</p>${x.diagnostico ? `<p class="small">Diagnóstico: ${esc(x.diagnostico)}</p>` : ''}</div>`).join('')}</div></details>` : ''}
-      ${puede ? `<details class="mas" ${!r ? 'open' : ''}><summary>${r ? 'Actualizar la revisión (crea una versión nueva)' : 'Registrar la revisión'}</summary><div class="mas__cuerpo">
-        <form class="form" id="f-revision" novalidate>
-          ${campo({ nombre: 'relato', etiqueta: 'Lo que cuenta el cliente', tipo: 'textarea', requerido: true, valor: r?.relato || v.motivo })}
-          ${campo({ nombre: 'hallazgos', etiqueta: 'Observaciones generales', tipo: 'textarea', requerido: !(v.hallazgos||[]).length, valor: r?.hallazgos || '', ayuda: (v.hallazgos||[]).length ? 'Los hallazgos de arriba ya se incluyen por separado en el informe; no hace falta repetirlos.' : 'También podés registrar observaciones por separado en Hallazgos.' })}
-          ${campo({ nombre: 'hipotesis', etiqueta: 'Lo que podría ser (todavía sin confirmar)', tipo: 'textarea', valor: r?.hipotesis || '' })}
-          ${campo({ nombre: 'pruebas', etiqueta: 'Pruebas realizadas', tipo: 'textarea', valor: r?.pruebas || '', ayuda: 'Necesarias para concluir.' })}
-          ${opcionesRadio('estado', [['en_revision', 'Sigue en revisión'], ['sin_falla', 'Sin falla encontrada'], ['confirmado', 'Diagnóstico confirmado']], r?.estado || 'en_revision', '¿Cómo está la revisión?')}
-          <div data-diag ${r?.estado === 'confirmado' ? '' : 'hidden'} class="bloque">
-            ${campo({ nombre: 'diagnostico', etiqueta: 'Diagnóstico confirmado', tipo: 'textarea', valor: r?.diagnostico || '' })}
-            ${casilla('confirma', 'Confirmo que lo comprobé con las pruebas registradas')}
-          </div>
-          ${campo({ nombre: 'recomendacion', etiqueta: 'Recomendación para el presupuesto', tipo: 'textarea', valor: r?.recomendacion || '' })}
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar revisión</button></div>
-        </form></div></details>` : ''}
+      <div data-rev-vista ${pendiente ? 'hidden' : ''}>${guardada}${vacia}
+        ${r && puede ? `<button type="button" class="btn rv-editar" data-editar-rev>${icono('lapiz')}Editar revisión (crea la versión ${r.version_num + 1})</button>` : ''}</div>
+      ${formulario}
+      ${v.revisionesAnteriores.length ? `<details class="mas"><summary>Versiones anteriores (${v.revisionesAnteriores.length})</summary><div class="mas__cuerpo">${v.revisionesAnteriores.slice().reverse().map((x) => `<div class="bloque"><p><strong>Versión ${x.version_num}</strong> · ${esc(x.por || '')} · ${esc(fechaHora(x.creado_at))} · ${esc(EST_REV[x.estado].t)}</p><p class="small">${esc(x.hallazgos)}</p>${x.diagnostico ? `<p class="small">Diagnóstico: ${esc(x.diagnostico)}</p>` : ''}${x.hipotesis ? `<p class="small">Posible causa (sin confirmar): ${esc(x.hipotesis)}</p>` : ''}</div>`).join('')}</div></details>` : ''}
+      <p class="rv-nota">${icono('escudo', 'i-sm')}Registrar la revisión no autoriza trabajos ni cambia el presupuesto.</p>
     </section>`,
     enlazar(raiz) {
-      enlazarHallazgos(raiz,v,app);
+      raiz.querySelectorAll('[data-ir]').forEach((b) => b.addEventListener('click', () => {
+        const destino = raiz.querySelector('#' + b.dataset.ir);
+        destino?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }));
       const f = raiz.querySelector('#f-revision');
-      if (!f) return;
-      const diag = f.querySelector('[data-diag]');
-      f.querySelectorAll('[name="estado"]').forEach((x) => x.addEventListener('change', () => { diag.hidden = f.querySelector('[name="estado"]:checked').value !== 'confirmado'; }));
-      alEnviar(f, async (d) => {
-        await post(`/api/visitas/${v.id}/revision`, { ...d, diagnostico: d.estado === 'confirmado' ? d.diagnostico : '', versionActual: r?.version_num || 0 });
-        toast('Revisión guardada como versión nueva.');
-        app.ir(`#/visitas/${v.id}/revision`);
+      const sucia = () => !!f?.dataset.sucio;
+      enlazarHallazgos(raiz, v, app, {
+        revisionPendiente: sucia,
+        antesDeRecargar: () => { if (sucia()) revisionEnPantalla.set(v.id, leerForm(f)); }
       });
+      if (!f) return;
+      const vista = raiz.querySelector('[data-rev-vista]');
+      const el = (n) => f.elements[n];
+      const inicial = JSON.stringify(CAMPOS_REV.map((k) => k === 'estado' ? est : val(k)));
+      let guardando = false, incierto = false, error = false;
+      const leer = () => leerForm(f);
+      const tileRev = raiz.querySelector('[data-tile="r"]'), tileEst = raiz.querySelector('[data-tile="e"]');
+      const ponerTile = (t, b, s, cls) => { if (!t) return; t.className = `rv-tile ${cls}`; t.querySelector('b').textContent = b; t.querySelector('small').textContent = s; };
+      const actualizar = () => {
+        const d = leer(), e = d.estado || 'en_revision', has = (k) => !!String(d[k] || '').trim();
+        const cambio = JSON.stringify(CAMPOS_REV.map((k) => d[k] ?? '')) !== inicial || !!pendiente;
+        if (cambio) f.dataset.sucio = '1'; else delete f.dataset.sucio;
+        f.querySelector('[data-diag]').hidden = e !== 'confirmado';
+        f.querySelector('[data-copiar-hip]').hidden = has('diagnostico') || !has('hipotesis');
+        const sobra = e !== 'confirmado' && has('diagnostico');
+        f.querySelector('[data-sobra]').hidden = !sobra;
+        f.querySelector('[data-sobra-txt]').textContent = sobra ? d.diagnostico.trim().slice(0, 160) + (d.diagnostico.trim().length > 160 ? '…' : '') : '';
+        f.querySelector('[data-ayuda-hip]').textContent = e === 'confirmado' ? 'Queda como hipótesis previa, aunque el estado sea «Diagnóstico confirmado». Lo comprobado va en «Diagnóstico confirmado».' : 'Una sospecha que todavía no comprobaste. Se guarda marcada como no confirmada.';
+        f.querySelectorAll('.rv-op').forEach((o) => o.classList.toggle('sel', o.querySelector('input').checked));
+        // Lo que pide el servidor para guardar con el estado elegido.
+        const li = (ok, txt, sub) => `<li class="${ok ? 'ok' : 'nd'}">${icono(ok ? 'check' : 'pausa')}<span>${txt}<small>${sub}</small></span></li>`;
+        const base = [[has('relato'), 'Relato del cliente', has('relato') ? 'Registrado' : 'Hace falta para guardar'], [has('hallazgos') || nH > 0, 'Observaciones', has('hallazgos') ? 'Registradas' : nH ? `Con ${nH} hallazgo${nH === 1 ? '' : 's'} alcanza` : 'Hacen falta para guardar, o un hallazgo']];
+        let titulo, items, pie;
+        if (e === 'en_revision') {
+          const it = [...base, [has('pruebas'), 'Pruebas realizadas', has('pruebas') ? 'Registradas' : 'Sin completar'], [has('hipotesis'), 'Posible causa', has('hipotesis') ? 'Registrada' : 'Sin completar'], [has('recomendacion'), 'Recomendación', has('recomendacion') ? 'Registrada' : 'Sin completar']];
+          titulo = `Registrado hasta ahora · ${it.filter((x) => x[0]).length} de ${it.length}`; items = it;
+          pie = 'Con «Sigue en revisión» podés guardar con lo que tengas. Para cerrar la revisión, elegí «Sin falla encontrada» o «Diagnóstico confirmado»: el sistema pide las pruebas realizadas.';
+        } else {
+          titulo = `Para concluir con «${EST_REV[e].t}»`;
+          items = [...base, [has('pruebas'), 'Pruebas realizadas', has('pruebas') ? 'Registradas' : 'Requeridas para concluir']];
+          if (e === 'confirmado') items.push([has('diagnostico'), 'Diagnóstico confirmado', has('diagnostico') ? 'Escrito' : 'Requerido: qué se comprobó'], [!!d.confirma, 'Confirmación', d.confirma ? 'Marcada' : 'Requerida: comprobado con las pruebas']);
+          pie = 'Son las reglas del sistema: sin esos datos no se guarda y no se pierde nada de lo escrito.';
+        }
+        f.querySelector('[data-req]').innerHTML = `<b>${titulo}</b><ul class="rv-req2">${items.map(([ok, t, s]) => li(ok, t, s)).join('')}</ul><p class="rv-pend">${icono('info', 'i-sm')}<span>${pie}</span></p>`;
+        // Barra de guardado y tarjetas de estado.
+        const dot = f.querySelector('[data-dock-dot]'), t = f.querySelector('[data-dock-t]'), s = f.querySelector('[data-dock-s]'), btn = f.querySelector('[data-guardar-rev]'), verif = f.querySelector('[data-verificar-rev]');
+        verif.hidden = !incierto || guardando;
+        btn.disabled = guardando || (!cambio && !!r && !error && !incierto);
+        f.querySelector('[data-guardar-txt]').textContent = guardando ? 'Guardando…' : incierto || error ? 'Reintentar' : 'Guardar';
+        const [cd, ct, cs] = guardando ? ['', 'Guardando la revisión…', 'Esperá la confirmación del servidor']
+          : incierto ? ['a', 'No sabemos si se guardó', 'Verificá, o reintentá sin cambiar los datos: se comprueba para no duplicarla']
+          : error ? ['r', 'La revisión no se guardó', 'Lo escrito sigue en pantalla']
+          : !cambio && r ? ['g', `Sin cambios desde la versión ${r.version_num}`, 'Cambiá algo para guardar una versión nueva']
+          : cambio ? ['a', 'Revisión sin guardar', 'No incluye los hallazgos'] : ['', 'Revisión sin registrar', 'No incluye los hallazgos'];
+        dot.className = `rv-dot ${cd}`; t.textContent = ct; s.textContent = cs;
+        if (cambio) ponerTile(tileRev, 'Sin guardar', 'Hay cambios', 'wip');
+        else ponerTile(tileRev, r ? `Versión ${r.version_num}` : 'Pendiente', r ? 'Guardada' : 'Sin registrar', r ? 'ok' : '');
+        if (cambio) ponerTile(tileEst, EST_REV[e].c, 'Sin guardar', 'wip');
+      };
+      const mostrarForm = () => { vista.hidden = true; f.hidden = false; actualizar(); el('relato').focus(); };
+      raiz.querySelectorAll('[data-editar-rev]').forEach((b) => b.addEventListener('click', mostrarForm));
+      f.querySelector('[data-cancelar-rev]').addEventListener('click', async () => {
+        if (f.dataset.sucio) {
+          const ok = (await confirmar({ titulo: '¿Descartar los cambios de la revisión?', texto: 'Lo que escribiste en la revisión técnica todavía no se guardó.', efecto: r ? `La versión ${r.version_num} guardada no cambia.` : 'No se registra nada.', aceptar: 'Descartar cambios', peligro: true })).ok;
+          if (!ok) return;
+        }
+        delete f.dataset.sucio;
+        app.recargar();
+      });
+      f.querySelector('[data-copiar-hip]').addEventListener('click', () => { el('diagnostico').value = el('hipotesis').value; actualizar(); el('diagnostico').focus(); });
+      f.querySelectorAll('[data-sobra-a]').forEach((b) => b.addEventListener('click', () => {
+        const a = b.dataset.sobraA, txt = el('diagnostico').value.trim();
+        if (a === 'volver') f.querySelector('input[name="estado"][value="confirmado"]').checked = true;
+        if (a === 'hip') { el('hipotesis').value = [el('hipotesis').value.trim(), txt].filter(Boolean).join('\n'); el('diagnostico').value = ''; }
+        if (a === 'borrar') el('diagnostico').value = '';
+        actualizar();
+        (a === 'volver' ? el('diagnostico') : a === 'hip' ? el('hipotesis') : f.querySelector('input[name="estado"]:checked'))?.focus();
+      }));
+      f.addEventListener('input', () => { if (error) error = false; actualizar(); });
+      f.addEventListener('change', actualizar);
+      const listo = (repetido, version) => {
+        delete f.dataset.sucio;
+        toast(repetido ? `La revisión ya estaba guardada${version ? ` (versión ${version})` : ''}. No se registró dos veces.` : `Revisión guardada como versión ${(r?.version_num || 0) + 1}. Los hallazgos se guardan aparte.`);
+        app.recargar();
+      };
+      // Después de un resultado incierto: consulta la orden y compara con la versión que se estaba editando.
+      f.querySelector('[data-verificar-rev]').addEventListener('click', async () => {
+        guardando = true; actualizar();
+        try {
+          const actual = (await get(`/api/visitas/${v.id}`)).visita.revision;
+          guardando = false;
+          if (actual && actual.version_num > (r?.version_num || 0)) return listo(true, actual.version_num);
+          incierto = false; error = true;
+          mostrarError(f, new Error('La revisión no figura como guardada. Lo escrito sigue en pantalla: podés reintentar.'));
+        } catch (err) { guardando = false; mostrarError(f, err); }
+        actualizar();
+      });
+      f.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (guardando) return;
+        const d = leer();
+        limpiarErrores(f);
+        try {
+          if ((d.estado || 'en_revision') !== 'confirmado' && d.diagnostico.trim()) throw Object.assign(new Error('Hay un diagnóstico confirmado escrito, pero el estado elegido no es «Diagnóstico confirmado». Decidí qué hacer con ese texto antes de guardar.'), { campo: 'estado' });
+          guardando = true; error = false; actualizar();
+          const res = await post(`/api/visitas/${v.id}/revision`, { ...d, versionActual: r?.version_num || 0 }, { idempotencia: claveDeEnvio(f) });
+          guardando = false;
+          listo(!!res.repetido);
+        } catch (err) {
+          guardando = false;
+          incierto = !!err.datos?.guardadoSinConfirmar;
+          error = !incierto;
+          // Un dato rechazado no deja nada guardado: con los datos corregidos se envía como operación nueva.
+          if (error) delete f.dataset.clave;
+          mostrarError(f, err);
+          actualizar();
+        }
+      });
+      actualizar();
     }
   };
 }
@@ -107,6 +264,9 @@ export function seccionPresupuesto(v, app, cat) {
   const vSig = (vActual?.numero || 0) + 1;
   const monto = (c) => c === 0 ? 'Sin cargo' : pesos(c);
   const ok = ultimaRespuesta.get(v.id);
+  // Lo que propuso la revisión, como referencia para armar el presupuesto: no se agrega solo ni autoriza nada.
+  const propuestas = [...(v.revision?.recomendacion ? [['Recomendación de la revisión', v.revision.recomendacion]] : []), ...(v.hallazgos || []).filter((h) => h.propuesta).map((h) => [`Hallazgo: ${h.observacion}`, h.propuesta])];
+  const referencia = propuestas.length ? `<details class="mas pb-ref"><summary>Lo que propuso la revisión (${propuestas.length})</summary><div class="mas__cuerpo"><ul class="pb-ver-l">${propuestas.map(([de, txt]) => `<li><span class="pb-n">${esc(txt)}<small class="pb-nota">${esc(de)}</small></span></li>`).join('')}</ul><p class="pb-nota">Es una referencia: para presupuestarlo, cargalo como línea. El cliente lo responde después.</p></div></details>` : '';
   ultimaRespuesta.delete(v.id);
 
   const porTexto = (l) => [
@@ -215,7 +375,8 @@ export function seccionPresupuesto(v, app, cat) {
   return {
     html: `<section class="bloque pb" aria-labelledby="t-pre">
       <div class="pb-cab"><h2 id="t-pre">Presupuesto y respuesta del cliente</h2>
-        <div class="pb-vrow">${p ? `<button type="button" class="pb-vbtn" data-ver-versiones aria-haspopup="dialog" aria-label="Ver versiones del presupuesto. Vigente: versión ${vActual.numero}"><span class="pb-chip pb-vig">Versión ${vActual.numero} · vigente${icono('der', 'i-sm')}</span></button><span class="pb-nota">Hasta ${esc(fecha(vActual.validez_hasta))}</span>` : '<span class="pb-chip">Sin presupuesto</span>'}</div></div>
+        <div class="pb-vrow">${p ? `<button type="button" class="pb-vbtn" data-ver-versiones aria-haspopup="dialog" aria-label="Ver versiones del presupuesto. Vigente: versión ${vActual.numero}"><span class="pb-chip pb-vig">Versión ${vActual.numero} · vigente${icono('der', 'i-sm')}</span></button><span class="pb-nota">Hasta ${esc(fecha(vActual.validez_hasta))}</span>` : '<span class="pb-chip">Sin presupuesto</span>'}
+          ${puedeResp && sinResp.length && vigentes.length >= 4 ? `<button type="button" class="pb-sec" data-responder aria-haspopup="dialog"><span data-responder-txt>Responder (${sinResp.length})</span>${icono('der', 'i-sm')}</button>` : ''}</div></div>
       ${!vigentes.length ? `<div class="pb-vacio"><span class="pb-vacio-ic">${icono('documento')}</span><b>Todavía no hay presupuesto</b><p>${v.tipo === 'revision' ? 'Se prepara con lo que surge de la revisión.' : 'Si el importe del service se acordó, podés cargarlo acá.'} Hasta que el cliente responda, nada queda autorizado.</p></div>` : ''}
       ${!dinero ? `<p class="pb-aviso" role="note">${icono('info')}<span>Ves qué está autorizado y qué no. Los importes los ve recepción o el dueño.</span></p>` : ''}
       ${resumen}
@@ -236,6 +397,7 @@ export function seccionPresupuesto(v, app, cat) {
         ${campo({ nombre: 'nota', etiqueta: 'Motivo de la corrección', requerido: true })}
         <button class="btn" type="submit">Guardar corrección</button></form></div></details>` : ''}
       ${puedePrep ? `<div class="pb-editor" data-editor ${vigentes.length ? 'hidden' : ''}><h3 tabindex="-1" data-editor-titulo>${vigentes.length ? `Agregar trabajos · versión ${vSig}` : 'Preparar el presupuesto'}</h3>
+        ${referencia}
         ${vigentes.length ? `<p class="pb-nota">Lo que agregues entra en la versión ${vSig}, sin respuesta. Lo ya respondido no cambia.</p>` : ''}
         <datalist id="dl-trabajos">${[...(cat?.servicios||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.articulos||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.trabajos || []).map((x) => x.nombre), ...(globalThis.TALLERES_CATALOGOS?.productos || []).map((x) => x.nombre)].map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
         <form class="form presupuesto-editor" id="f-presupuesto" novalidate>
@@ -308,6 +470,8 @@ export function seccionPresupuesto(v, app, cat) {
           nota.hidden = !n;
           nota.textContent = n ? `Borrador sin guardar: ${els.map((l) => `${l.descripcion} → ${OPC_B[elegida(l)][0].toLowerCase()}`).join('; ')}. Se registra recién al tocar «Guardar respuesta».` : '';
           raiz.querySelector('[data-abrir-txt]').textContent = hay ? 'Continuar respuesta' : 'Registrar respuesta';
+          const rTxt = raiz.querySelector('[data-responder-txt]');
+          if (rTxt) rTxt.textContent = hay ? 'Continuar respuesta' : `Responder (${sinResp.length})`;
           for (const l of sinResp) {
             const st = raiz.querySelector(`.pb-lista [data-linea-id="${l.id}"] [data-estado-linea]`);
             if (!st) continue;
@@ -323,6 +487,9 @@ export function seccionPresupuesto(v, app, cat) {
           guardarBtn.textContent = guardando ? 'Guardando…' : incierto ? 'Verificar y reintentar' : errorTxt ? 'Reintentar guardado' : n ? `Guardar respuesta (${n})` : 'Guardar respuesta';
         };
         abrir.addEventListener('click', () => abrirHoja(hr, abrir));
+        // Con cuatro líneas o más, un acceso arriba evita bajar hasta el aviso para responder.
+        const responder = raiz.querySelector('[data-responder]');
+        responder?.addEventListener('click', () => abrirHoja(hr, responder));
         fr.querySelector('[data-cerrar-hoja]').addEventListener('click', () => hr.close());
         hr.addEventListener('cancel', (e) => { if (guardando) e.preventDefault(); });
         // Tocar de nuevo la opción elegida la quita: esa línea vuelve a quedar sin elegir.
