@@ -28,7 +28,7 @@ export default async function recibir({app,query}){
   const turnoId=query.turno||draft?.turnoId;
   const turno=turnoId?(await get('/api/agenda?desde=2000-01-01&hasta=2100-01-01')).turnos.find(x=>String(x.id)===String(turnoId)):null;
   return {titulo:'Recibir un auto',html:`<div class="rec-b">
-    <header class="rec-banda"><a class="ibtn" href="#/hoy" aria-label="Salir de la recepción" title="Salir de la recepción">${ic('close')}</a><div><h1 tabindex="-1">Recibir un auto</h1><p data-paso-label>Paso 1 de 7 · el borrador se guarda solo</p></div><button class="ibtn" type="button" data-atras aria-label="Volver al paso anterior" title="Volver al paso anterior">${ic('arrow_back')}</button></header>
+    <header class="rec-banda"><a class="ibtn" href="#/hoy" aria-label="Salir de la recepción" title="Salir de la recepción">${ic('close')}</a><div><h1 tabindex="-1">Recibir un auto</h1><p><span data-paso-label>Paso 1 de 7 · Auto</span><span class="rec-placa" data-placa-banda hidden></span></p><div class="rec-tramos" aria-hidden="true">${PASOS.map((_,i)=>`<span data-tramo="${i}"></span>`).join('')}</div></div><button class="ibtn" type="button" data-atras aria-label="Volver al paso anterior" title="Volver al paso anterior">${ic('arrow_back')}</button></header>
     <form id="f-recibir" class="rec-hoja" novalidate>
       <ol class="hoja-ing">
         <li class="hi" data-hi="0"><button type="button" class="hi-fila" data-ir-paso="0"><span class="hi-n">1</span><span class="hi-t"><b>${PASOS[0]}</b><small data-hi-resumen></small></span><span class="hi-cambiar">Cambiar</span></button><section data-paso="0" class="rec-etapa">
@@ -49,13 +49,14 @@ export default async function recibir({app,query}){
             ${campo({nombre:'cnombre',etiqueta:'Nombre del cliente',requerido:true,attrs:'maxlength="120"'})}${campo({nombre:'ctelefono',etiqueta:'Teléfono',tipo:'tel',requerido:true,attrs:'maxlength="40" inputmode="tel"'})}
           </div>
         </section></li>
-        <li class="hi" data-hi="1"><button type="button" class="hi-fila" data-ir-paso="1"><span class="hi-n">2</span><span class="hi-t"><b>${PASOS[1]}</b><small data-hi-resumen></small></span><span class="hi-cambiar">Cambiar</span></button><section data-paso="1" class="rec-etapa" hidden><h2 tabindex="-1">Estado al ingresar</h2><p class="rec-explica">Antes de mover o reparar el auto, registrá cómo llegó. Las fotos del tablero y del exterior son obligatorias.</p>
-          <div class="campo" data-campo="fotosIngreso"><div data-fotos-ingreso></div></div>
-          ${opcionesRadio('tableroEstado',[['sin_testigos','Sin testigos de falla observados'],['con_testigos','Hay testigos encendidos'],['no_enciende','No se puede encender el tablero']],'','Estado del tablero')}
-          ${campo({nombre:'ingresoTestigos',etiqueta:'Testigos encendidos o aclaración',tipo:'textarea',attrs:'maxlength="1000" rows="2"',ayuda:'Indicá cuáles se ven y si el motor está encendido, solo en contacto o no arranca. Si no enciende, fotografiá igualmente el tablero y explicalo.'})}
-          ${opcionesRadio('carroceria',[['sin_danos','Sin daños visibles observados'],['con_danos','Hay daños previos']],'','Carrocería e interior')}
-          ${campo({nombre:'ingresoObservaciones',etiqueta:'Estado visible y detalles al ingresar',tipo:'textarea',requerido:true,attrs:'maxlength="2000" rows="3"',placeholder:'Ej.: rayón en puerta delantera derecha, paragolpes trasero golpeado.',ayuda:'Revisá carrocería, vidrios e interior. Ubicá cada daño y agregá una foto de detalle. Si no observás daños, dejalo escrito. Lo no revisado debe quedar aclarado.'})}
-          ${casilla('ingresoConfirmado','Revisé las fotos: corresponden a este auto y muestran el estado de este ingreso')}
+        <li class="hi" data-hi="1"><button type="button" class="hi-fila" data-ir-paso="1"><span class="hi-n">2</span><span class="hi-t"><b>${PASOS[1]}</b><small data-hi-resumen></small></span><span class="hi-cambiar">Cambiar</span></button><section data-paso="1" class="rec-etapa" hidden><h2 tabindex="-1">Estado al ingresar</h2><p class="rec-explica">Antes de mover o reparar el auto, registrá cómo llegó: fotos, tablero y carrocería.</p>
+          <div class="campo p2-fotos" data-campo="fotosIngreso"><div data-fotos-ingreso></div></div>
+          <fieldset class="p2-sec" data-campo="tableroEstado"><legend class="p2-tit">Tablero</legend><div class="p2-ops c3"><label class="p2-op"><input type="radio" name="tableroEstado" value="sin_testigos"><span>${ic('check_circle','p2-op-ok')}Sin alertas observadas</span></label><label class="p2-op"><input type="radio" name="tableroEstado" value="con_testigos"><span>${ic('check_circle','p2-op-ok')}Con testigos encendidos</span></label><label class="p2-op"><input type="radio" name="tableroEstado" value="no_enciende"><span>${ic('check_circle','p2-op-ok')}No enciende</span></label></div></fieldset>
+          <div class="p2-sub" data-testigos data-campo="ingresoTestigos" hidden><label class="p2-sub-l" for="rec-testigos" data-testigos-l>¿Qué testigos se ven?</label><input class="p2-inp" id="rec-testigos" name="testigosVer" maxlength="900" autocomplete="off" placeholder="Ej.: check engine, ABS"><fieldset class="p2-ops c2" data-motor><legend class="sr">Estado del motor al mirar el tablero</legend><label class="p2-op"><input type="radio" name="motorEstado" value="encendido"><span>${ic('check_circle','p2-op-ok')}Motor encendido</span></label><label class="p2-op"><input type="radio" name="motorEstado" value="contacto"><span>${ic('check_circle','p2-op-ok')}Solo en contacto</span></label></fieldset><input type="hidden" name="ingresoTestigos"></div>
+          <fieldset class="p2-sec" data-campo="carroceria"><legend class="p2-tit">Carrocería e interior</legend><div class="p2-ops c2"><label class="p2-op"><input type="radio" name="carroceria" value="sin_danos"><span>${ic('check_circle','p2-op-ok')}Sin daños visibles observados</span></label><label class="p2-op"><input type="radio" name="carroceria" value="con_danos"><span>${ic('check_circle','p2-op-ok')}Con daños previos</span></label></div></fieldset>
+          <div class="p2-danos" data-campo="ingresoObservaciones"><div data-danos></div><p class="p2-registro" data-sin-danos hidden>${ic('task_alt')}Queda registrado: «Sin daños visibles observados».</p><input type="hidden" name="ingresoObservaciones"><details class="p2-aclarar" data-aclarar><summary>${ic('add')}Aclarar zona no revisada (opcional)</summary><label class="sr" for="rec-aclaracion">Zona no revisada o aclaración</label><textarea class="p2-inp" id="rec-aclaracion" name="ingresoAclaracion" maxlength="600" rows="2" placeholder="Ej.: no se revisó el techo por la lluvia"></textarea></details></div>
+          <label class="p2-conf" data-campo="ingresoConfirmado"><input type="checkbox" name="ingresoConfirmado" value="1"><span class="p2-caja" aria-hidden="true">${ic('check')}</span><span>Verifiqué las fotos y el estado de este auto</span></label>
+          <p class="nota">${ic('edit_note')}Se guarda como borrador; cuenta como recibido recién al confirmar en el paso 7.</p><div class="p2-faltan" data-faltan role="status" aria-live="polite"></div>
         </section></li>
         <li class="hi" data-hi="2"><button type="button" class="hi-fila" data-ir-paso="2"><span class="hi-n">3</span><span class="hi-t"><b>${PASOS[2]}</b><small data-hi-resumen></small></span><span class="hi-cambiar">Cambiar</span></button><section data-paso="2" class="rec-etapa" hidden><h2 tabindex="-1">¿Por qué viene?</h2><p class="rec-explica">Marcá lo que cuenta el cliente. Podés marcar varios. No es un diagnóstico.</p>
           ${turno?.motivo?`<p class="aviso">En el turno dijo: ${esc(turno.motivo)}. Revisalo con el cliente.</p>`:''}
@@ -88,7 +89,28 @@ export default async function recibir({app,query}){
   </div>`,despues(raiz){
     const f=raiz.querySelector('#f-recibir'),q=f.querySelector('#rec-q'),resultados=f.querySelector('[data-resultados]');
     let modo=elegido?'conocido':'buscar',paso=0,volverRevision=false,motivos=[],consulta=0,consultaContacto=0,timer,ctimer,pendiente=null;
-    let fotosIngreso;
+    let fotosIngreso,carroceriaVista;
+    // El servidor pide testigos y observaciones como texto: se arman con lo que la persona escribió y eligió.
+    const componer=()=>{
+      const d=campos(),motor={encendido:'Motor encendido',contacto:'Solo en contacto'}[d.motorEstado];
+      f.elements.ingresoTestigos.value=d.tableroEstado==='sin_testigos'||!d.tableroEstado?'':[d.testigosVer.trim(),d.tableroEstado==='con_testigos'?motor:''].filter(Boolean).join(' · ');
+      const danos=(fotosIngreso?.datos()||[]).filter(x=>x.tipo==='detalle'&&x.descripcion.trim()).map((x,i)=>`Daño ${i+1}: ${x.descripcion.trim()}`);
+      const base=d.carroceria==='sin_danos'?'Sin daños visibles observados.':d.carroceria==='con_danos'?danos.join('. '):'';
+      f.elements.ingresoObservaciones.value=[base,d.ingresoAclaracion.trim()?`Aclaración: ${d.ingresoAclaracion.trim()}`:''].filter(Boolean).join(' ').slice(0,2000);
+    };
+    // Lo pendiente del paso 2, sin rojo hasta que algo falla de verdad.
+    const faltan=()=>{
+      const caja=f.querySelector('[data-faltan]');if(!caja||!fotosIngreso)return;
+      const d=campos(),e=fotosIngreso.estado(),L=[];
+      if(e.fallidas.length){const t=e.fallidas[0];caja.className='p2-faltan err';caja.innerHTML=`${ic('warning')}<span>${e.fallidas.length===1?'1 foto':e.fallidas.length+' fotos'} ${t==='tablero'?'del tablero':t==='exterior'?'del exterior':'de daños'} no se subió</span><button type="button" class="enlace" data-ir-foto>Ir a la foto</button>`;caja.querySelector('[data-ir-foto]').onclick=()=>{const a=f.querySelector('.p2-alerta, .p2-tile.err');a?.scrollIntoView({block:'center'});a?.querySelector('button,input')?.focus();};return;}
+      if(e.subiendo){caja.className='p2-faltan';caja.innerHTML=`<span class="p2-giro chico" aria-hidden="true"></span><span>Subiendo fotos…</span>`;return;}
+      if(!e.tablero)L.push('tablero');if(!e.exterior)L.push('exterior');
+      const resp=[!d.tableroEstado,!d.carroceria].filter(Boolean).length;if(resp)L.push(resp===1?'1 respuesta':'2 respuestas');
+      if(['con_testigos','no_enciende'].includes(d.tableroEstado)&&!d.testigosVer.trim())L.push('testigos');
+      if(d.carroceria==='con_danos'&&(!e.detalle||e.danosSinTexto||e.danosSinFoto))L.push('daños');
+      if(!d.ingresoConfirmado)L.push('confirmación');
+      caja.className='p2-faltan'+(L.length?'':' ok');caja.innerHTML=L.length?`<span>Faltan: ${L.join(' · ')}</span>`:`${ic('task_alt')}<span>Todo listo para continuar</span>`;
+    };
     const campos=()=>leerForm(f);
     if(draft&&!query.vehiculo&&!query.turno&&!query.patente){
       for(const [k,v] of Object.entries(draft.campos||{})){const es=[...f.elements].filter(e=>e.name===k);for(const e of es){if(e.type==='checkbox')e.checked=!!v;else if(e.type==='radio')e.checked=e.value===v;else e.value=v??'';}}
@@ -100,21 +122,25 @@ export default async function recibir({app,query}){
       const ok=guardarBorrador(app,{fotosVersion:1,fotos:fotosIngreso?.datos()||draft?.fotos||[],campos:campos(),vehiculoId:modo==='conocido'?elegido?.id:null,modo,paso,motivos,clave:f.dataset.clave,pendiente,turnoId:turno?.id,relacionadaId:relacionada?.id});
       f.toggleAttribute('data-sin-aviso',ok);f.querySelector('[data-estado-borrador]').textContent=pendiente?'Guardado sin confirmar. Reintentá sin cambiar los datos.':ok?'Borrador en esta pestaña · no cuenta como recibido.':'No se pudo conservar el borrador. No cierres esta pantalla.';
     };
-    fotosIngreso=enlazarFotosIngreso(f.querySelector('[data-fotos-ingreso]'),{clave:claveDeEnvio(f),inicial:draft?.fotos||[],guardar:()=>{f.elements.ingresoConfirmado.checked=false;guardar();}});
+    fotosIngreso=enlazarFotosIngreso(f.querySelector('[data-fotos-ingreso]'),{clave:claveDeEnvio(f),inicial:draft?.fotos||[],danos:f.querySelector('[data-danos]'),carroceria:()=>f.querySelector('[name=carroceria]:checked')?.value||'',alDano:()=>{const x=f.querySelector('[name=carroceria][value=con_danos]');x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));},guardar:()=>{f.elements.ingresoConfirmado.checked=false;componer();faltan();guardar();}});
     const marca=()=>{const d=campos();f.elements.marca.value=d.marcaOpcion==='Otra'?d.marcaOtra:d.marcaOpcion||'';f.querySelector('[data-otra-marca]').hidden=d.marcaOpcion!=='Otra';f.querySelector('[data-marca-estado]').textContent=d.marcaOpcion?`Marca elegida: ${f.elements.marca.value||'Otra (completá el nombre)'}`:'Elegí una marca.';f.elements.marca.dispatchEvent(new Event('input'));};
     enlazarModelos(f);
     const vistaDatos=()=>{
       const d=campos();f.querySelector('[data-nuevo-auto]').hidden=modo!=='nuevo';f.querySelector('[data-buscar-auto]').hidden=modo==='nuevo';
       f.elements.patente.disabled=!!d.sinPatente;f.elements.km.disabled=!!d.sinKm;
       const exigeTestigos=['con_testigos','no_enciende'].includes(d.tableroEstado);
-      f.elements.ingresoTestigos.required=exigeTestigos;f.elements.ingresoTestigos.setAttribute('aria-required',String(exigeTestigos));
-      f.querySelector('[data-campo="ingresoTestigos"] label span').hidden=exigeTestigos;
+      f.querySelector('[data-testigos]').hidden=!exigeTestigos;f.querySelector('[data-motor]').hidden=d.tableroEstado!=='con_testigos';
+      f.querySelector('[data-testigos-l]').textContent=d.tableroEstado==='no_enciende'?'¿Qué pasa al intentar encenderlo?':'¿Qué testigos se ven?';
+      f.elements.testigosVer.placeholder=d.tableroEstado==='no_enciende'?'Ej.: no da contacto, batería descargada':'Ej.: check engine, ABS';
+      f.querySelector('[data-sin-danos]').hidden=d.carroceria!=='sin_danos';
+      if(d.carroceria!==carroceriaVista){carroceriaVista=d.carroceria;fotosIngreso?.refrescar();}
+      componer();faltan();
       f.querySelector('[data-revision]').hidden=d.tipo!=='revision';f.querySelector('[data-autorizado]').hidden=!(d.tipo==='service'||d.tipo==='revision'&&d.revisionCosto==='si');f.querySelector('[data-service]').hidden=d.tipo!=='service';f.querySelector('[data-otra-persona]').hidden=d.quien!=='otra';
       const abierta=elegido?.visitas?.find(x=>!x.entregada_at&&!x.anulada_at);
       f.querySelector('[data-elegido]').innerHTML=modo==='conocido'&&elegido?`<div class="rec-elegido">${resultado(elegido)}${!abierta?'<p>'+icono('check')+' Auto elegido. Podés continuar o buscar otro.</p>':''}</div>`:'';
       const placa=modo==='nuevo'?(d.sinPatente?'Sin patente visible':d.patente):elegido?.patente;
       const modelo=modo==='nuevo'?[d.marca,d.modelo,d.anio].filter(Boolean).join(' '):elegido?[elegido.marca,elegido.modelo].filter(Boolean).join(' '):'';
-      f.querySelector('[data-resumen]').textContent=placa?[placa,modelo].filter(Boolean).join(' · '):'Sin auto elegido';
+      f.querySelector('[data-resumen]').textContent=placa?[placa,modelo].filter(Boolean).join(' · '):'Sin auto elegido';const pb=raiz.querySelector('[data-placa-banda]');if(pb){pb.hidden=!placa;pb.textContent=placa||'';pb.setAttribute('aria-label','Patente '+(placa||''));}
     };
     const detalleMotivos=()=>{
       f.querySelectorAll('[data-motivo]').forEach(b=>b.setAttribute('aria-pressed',String(motivos.some(m=>m.id===b.dataset.motivo))));
@@ -133,7 +159,7 @@ export default async function recibir({app,query}){
         if(!d.contactoId&&d.ctelefono.replace(/\D/g,'').length<6)throw falla('Revisá el teléfono del cliente.','ctelefono');
       }else if(!elegido||modo!=='conocido')throw falla('Elegí un auto o cargá uno nuevo.','vehiculoId');
       else if(elegido.visitas?.some(x=>!x.entregada_at&&!x.anulada_at))throw falla('Este auto ya tiene una orden abierta. Continuá esa orden.','vehiculoId');}
-      if(i===1){fotosIngreso.validar(d.carroceria);if(!d.tableroEstado)throw falla('Indicá el estado del tablero.','tableroEstado');if(d.tableroEstado!=='sin_testigos'&&!d.ingresoTestigos.trim())throw falla('Detallá los testigos o por qué no enciende.','ingresoTestigos');if(!d.carroceria)throw falla('Indicá si observás daños previos.','carroceria');if(!d.ingresoObservaciones.trim())throw falla('Describí el estado visible al ingresar.','ingresoObservaciones');if(!d.ingresoConfirmado)throw falla('Confirmá que revisaste las fotos y el estado al ingresar.','ingresoConfirmado');}
+      if(i===1){fotosIngreso.validar(d.carroceria);if(!d.tableroEstado)throw falla('Indicá el estado del tablero.','tableroEstado');if(d.tableroEstado!=='sin_testigos'&&!d.testigosVer.trim())throw falla(d.tableroEstado==='no_enciende'?'Contá qué pasa al intentar encenderlo.':'Escribí qué testigos se ven.','ingresoTestigos');if(!d.carroceria)throw falla('Indicá si observás daños previos.','carroceria');if(!d.ingresoObservaciones.trim())throw falla('Describí el estado visible al ingresar.','carroceria');if(!d.ingresoConfirmado)throw falla('Confirmá que verificaste las fotos y el estado de este auto.','ingresoConfirmado');}
       if(i===2){if(!motivos.length&&!d.relato.trim())throw falla('Elegí un motivo o escribí lo que cuenta el cliente.','relato');if(motivos.some(m=>m.id==='otro')&&!d.otro.trim())throw falla('Contá el otro motivo.','otro');}
       if(i===3&&!d.sinKm){const n=d.km.replace(/[.\s]/g,'');if(!/^\d+$/.test(n)||+n>9999999)throw falla('Escribí los kilómetros o marcá Sin lectura.','km');const ultima=ultimaLectura(elegido?.lecturas);if(modo==='conocido'&&ultima&&+n<ultima.km&&!d.kmExplicacion.trim())throw falla(`La lectura anterior es ${ultima.km} km. Explicá la diferencia.`,'kmExplicacion');}
       if(i===4){if(!d.tipo)throw falla('Elegí qué autoriza el cliente.','tipo');if(d.tipo==='revision'&&!d.revisionCosto)throw falla('Indicá si la revisión tiene costo.','revisionCosto');if((d.tipo==='service'||d.revisionCosto==='si')&&!d.autPersona.trim())throw falla('Indicá quién autorizó lo acordado.','autPersona');}
@@ -153,7 +179,7 @@ export default async function recibir({app,query}){
     const irPaso=(i,enfocar=true)=>{
       const anterior=paso;detenerMovimiento(f);
       paso=i;limpiarErrores(f);f.querySelectorAll('[data-paso]').forEach(s=>s.hidden=+s.dataset.paso!==i);
-      raiz.querySelector('[data-paso-label]').textContent=`Paso ${i+1} de ${PASOS.length} · el borrador se guarda solo`;
+      raiz.querySelector('[data-paso-label]').textContent=`Paso ${i+1} de ${PASOS.length} · ${PASOS[i]}`;raiz.querySelectorAll('[data-tramo]').forEach(t=>{const n=+t.dataset.tramo;t.className=n<i?'h':n===i?'a':'';});
       const res=resumenPasos();f.querySelectorAll('[data-hi]').forEach(li=>{const n=+li.dataset.hi,estado=n<i?'hecho':n===i?'actual':'futuro';li.className='hi '+estado;li.toggleAttribute('aria-current',n===i);const b=li.querySelector('[data-ir-paso]');b.disabled=n>=i;b.querySelector('[data-hi-resumen]').textContent=n<i?res[n]:'';b.querySelector('.hi-n').innerHTML=n<i?ic('check'):String(n+1);});
       f.querySelector(`[data-hi="${i}"]`).append(f.querySelector('[data-acciones]'));
       f.querySelectorAll('[data-indice]').forEach(li=>li.toggleAttribute('aria-current',+li.dataset.indice===i));f.querySelector('[data-omitir]').hidden=i!==5||volverRevision;f.querySelector('[data-continuar]').type=i===6?'submit':'button';f.querySelector('[data-continuar]').innerHTML=i===6?`${ic('check')}Confirmar el ingreso`:volverRevision?'Volver a revisión':`Continuar ${ic('arrow_downward')}`;
@@ -187,7 +213,7 @@ export default async function recibir({app,query}){
       if(!pendiente&&modo==='nuevo'&&d.quien==='otra')cuerpo.retiroNota=[d.retiroNota,`Lo dejó ${d.dejaNombre}${d.dejaTelefono?' · '+d.dejaTelefono:''}`].filter(Boolean).join('. ').slice(0,300);
       f.querySelector('[data-continuar]').textContent='Guardando…';
       try{const r=await post('/api/visitas',cuerpo,{idempotencia:claveDeEnvio(f)});borrarBorrador(app);delete f.dataset.sucio;raiz.innerHTML=`<section class="rec-exito"><span class="rec-exito-icon">${icono('check')}</span><h1 tabindex="-1">Auto recibido</h1><p>El servidor confirmó la orden <strong>N.º ${esc(r.visita.numero)}</strong> para ${esc(r.visita.vehiculo.patente)}.</p><a class="btn btn-primario" href="#/visitas/${r.id}">Abrir la orden</a><a class="btn" href="#/recibir?nueva=1">Recibir otro auto</a><a class="btn btn-texto" href="#/hoy">Volver a Hoy</a></section>`;raiz.querySelector('h1').focus();}
-      catch(e){if(e.datos?.guardadoSinConfirmar){pendiente=cuerpo;guardar();bloquear();}else{const mapa={patente:0,marca:0,modelo:0,anio:0,cnombre:0,ctelefono:0,fotosIngreso:1,carroceria:1,tableroEstado:1,ingresoObservaciones:1,ingresoTestigos:1,ingresoConfirmado:1,motivos:2,relato:2,otro:2,km:3,kmExplicacion:3,tipo:4,revisionCosto:4,autPersona:4,autImporte:4,responsableId:5,retiro:5};irPaso(mapa[e.campo]??6);f.querySelector('[data-continuar]').textContent=paso===6?'Reintentar el ingreso':'Continuar';if(e.datos?.visitaAbierta)toast(e.message,{error:true,accion:{texto:'Abrir orden',fn:()=>app.ir('#/visitas/'+e.datos.visitaAbierta.id)}});}throw e;}
+      catch(e){if(e.datos?.guardadoSinConfirmar){pendiente=cuerpo;guardar();bloquear();}else{const mapa={patente:0,marca:0,modelo:0,anio:0,cnombre:0,ctelefono:0,fotosIngreso:1,carroceria:1,tableroEstado:1,ingresoObservaciones:1,ingresoTestigos:1,testigosVer:1,ingresoConfirmado:1,motivos:2,relato:2,otro:2,km:3,kmExplicacion:3,tipo:4,revisionCosto:4,autPersona:4,autImporte:4,responsableId:5,retiro:5};irPaso(mapa[e.campo]??6);f.querySelector('[data-continuar]').textContent=paso===6?'Reintentar el ingreso':'Continuar';if(e.datos?.visitaAbierta)toast(e.message,{error:true,accion:{texto:'Abrir orden',fn:()=>app.ir('#/visitas/'+e.datos.visitaAbierta.id)}});}throw e;}
     });
     if(draft?.campos?.contactoId){f.elements.cnombre.readOnly=true;f.elements.ctelefono.readOnly=true;const p=f.querySelector('[data-contacto-elegido]');p.hidden=false;p.innerHTML='Contacto existente recuperado del borrador. <button type="button" class="btn btn-texto">Usar otro contacto</button>';p.querySelector('button').onclick=()=>{f.elements.contactoId.value='';f.elements.cnombre.readOnly=false;f.elements.ctelefono.readOnly=false;p.hidden=true;guardar();};}
     marca();detalleMotivos();irPaso(paso,false);if(pendiente)bloquear();
