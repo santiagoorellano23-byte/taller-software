@@ -13,6 +13,10 @@ const GRUPOS = { revision: ['revision', 'presupuesto'], trabajo: ['trabajo'], co
 const OPERATIVOS = [['autorizacion', 'Sin respuesta del cliente', 'sms'], ['repuestos', 'Piezas por resolver', 'inventory_2'], ['retiros', 'Retiros acordados hoy', 'schedule'], ['listas', 'Listos para retirar', 'task_alt']];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 // Etapa de la barra de cinco segmentos según la situación real (no adelanta pasos).
+// Ilustraciones de la portada (estáticas): variante clara y oscura en la misma caja; el CSS muestra la del tema activo.
+const ilus = (n, [w, h] = n.endsWith('chico') ? [24, 24] : [100, 78]) => ['claro', 'oscuro'].map((t) => `<img class="pt-${t}" src="/ilustraciones/hoy/${n}-${t}.svg" alt="" width="${w}" height="${h}" decoding="async">`).join('');
+// Cifra del resumen: el tamaño se ajusta a su largo y al ancho de la columna, sin cortarla ni empujar la ilustración.
+const dato = (ilu, valor, rotulo) => `<div class="pt-c"><span class="pt-ico pt-ico-${ilu.split('-')[0]}" aria-hidden="true">${ilus(ilu)}</span><dt>${rotulo}</dt><dd style="--ch:${Math.max(2, String(valor).length)}">${esc(valor)}</dd></div>`;
 const ETAPA = { revision: 1, presupuesto: 2, autorizacion: 2, repuesto: 3, trabajo: 3, control: 3, controlada: 3, lista: 4 };
 
 function seccionAccion(v, app) { if (v.situacion.clave === 'lista' && app.puede('ver.dinero') && /Liquidar|Cobrar/.test(v.situacion.paso)) return 'cobros'; return ({ revision: 'revision', presupuesto: 'presupuesto', autorizacion: 'presupuesto', repuesto: 'trabajo', trabajo: 'trabajo', control: 'control', controlada: 'control', lista: 'control' })[v.situacion.clave] || 'trabajo'; }
@@ -67,15 +71,15 @@ export default async function hoy({ app, query }) {
 
   return {
     titulo: 'Hoy',
-    html: `<header class="a-cab"><div class="a-marca">${marcaTaller(t)}<span><small><span translate="no">${esc(t.nombre)}</span> · ${esc(DIAS[new Date(ahora.slice(0, 10) + 'T12:00:00Z').getUTCDay()])} ${esc(fecha(ahora).slice(0, 5))}</small><h1 tabindex="-1">Hoy</h1></span>${t.demo ? '<span class="chip demo" title="Personas, autos e importes inventados para mostrar el sistema">DEMO</span>' : ''}</div>
+    html: `<header class="a-cab pt-cab"><div class="a-marca">${marcaTaller(t)}<span class="pt-id"><span class="pt-taller"><span translate="no">${esc(t.nombre)}</span>${t.demo ? '<span class="chip demo" title="Personas, autos e importes inventados para mostrar el sistema">DEMO</span>' : ''}</span><span class="pt-tit"><h1 tabindex="-1">Hoy</h1><span class="pt-fecha">${esc(DIAS[new Date(ahora.slice(0, 10) + 'T12:00:00Z').getUTCDay()])} ${esc(fecha(ahora).slice(0, 5))}</span></span></span></div>
       <div class="a-cab-acc">${ibtn('help', 'Ayuda', { attrs: 'data-ayuda="guia"' })}<button type="button" class="av-b" data-sesion aria-label="Tu sesión: ${esc(app.sesion.usuario.nombre)}">${esc(app.sesion.usuario.nombre.slice(0, 1).toUpperCase())}</button></div></header>
       ${lineaPlan()}
-      <div class="buscador-d">${ic('search')}<label class="sr" for="hoy-q">Buscar por patente, cliente o teléfono</label><input id="hoy-q" type="search" placeholder="Patente, cliente o teléfono" autocomplete="off" enterkeyhint="search"></div>
-      <dl class="resumen-a" aria-label="Resumen del día"><div><dt>En el taller</dt><dd>${d.presentes.length}</dd></div><div><dt>Retiros hoy</dt><dd>${d.retiros.length}</dd></div>${cuentas ? `<div><dt>Saldo por cobrar</dt><dd>${esc(pesos(cuentas.total || 0))}</dd></div>` : `<div><dt>Listos</dt><dd>${listos}</dd></div>`}</dl>
+      <div class="buscador-d pt-busca">${ic('search')}<label class="sr" for="hoy-q">Buscar por patente, cliente o teléfono</label><input id="hoy-q" type="search" placeholder="Patente, cliente o teléfono" autocomplete="off" enterkeyhint="search"></div>
+      <dl class="resumen-a pt-res${cuentas ? ' con-din' : ''}${cuentas && pesos(cuentas.total || 0).length >= 10 ? ' din-largo' : ''}" aria-label="Resumen del día">${dato('taller-grande', d.presentes.length, 'En el taller')}${dato('calendario-grande', d.retiros.length, 'Retiros hoy')}${cuentas ? dato('dinero-grande', pesos(cuentas.total || 0), 'Saldo por cobrar') : dato('listos-grande', listos, 'Listos')}</dl>
       ${borrador ? `<section class="aviso-in warn" aria-label="Recepción sin terminar">${ic('edit_note')}<span><b>Recepción sin terminar.</b> ${esc(borrador.campos?.patente || 'Auto en preparación')}: es un borrador, todavía no cuenta como recibido. <a href="#/recibir">Continuar</a>${!borrador.pendiente ? ' · <button type="button" class="enlace" data-descartar-borrador>Descartar</button>' : ''}</span></section>` : ''}
-      <nav class="filtros" aria-label="Grupos de atención">${OPERATIVOS.map(([k, txt, i]) => `<a class="filtro" href="#/hoy?ver=${filtro === k ? 'todos' : k}" ${filtro === k ? 'aria-current="true"' : ''}>${ic(i)}<span>${txt}</span><b>${pendientes[k]?.length || 0}</b></a>`).join('')}</nav>
+      <div class="pt-fw" data-ini="1" data-fin="1"><nav class="filtros pt-filtros" aria-label="Grupos de atención">${OPERATIVOS.map(([k, txt, i]) => { const n = pendientes[k]?.length || 0; return `<a class="filtro${n ? '' : ' cero'}" href="#/hoy?ver=${filtro === k ? 'todos' : k}" ${filtro === k ? 'aria-current="true"' : ''}>${ic(i)}<span>${txt}</span><b>${n}</b></a>`; }).join('')}</nav><button type="button" class="pt-fmas" data-filtros-mas tabindex="-1" aria-hidden="true">${ic('chevron_right')}</button></div>
       ${operativo ? `<p class="nota">${ic('info')}Órdenes abiertas; una orden puede aparecer en más de un grupo. Hoy corresponde al horario del taller (${esc((d.zona || 'America/Argentina/Mendoza').split('/').at(-1).replaceAll('_', ' '))}).</p>` : ''}
-      <nav class="seg" aria-label="Qué autos ver">${[['todos', 'Todo el taller', d.presentes.length], ['mias', 'Asignado a mí', d.mias?.length || 0]].map(([ver, nombre, n]) => `<a href="#/hoy?ver=${ver}" ${filtro === ver ? 'aria-current="page"' : ''}>${nombre} <b>${n}<span class="sr"> vehículo${n === 1 ? '' : 's'}</span></b></a>`).join('')}</nav>
+      <nav class="seg pt-seg" aria-label="Qué autos ver">${[['todos', 'Todo el taller', d.presentes.length], ['mias', 'Asignado a mí', d.mias?.length || 0]].map(([ver, nombre, n]) => `<a href="#/hoy?ver=${ver}" ${filtro === ver ? 'aria-current="page"' : ''}>${ver === 'todos' ? `<span class="pt-sel" aria-hidden="true">${ilus('taller-chico')}</span>` : ''}<span class="pt-seg-t">${nombre}</span> <b>${n}<span class="sr"> vehículo${n === 1 ? '' : 's'}</span></b></a>`).join('')}</nav>
       <p class="sr" aria-live="polite" data-cuenta>${presentes.length} de ${d.presentes.length} autos${operativo ? ' · ' + esc(operativo[1]) : ''}</p>
       <div data-sin-resultados hidden>${vacioD('search', 'Ninguno de los autos presentes coincide', '', '<button type="button" class="btn" data-buscar-todos>Buscar en todos los autos del taller</button>')}</div>
       ${!d.presentes.length ? vacioD('garage', 'No hay autos en el taller', 'Cuando recibas un auto, aparece acá con su próxima acción.', app.puede('visita.recibir') ? `<a class="btn btn-primario" href="#/recibir">${ic('add')}Recibir un auto</a>` : '')
@@ -90,6 +94,14 @@ export default async function hoy({ app, query }) {
       </div></details>
       ${responsables.size ? `<details class="desp"><summary>${ic('group')}Órdenes abiertas por responsable</summary><div class="desp-c"><p class="nota">Cantidad de órdenes; no representa horas ni capacidad disponible.</p><ul class="lista-d densa">${[...responsables].map(([nombre, n]) => `<li><span class="li-t"><b>${esc(nombre)}</b></span><span class="monto-d">${n}</span></li>`).join('')}</ul></div></details>` : ''}`,
     despues(raiz) {
+      // Filtros: degradado y flecha solo hacia el lado con opciones fuera de la vista; la opción elegida queda visible.
+      const sc = raiz.querySelector('.pt-filtros'), fw = sc.parentElement;
+      const bordes = () => { fw.dataset.ini = sc.scrollLeft <= 2 ? '1' : '0'; fw.dataset.fin = sc.scrollLeft + sc.clientWidth >= sc.scrollWidth - 2 ? '1' : '0'; };
+      const elegido = sc.querySelector('[aria-current]');
+      if (elegido && elegido.offsetLeft + elegido.offsetWidth + 48 > sc.clientWidth) sc.scrollLeft = elegido.offsetLeft - 16;
+      sc.addEventListener('scroll', bordes, { passive: true });
+      new ResizeObserver(bordes).observe(sc);
+      fw.querySelector('[data-filtros-mas]').addEventListener('click', () => sc.scrollBy({ left: Math.round(sc.clientWidth * 0.7), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
       raiz.querySelector('[data-descartar-borrador]')?.addEventListener('click', () => { borrarBorrador(app); app.recargar(); });
       const q = raiz.querySelector('#hoy-q');
       const items = raiz.querySelectorAll('article[data-patente]');

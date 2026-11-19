@@ -117,7 +117,8 @@ export function lineaPlan() {
   const s = app.sesion?.taller.servicio;
   if (!s || !app.puede('servicio.gestionar') || !['activa', 'prueba'].includes(s.estado) || s.diasRestantes == null || s.diasRestantes > 7) return '';
   const cuando = s.diasRestantes === 0 ? 'hoy es el último día' : `quedan ${s.diasRestantes} día${s.diasRestantes === 1 ? '' : 's'}`;
-  return `<p class="plan-linea">${ic('schedule')}<span title="Acceso hasta el ${fechaLarga(s.periodoHasta)}">Acceso: ${cuando}</span><a href="#/ajustes/plan">Renovar acceso</a></p>`;
+  // Toda la franja lleva a renovar (área táctil amplia); «Renovar acceso» se ve como enlace en la misma línea si entra.
+  return `<a class="plan-linea" href="#/ajustes/plan" title="Acceso hasta el ${fechaLarga(s.periodoHasta)}">${ic('schedule')}<span class="plan-t">Acceso: ${cuando}<span class="plan-sep" aria-hidden="true"> · </span><span class="plan-b">Renovar acceso</span></span>${ic('chevron_right', 'plan-ch')}</a>`;
 }
 function avisoServicio(s) {
   if (!s) return '';
