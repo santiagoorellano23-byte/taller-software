@@ -8,6 +8,9 @@ process.env.TALLERES_PROXY = '1';
 process.env.TALLERES_SEGURO = '1';
 // Demostración pública con datos ficticios: se entra como dueño sin contraseña (el servidor lo niega si hubiera un taller real).
 process.env.TALLERES_DEMO_SIN_INGRESO = '1';
+// Vercel reparte los pedidos entre varias copias y cada una arma su propia base: con una clave común a las copias de
+// este despliegue, la sesión de la demo vale en cualquiera. Solo datos ficticios; una clave propia tiene prioridad.
+process.env.TALLERES_DEMO_CLAVE ||= process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_URL || 'demo-growth-labs-talleres';
 
 const { config, archivoBase } = await import('../server/config.js');
 const { crearServidor } = await import('../server/index.js');

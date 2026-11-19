@@ -1,7 +1,8 @@
 // Autenticación: contraseñas con scrypt, sesiones de servidor y enlaces de invitación/recuperación.
 import crypto from 'node:crypto';
-import { uno, ejecutar, insertar } from './db.js';
-import { ErrorUsuario, falla } from './util.js';
+import { uno, todos, ejecutar, insertar } from './db.js';
+import { ErrorUsuario, falla, json } from './util.js';
+import { config } from './config.js';
 
 // Sesiones y enlaces vencen según la hora real (el reloj simulado de pruebas no los afecta).
 const ahora = () => new Date();
@@ -31,10 +32,31 @@ export function validarClaveNueva(clave) {
 const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
 export const tokenNuevo = () => crypto.randomBytes(32).toString('base64url');
 
+// Demo en varias copias del servidor (Vercel): todas arman la misma base ficticia, con los mismos usuarios. La sesión
+// lleva usuario y vencimiento firmados para que otra copia la registre en su base. Solo con la clave de la demo,
+// el ingreso sin contraseña habilitado y una base en la que todos los talleres son de demostración.
+const firmaDemo = (cuerpo) => crypto.createHmac('sha256', config.demoClave).update(cuerpo).digest('base64url');
+function baseDeDemo(db) {
+  if (!config.demoSinIngreso || !config.demoClave) return false;
+  const talleres = todos(db, 'SELECT config FROM talleres');
+  return talleres.length > 0 && talleres.every((t) => json(t.config, {})?.demo === true);
+}
+function registrarSesionDemo(db, token) {
+  const [pre, uid, exp, firma = ''] = String(token).split('.');
+  if (pre !== 'demo' || !baseDeDemo(db)) return false;
+  const esperada = Buffer.from(firmaDemo(`${uid}.${exp}`));
+  if (esperada.length !== Buffer.from(firma).length || !crypto.timingSafeEqual(esperada, Buffer.from(firma))) return false;
+  if (!(Number(exp) > Date.now()) || !uno(db, 'SELECT id FROM usuarios WHERE id = ?', Number(uid))) return false;
+  const t = isoAhora();
+  insertar(db, 'INSERT INTO sesiones (token_hash, usuario_id, creada, expira, ultima) VALUES (?, ?, ?, ?, ?)', sha(token), Number(uid), t, new Date(Number(exp)).toISOString(), t);
+  return true;
+}
+
 export function crearSesion(db, usuarioId) {
-  const token = tokenNuevo();
   const t = ahora();
   const expira = new Date(t.getTime() + DURACION_SESION_H * 3600e3).toISOString();
+  const exp = Date.parse(expira);
+  const token = baseDeDemo(db) ? `demo.${usuarioId}.${exp}.${firmaDemo(`${usuarioId}.${exp}`)}` : tokenNuevo();
   insertar(db, 'INSERT INTO sesiones (token_hash, usuario_id, creada, expira, ultima) VALUES (?, ?, ?, ?, ?)', sha(token), usuarioId, t.toISOString(), expira, t.toISOString());
   ejecutar(db, 'UPDATE usuarios SET ultimo_acceso = ? WHERE id = ?', t.toISOString(), usuarioId);
   return { token, expira };
@@ -43,8 +65,9 @@ export function crearSesion(db, usuarioId) {
 // Devuelve { usuario, taller } si la cookie corresponde a una sesión vigente de un usuario y taller activos.
 export function sesionDesdeToken(db, token) {
   if (!token) return null;
-  const fila = uno(db, `SELECT s.id AS sesion_id, s.expira, u.id, u.taller_id, u.nombre, u.email, u.rol, u.activo, t.activo AS taller_activo
+  const buscar = () => uno(db, `SELECT s.id AS sesion_id, s.expira, u.id, u.taller_id, u.nombre, u.email, u.rol, u.activo, t.activo AS taller_activo
     FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id JOIN talleres t ON t.id = u.taller_id WHERE s.token_hash = ?`, sha(token));
+  const fila = buscar() || (registrarSesionDemo(db, token) ? buscar() : null);
   if (!fila) return null;
   if (fila.expira < isoAhora() || !fila.activo || !fila.taller_activo) {
     ejecutar(db, 'DELETE FROM sesiones WHERE id = ?', fila.sesion_id);

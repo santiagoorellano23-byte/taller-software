@@ -6,13 +6,24 @@ export class ErrorApi extends Error {
 let alPerderSesion = () => {};
 export const configurarApi = ({ sesionPerdida }) => { alPerderSesion = sesionPerdida; };
 
+// En la demo (Vercel) cada copia del servidor tiene su propia base de prueba y los pedidos simultáneos pueden caer
+// en copias distintas: la demo manda un pedido por vez para que lo cargado se lea en la misma copia.
+let cola = null;
+export const pedidosDeAUno = (si) => { cola = si ? (cola || Promise.resolve()) : null; };
+export function api(...args) {
+  if (!cola) return pedir(...args);
+  const p = cola.then(() => pedir(...args));
+  cola = p.catch(() => {});
+  return p;
+}
+
 // Se conserva en el mismo formulario si se pierde la confirmación del servidor.
 // No regenerar al reintentar: el servidor comprueba también el contenido enviado.
 export function claveDeEnvio(form) {
   return form.dataset.clave ||= crypto.randomUUID();
 }
 
-export async function api(metodo, ruta, cuerpo, { idempotencia = false, archivo = null, cabeceras = {} } = {}) {
+async function pedir(metodo, ruta, cuerpo, { idempotencia = false, archivo = null, cabeceras = {} } = {}) {
   const h = { 'X-Talleres': '1', ...cabeceras };
   let body;
   if (archivo) { body = archivo; h['Content-Type'] = archivo.type || 'application/octet-stream'; }

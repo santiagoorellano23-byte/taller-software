@@ -20,7 +20,10 @@ export const config = {
   transferencia: (process.env.TALLERES_TRANSFERENCIA || '').trim().slice(0, 600),
   // Solo para demostraciones: entrar como dueño del taller ficticio sin contraseña. Además exige que todos
   // los talleres de la base sean de demostración; en una instalación real no hace nada.
-  demoSinIngreso: process.env.TALLERES_DEMO_SIN_INGRESO === '1'
+  demoSinIngreso: process.env.TALLERES_DEMO_SIN_INGRESO === '1',
+  // Solo para la demo en Vercel, donde cada copia del servidor tiene su propia base de prueba: con esta clave la
+  // sesión de la demo lleva usuario y vencimiento firmados y cualquier copia la reconoce. Exige demoSinIngreso.
+  demoClave: process.env.TALLERES_DEMO_CLAVE || ''
 };
 
 // En un alojamiento la carpeta del código se reemplaza en cada despliegue (en Hostinger, hbuilds/ y public_html/).

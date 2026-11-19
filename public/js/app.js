@@ -1,5 +1,5 @@
 // Arranque del panel: sesión, navegación, rutas, ayuda contextual y aviso de cambios sin guardar.
-import { api, get, post, configurarApi } from './api.js?v=0.1.0';
+import { api, get, post, configurarApi, pedidosDeAUno } from './api.js?v=0.1.0';
 import { esc, icono, toast, confirmar, hayCambiosSinGuardar, fijarZona, campo, alEnviar } from './ui.js?v=0.1.0';
 import { abrirAyuda } from './ayuda.js?v=0.1.0';
 import { selectorTema, enlazarTema, aplicarTema } from './tema.js?v=0.1.0';
@@ -336,6 +336,7 @@ async function iniciar(probarDemo = true) {
     return;
   }
   app.permisos = new Set(app.sesion.permisos);
+  pedidosDeAUno(app.sesion.taller.demo);
   aplicarApariencia(app.sesion.taller.apariencia);
   fijarZona(app.sesion.taller.zona);
   raiz.className = 'app';
