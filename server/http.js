@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { ErrorUsuario, isoAhora, json as leerJson } from './util.js';
 import { sesionDesdeToken } from './auth.js';
 import { transaccion, uno, insertar, ejecutar } from './db.js';
@@ -236,13 +237,28 @@ export function servirEstatico(res, raiz, ruta) {
     return;
   }
   const ext = path.extname(archivo).toLowerCase();
-  res.writeHead(200, {
+  const etag = `W/"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
+  const cabeceras = {
     'Content-Type': TIPOS[ext] || 'application/octet-stream',
-    'Content-Length': st.size,
     // Código y estilos se revalidan siempre (una actualización no deja pantallas viejas); fuentes e imágenes se guardan.
-    'Cache-Control': ['.woff2', '.png', '.jpg', '.svg', '.ico'].includes(ext) ? 'public, max-age=86400' : 'no-cache'
-  });
+    'Cache-Control': ['.woff2', '.png', '.jpg', '.svg', '.ico'].includes(ext) ? 'public, max-age=86400' : 'no-cache',
+    ETag: etag, Vary: 'Accept-Encoding'
+  };
+  const pedido = res.req?.headers || {};
+  // Revalidar sin cambios no vuelve a mandar el archivo: en el teléfono la segunda carga baja casi nada.
+  if (pedido['if-none-match'] === etag) { res.writeHead(304, cabeceras); res.end(); return; }
+  if (COMPRIMIBLES.has(ext) && st.size > 1024 && /\bgzip\b/.test(pedido['accept-encoding'] || '')) {
+    let c = comprimidos.get(archivo);
+    if (c?.etag !== etag) { c = { etag, datos: zlib.gzipSync(fs.readFileSync(archivo), { level: 9 }) }; comprimidos.set(archivo, c); }
+    res.writeHead(200, { ...cabeceras, 'Content-Encoding': 'gzip', 'Content-Length': c.datos.length });
+    res.end(c.datos);
+    return;
+  }
+  res.writeHead(200, { ...cabeceras, 'Content-Length': st.size });
   fs.createReadStream(archivo).pipe(res);
 }
+// Texto comprimido una sola vez por versión del archivo (el código entero pesa menos de 1 MB).
+const COMPRIMIBLES = new Set(['.html', '.js', '.css', '.svg', '.json', '.txt', '.webmanifest']);
+const comprimidos = new Map();
 
 export { ejecutar };

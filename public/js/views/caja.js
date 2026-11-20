@@ -12,7 +12,7 @@ export default async function caja({ query, app }) {
       <a class="volver" href="#/mas">${icono('izq')}Más funciones</a>
       <div class="cab"><h1 tabindex="-1">Caja</h1><div class="acciones no-imprimir"><button type="button" class="btn btn-chico" data-imprimir>${icono('imprimir')}Imprimir</button></div></div>
       <form class="form panel panel__cuerpo no-imprimir" id="f-periodo" data-sin-aviso><div class="fila-campos">${campo({ nombre: 'desde', etiqueta: 'Desde', tipo: 'date', valor: d.desde })}${campo({ nombre: 'hasta', etiqueta: 'Hasta', tipo: 'date', valor: d.hasta })}</div>
-        <div class="acciones"><button class="btn btn-oscuro btn-chico" type="submit">Ver período</button><a class="btn btn-chico" href="#/caja">Hoy</a></div></form>
+        <div class="acciones"><button class="btn btn-oscuro btn-chico" type="submit">${icono('calendario')}Ver período</button><a class="btn btn-chico" href="#/caja">Hoy</a></div></form>
       <div class="montos">
         <div class="monto"><span style="color:var(--green)">Entró</span><b class="num">${pesos(d.totalEntra)}</b><small>Cobros a clientes</small></div>
         <div class="monto"><span style="color:var(--red)">Salió</span><b class="num">${pesos(d.totalSale)}</b><small>Devoluciones, anulaciones y pagos a proveedores</small></div>

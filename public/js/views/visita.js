@@ -64,7 +64,7 @@ function planificacion(v, app, usuarios) {
       ${campo({ nombre: 'retiro', etiqueta: 'Retiro acordado', tipo: 'datetime-local', valor: v.retiro_acordado || '', ayuda: 'Vacío = a confirmar.' })}
       ${campo({ nombre: 'prioridad', etiqueta: 'Prioridad', tipo: 'select', valor: v.prioridad, opciones: [['normal', 'Normal'], ['alta', 'Alta']] })}</div>
       ${campo({ nombre: 'retiroNota', etiqueta: 'Nota sobre el retiro', valor: v.retiro_nota || '' })}
-      <button class="btn btn-primario" type="submit">Guardar cambios</button></form></div></details>`;
+      <button class="btn btn-primario" type="submit">${ic('check')}Guardar cambios</button></form></div></details>`;
 }
 
 export default async function visita({ params, app }) {
@@ -118,7 +118,7 @@ export default async function visita({ params, app }) {
       <section class="heroe" aria-label="Vehículo y progreso de la orden">
         <div class="h-id">${logoMarca(v.vehiculo.marca, { grande: true })}${placa(v.vehiculo.patente, { grande: true })}</div>
         <div class="h-mod"><b>${esc(auto)}</b>${detalleAuto ? `<small>${esc(detalleAuto)}</small>` : ''}
-          <small>${esc(v.contacto_nombre || 'Sin cliente')}${v.contacto_telefono ? ` · <a href="tel:${esc(v.contacto_telefono.replace(/[^\d+]/g, ''))}">${esc(v.contacto_telefono)}</a>` : ' · <span class="sindato">sin teléfono</span>'}</small></div>
+          <small>${esc(v.contacto_nombre || 'Sin cliente')}${v.contacto_telefono ? ` · <a class="tel" href="tel:${esc(v.contacto_telefono.replace(/[^\d+]/g, ''))}">${ic('call')}${esc(v.contacto_telefono)}</a>` : ' · <span class="sindato">sin teléfono</span>'}</small></div>
         <ol class="pasos ${v.anulada_at ? 'anulada' : ''}" aria-label="${esc(etapaTxt)}">${ETAPAS_ORDEN.map((t, i) => { const cls = v.anulada_at ? 'x' : i < e ? 'h' : i === e ? 'a' : '';
           return `<li class="${cls}" ${i === e ? 'aria-current="step"' : ''}><span>${cls === 'h' ? ic('check') : ''}</span><small>${i === 2 ? '<span class="lg">Presupuesto</span><span class="ct">Presup.</span>' : t}</small></li>`; }).join('')}</ol>
         <p class="pasos-actual" aria-hidden="true">${esc(v.anulada_at ? 'Orden anulada' : v.entregada_at ? 'Entregado' : `${ETAPAS_ORDEN[e]} · etapa ${e + 1} de 5`)}</p>

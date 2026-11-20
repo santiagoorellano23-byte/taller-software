@@ -54,7 +54,7 @@ export default async function ficha({ params, app }) {
           <div class="form-pie"><button class="btn btn-primario" type="submit">Guardar lectura</button></div></form></div></details>` : ''}
       </section>
       ${editar ? `<details class="desp"><summary>${ic('edit')}Corregir datos del auto</summary><div class="desp-c"><form class="form" id="f-vehiculo" novalidate>
-        ${camposVehiculo(v)}<p class="nota">Corregir los datos actuales no cambia los documentos ya emitidos.</p><div class="form-pie"><button class="btn btn-primario" type="submit">Guardar cambios</button></div></form></div></details>` : ''}
+        ${camposVehiculo(v)}<p class="nota">Corregir los datos actuales no cambia los documentos ya emitidos.</p><div class="form-pie"><button class="btn btn-primario" type="submit">${ic('check')}Guardar cambios</button></div></form></div></details>` : ''}
       ${app.puede('vehiculos.archivar') ? `<div><button type="button" class="btn ${v.archivado ? '' : 'btn-peligro'}" data-archivar>${ic(v.archivado ? 'history' : 'lock')}${v.archivado ? 'Recuperar la ficha' : 'Archivar la ficha'}</button></div>` : ''}`,
     despues(raiz) {
       const fv = raiz.querySelector('#f-vehiculo');

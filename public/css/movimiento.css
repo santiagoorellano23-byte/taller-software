@@ -243,6 +243,33 @@
   .mas-tarjeta a:active { background-color: var(--surface-3); }
 }
 
+/* Tacto (20/11/2026): tarjetas, filtros y apartados responden al dedo con una escala breve que nunca demora
+   la navegación; desplegables y avisos acompañan el cambio de estado. Solo transform y opacidad. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  :is(.orden-f, .tarjeta, .acceso, .li-b, .filtros .filtro, .seg a, .pt-fmas, .subnav a) {
+    transition: transform 160ms var(--respuesta-curva), background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida), box-shadow var(--respuesta-rapida);
+  }
+  :is(.orden-f, .acceso, .li-b):active,
+  .tarjeta:has(> .t-cab:active) { transform: scale(.985); transition-duration: 60ms; }
+  :is(.filtros .filtro, .seg a, .pt-fmas, .subnav a):active { transform: scale(.96); transition-duration: 60ms; }
+  /* El chevron gira con el desplegable; el contenido aparece desde arriba sin mover lo que sigue. */
+  details.mas > summary::after { transition: transform var(--respuesta) var(--respuesta-curva), opacity var(--respuesta-rapida); }
+  details.mas[open] > .mas__cuerpo { animation: desplegar var(--respuesta) var(--respuesta-curva); }
+  /* Ilustraciones del resumen de Hoy: entran una vez al abrir la portada (no son botones: no responden al tacto). */
+  .pt-ico img { animation: ilustrar 420ms var(--respuesta-curva) both; }
+  .pt-c:nth-child(2) .pt-ico img { animation-delay: 50ms; }
+  .pt-c:nth-child(3) .pt-ico img { animation-delay: 100ms; }
+  /* Aviso de éxito: el tilde se dibuja; el de error aparece con un leve pulso, sin sacudir. */
+  .toast:not(.toast--error) > svg.i path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: trazo 320ms 90ms var(--respuesta-curva) forwards; }
+  .toast--error > svg.i { animation: pulso 260ms var(--respuesta-curva); }
+  html[data-entrada="teclado"] :is(.pt-ico img, details.mas[open] > .mas__cuerpo) { animation: none; }
+}
+@keyframes desplegar { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes ilustrar { from { opacity: 0; transform: translateY(6px) scale(.94); } }
+@keyframes trazo { to { stroke-dashoffset: 0; } }
+@keyframes pulso { from { transform: scale(.8); opacity: .4; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;

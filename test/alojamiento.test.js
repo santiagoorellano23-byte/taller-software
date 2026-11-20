@@ -18,3 +18,21 @@ test('Carpeta de datos fuera del código en el alojamiento', () => {
   // Carpeta propia fuera del código: correcto.
   assert.equal(problemaCarpetaDatos({ raiz: hostinger, datos: '/home/u1/talleres-datos', env: { TALLERES_DATOS: '/home/u1/talleres-datos', TALLERES_SEGURO: '1' } }), null);
 });
+
+test('Archivos del panel: van comprimidos y una revalidación sin cambios no los vuelve a bajar', async () => {
+  const { levantar } = await import('./entorno.js');
+  const E = await levantar({ sembrarDatos: false });
+  try {
+    const r = await fetch(E.base + '/css/propuesta-a.css?v=x', { headers: { 'Accept-Encoding': 'gzip' } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get('content-encoding'), 'gzip');
+    assert.match(await r.text(), /\.hi /, 'el contenido llega completo al descomprimir');
+    const etag = r.headers.get('etag');
+    assert.ok(etag);
+    assert.equal((await fetch(E.base + '/css/propuesta-a.css?v=x', { headers: { 'If-None-Match': etag } })).status, 304);
+    // Sin gzip aceptado, el archivo va tal cual.
+    const r3 = await fetch(E.base + '/js/app.js', { headers: { 'Accept-Encoding': 'identity' } });
+    assert.equal(r3.headers.get('content-encoding'), null);
+    assert.equal(Number(r3.headers.get('content-length')), (await r3.arrayBuffer()).byteLength);
+  } finally { await E.cerrar(); }
+});

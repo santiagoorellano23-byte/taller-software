@@ -52,7 +52,7 @@ export default async function autos({ app, query }) {
       <section class="grupo-o" data-resultados-grupo hidden aria-live="polite"><h2>Resultados<span data-resultados-n></span></h2><div class="grupo-o" data-resultados></div></section>
       <section class="grupo-o" data-recientes><h2>${query.archivados ? 'Fichas archivadas' : 'Autos'}<span>${lista.length}</span></h2>
         ${lista.length ? lista.map(filaAuto).join('') : vacioD('directions_car', 'Todavía no hay autos cargados', 'Cuando recibas un auto, queda su ficha acá.')}</section>
-      ${app.puede('vehiculos.archivar') ? `<p><a class="btn btn-texto" href="#/autos${query.archivados ? '' : '?archivados=1'}">${query.archivados ? 'Ver fichas activas' : 'Ver fichas archivadas'}</a></p>` : ''}`,
+      ${app.puede('vehiculos.archivar') ? `<p><a class="btn btn-texto" href="#/autos${query.archivados ? '' : '?archivados=1'}">${ic(query.archivados ? 'directions_car' : 'history')}${query.archivados ? 'Ver fichas activas' : 'Ver fichas archivadas'}</a></p>` : ''}`,
     despues(raiz) {
       const q = raiz.querySelector('#autos-q'), cont = raiz.querySelector('[data-resultados]'), grupo = raiz.querySelector('[data-resultados-grupo]'), recientes = raiz.querySelector('[data-recientes]');
       let t, turno = 0;
@@ -70,7 +70,11 @@ export default async function autos({ app, query }) {
       };
       q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(buscar, 220); });
       if (q.value) buscar();
-      raiz.querySelector('[data-abrir-alta]')?.addEventListener('click', () => { const d = raiz.querySelector('[data-alta]'); d.open = true; d.querySelector('input')?.focus(); });
+      const abrirAlta = raiz.querySelector('[data-abrir-alta]'), alta = raiz.querySelector('[data-alta]');
+      abrirAlta?.addEventListener('click', () => { alta.open = true; alta.querySelector('input')?.focus(); });
+      // Cerrado, el formulario se oculta (el acceso lo reemplaza): el foco vuelve al acceso en vez de perderse.
+      alta?.addEventListener('toggle', () => { abrirAlta?.setAttribute('aria-expanded', String(alta.open)); if (!alta.open && (alta.contains(document.activeElement) || document.activeElement === document.body)) abrirAlta?.focus(); });
+      abrirAlta?.setAttribute('aria-expanded', 'false');
       const f = raiz.querySelector('#f-auto');
       if (f) {
         enlazarModelos(f);

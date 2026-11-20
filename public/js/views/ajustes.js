@@ -518,7 +518,7 @@ async function vPlan(app) {
       const form = raiz.querySelector('#f-renovar');
       if (form) alEnviar(form, async (d) => {
         await post('/api/plan/solicitudes', { tipo: 'renovacion', meses: Number(d.meses), avisoPago: d.avisoPago || '' }, { idempotencia: claveDeEnvio(form) });
-        toast('Solicitud enviada. Queda pendiente hasta que Growth Labs confirme el pago.');
+        toast(app.sesion.taller.demo ? 'Solicitud registrada solo en esta demo: no llega a Growth Labs ni genera ningún cobro.' : 'Solicitud enviada. Queda pendiente hasta que Growth Labs confirme el pago.');
         app.recargar();
       });
       raiz.querySelectorAll('[data-cambio]').forEach((b) => b.addEventListener('click', async () => {
@@ -527,7 +527,7 @@ async function vPlan(app) {
         b.disabled = true; b.classList.add('cargando'); b.setAttribute('aria-busy', 'true');
         try {
           await post('/api/plan/solicitudes', { tipo: 'cambio_plan', planId: Number(b.dataset.cambio), meses: m.opciones[0]?.meses || 1 }, { idempotencia: true });
-          toast('Consulta enviada. Queda pendiente hasta que Growth Labs la confirme.');
+          toast(app.sesion.taller.demo ? 'Consulta registrada solo en esta demo: no llega a Growth Labs ni cambia el plan.' : 'Consulta enviada. Queda pendiente hasta que Growth Labs la confirme.');
           app.recargar();
         } catch (err) { toast(err.message, { error: true }); b.disabled = false; b.classList.remove('cargando'); b.removeAttribute('aria-busy'); }
       }));

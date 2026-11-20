@@ -14,7 +14,8 @@ const OPERATIVOS = [['autorizacion', 'Sin respuesta del cliente', 'sms'], ['repu
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 // Etapa de la barra de cinco segmentos según la situación real (no adelanta pasos).
 // Ilustraciones de la portada (estáticas): variante clara y oscura en la misma caja; el CSS muestra la del tema activo.
-const ilus = (n, [w, h] = n.endsWith('chico') ? [24, 24] : [100, 78]) => ['claro', 'oscuro'].map((t) => `<img class="pt-${t}" src="/ilustraciones/hoy/${n}-${t}.svg" alt="" width="${w}" height="${h}" decoding="async">`).join('');
+// `loading=lazy`: la variante oculta no se descarga hasta que se cambia de tema.
+const ilus = (n, [w, h] = n.endsWith('chico') ? [24, 24] : [100, 78]) => ['claro', 'oscuro'].map((t) => `<img class="pt-${t}" src="/ilustraciones/hoy/${n}-${t}.svg" alt="" width="${w}" height="${h}" loading="lazy" decoding="async">`).join('');
 // Cifra del resumen: el tamaño se ajusta a su largo y al ancho de la columna, sin cortarla ni empujar la ilustración.
 const dato = (ilu, valor, rotulo) => `<div class="pt-c"><span class="pt-ico pt-ico-${ilu.split('-')[0]}" aria-hidden="true">${ilus(ilu)}</span><dt>${rotulo}</dt><dd style="--ch:${Math.max(2, String(valor).length)}">${esc(valor)}</dd></div>`;
 const ETAPA = { revision: 1, presupuesto: 2, autorizacion: 2, repuesto: 3, trabajo: 3, control: 3, controlada: 3, lista: 4 };

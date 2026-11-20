@@ -669,7 +669,7 @@ export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
       ${campo({ nombre: 'fechaPrevista', etiqueta: 'Llegada prevista', tipo: 'date' })}
       ${stock?.length ? campo({ nombre: 'articuloId', etiqueta: 'Artículo del stock', tipo: 'select', ayuda: 'Si sale del stock, se descuenta al colocarlo.', opciones: [['', 'No sale del stock'], ...stock.map((a) => [a.id, `${a.nombre} (${cant(a.disponible, a.unidad)} disponibles)`])] }) : ''}</div>
     <p class="muted small">Agregar un repuesto no cambia el presupuesto ni la autorización. Si cambia el alcance o el importe, agregalo primero al presupuesto.</p>
-    <button class="btn btn-primario" type="submit">Agregar repuesto</button></form></div></details>`;
+    <button class="btn btn-primario" type="submit">${icono('mas')}Agregar repuesto</button></form></div></details>`;
   const tareas = v.tareas;
   return {
     html: `<section class="bloque" aria-labelledby="t-tra">
@@ -863,10 +863,10 @@ export function seccionCobros(v, app) {
         ${v.cuenta.length ? `<ul class="lista">${v.cuenta.map((m) => `<li><div class="fila"><span class="fila__izq"><strong>${esc(TIPO[m.tipo])}${m.tipo === 'anulacion' ? ' de ' + esc((TIPO[m.anula_tipo] || '').toLowerCase()) : ''}</strong>${m.medio ? `<span class="muted">${esc(MEDIOS[m.medio])}</span>` : ''}${anulados.has(m.id) ? chip('Anulado', 'rojo', 'ban') : ''}</span><strong class="num">${pesos(m.importe)}</strong></div>
           <p class="small muted">${esc(fechaHora(m.fecha))}${m.referencia ? ' · ' + esc(m.referencia) : ''}${m.motivo ? ' · ' + esc(m.motivo) : ''}</p>
           <div class="acciones">${m.tipo === 'pago' && !anulados.has(m.id) && app.puede('documentos.emitir') ? `<button type="button" class="btn btn-chico btn-texto" data-recibo="${m.id}">${icono('documento')}Recibo</button>` : ''}
-          ${m.tipo !== 'anulacion' && !anulados.has(m.id) && app.puede('caja.anular') ? `<button type="button" class="btn btn-chico btn-texto" data-anular-mov="${m.id}">Anular</button>` : ''}</div></li>`).join('')}</ul>` : '<div class="panel__cuerpo"><p class="muted">Sin movimientos de dinero.</p></div>'}</div>
+          ${m.tipo !== 'anulacion' && !anulados.has(m.id) && app.puede('caja.anular') ? `<button type="button" class="btn btn-chico btn-texto" data-anular-mov="${m.id}">${icono('historial')}Anular</button>` : ''}</div></li>`).join('')}</ul>` : '<div class="panel__cuerpo"><p class="muted">Sin movimientos de dinero.</p></div>'}</div>
       ${app.puede('caja.anular') && t.cobrado > 0 ? `<details class="mas"><summary>Devolver dinero al cliente</summary><div class="mas__cuerpo"><form class="form" id="f-devolucion" novalidate>
         <div class="fila-campos">${campo({ nombre: 'importe', etiqueta: 'Importe devuelto', requerido: true, attrs: 'inputmode="decimal"' })}${campo({ nombre: 'medio', etiqueta: 'Cómo se devolvió', tipo: 'select', opciones: Object.entries(MEDIOS) })}</div>
-        ${campo({ nombre: 'motivo', etiqueta: 'Motivo', requerido: true })}<button class="btn btn-peligro" type="submit">Registrar devolución</button></form></div></details>` : ''}
+        ${campo({ nombre: 'motivo', etiqueta: 'Motivo', requerido: true })}<button class="btn btn-peligro" type="submit">${icono('historial')}Registrar devolución</button></form></div></details>` : ''}
     </section>`,
     enlazar(raiz) {
       raiz.querySelector('[data-liquidar]')?.addEventListener('click', async () => {

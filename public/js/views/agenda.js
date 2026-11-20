@@ -46,7 +46,7 @@ export default async function agenda({ app, query }) {
           <details class="mas"><summary>Auto y motivo (opcional)</summary><div class="mas__cuerpo"><div class="fila-campos">${campo({ nombre: 'patente', etiqueta: 'Patente' })}${campo({ nombre: 'vehiculo', etiqueta: 'Auto', placeholder: 'Marca y modelo' })}</div>${campo({ nombre: 'motivo', etiqueta: 'Motivo' })}
             ${casilla('aceptaAvisos', 'Acepta que le recordemos el turno')}</div></details>
           <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar turno</button><button class="btn" type="button" data-cancelar-nuevo>Cancelar</button></div></form></section>` : ''}
-      ${t.publico ? `<details class="mas"><summary>Código QR para pedir turnos online</summary><div class="mas__cuerpo">
+      ${t.publico ? `<details class="mas"><summary>${icono('qr')}Código QR para pedir turnos online</summary><div class="mas__cuerpo">
         <div class="qr-caja">${qrSVG(urlPublica)}<p class="small">${esc(urlPublica)}</p></div>
         <p class="muted small">Imprimilo para el mostrador. Lleva a la página pública del taller, donde se pide un turno que después confirmás acá. No muestra datos de clientes.</p></div></details>` : ''}
     </div>`,

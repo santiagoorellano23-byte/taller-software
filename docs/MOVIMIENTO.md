@@ -15,6 +15,20 @@ Una capa común de respuesta para controles de todos los módulos, más transici
 - `mostrador.js`: respuesta breve del título de una línea nueva, sin animar total o cantidad.
 - HTML de ingreso/activación y páginas públicas: carga de la capa de controles compartida. No se presume recorrido público completo por incluir la hoja.
 
+## Tacto y estados (20/11/2026)
+
+Capa agregada al final de `movimiento.css`, solo con `prefers-reduced-motion: no-preference` y solo transform/opacidad:
+
+| Qué | Tratamiento |
+|---|---|
+| Tarjetas de orden, auto y accesos (`.orden-f`, `.tarjeta`, `.acceso`, `.li-b`) | `scale(.985)` al presionar, 60 ms de bajada y 160 ms de vuelta. La navegación no espera. |
+| Filtros, segmentos y apartados (`.filtro`, `.seg a`, `.subnav a`) | `scale(.96)` al presionar. |
+| Desplegables `details.mas` | Chevron a la derecha que gira 180° (180 ms); el contenido entra 4 px desde arriba. Reemplaza el «+/–». |
+| Ilustraciones del resumen de Hoy | Entrada única al abrir la portada (420 ms, escalonada 50 ms). No responden al tacto porque no son botones. |
+| Avisos | Éxito: el tilde se dibuja (320 ms). Error: pulso breve del ícono, sin sacudir. |
+
+Con teclado (`data-entrada="teclado"`) no hay entradas. Con movimiento reducido no corre ninguna (verificado con preferencia emulada en Playwright: 0 animaciones).
+
 ## Escala y reglas
 
 | Situación | Tiempo normal | Tratamiento |

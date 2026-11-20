@@ -19,7 +19,7 @@ function item(s, app, hoy) {
     <p class="small muted">${esc(s.criterio || '')}${s.origen ? ` · surge de la visita N.º ${esc(s.origen.numero)} (${esc(fecha(s.origen.ingreso_at))})` : ''} · Contacto: ${esc(s.contacto?.nombre || 'sin contacto')}${s.contacto?.acepta_avisos === 0 ? ' (no quiere avisos)' : ''}</p>
     <div class="acciones">${app.puede('avisos.preparar') && s.contacto ? `<button type="button" class="btn btn-chico" data-preparar="${s.id}">${icono('mensaje')}Preparar aviso</button>` : ''}
       ${app.puede('visita.recibir') ? `<a class="btn btn-chico" href="#/recibir?vehiculo=${s.vehiculo.id}${s.tipo === 'service' ? '&tipo=service' : ''}">${icono('mas')}Recibir el auto</a>` : ''}
-      ${app.puede('seguimientos.gestionar') ? `<button type="button" class="btn btn-chico btn-texto" data-cerrar="${s.id}" data-version="${s.version}">Cerrar pendiente</button>` : ''}</div>
+      ${app.puede('seguimientos.gestionar') ? `<button type="button" class="btn btn-chico btn-texto" data-cerrar="${s.id}" data-version="${s.version}">${icono('check')}Cerrar pendiente</button>` : ''}</div>
     <div data-aviso-form="${s.id}" hidden></div></li>`;
 }
 

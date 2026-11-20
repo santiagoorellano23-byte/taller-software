@@ -1338,5 +1338,15 @@ html[data-tema-efectivo="oscuro"] .p2-demo-tag{color:#191b1f}
 .pb-sec{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:-8px 0 -8px auto;padding:0 10px 0 14px;border:0;border-radius:999px;background:var(--marca-tinte);color:var(--marca-texto);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer}
 .pb-sec svg{width:15px;height:15px}
 .pb-ref .pb-n small{display:block;margin-top:2px;font-weight:500}
+/* Desplegables «más»: ícono propio a la izquierda (si lo tiene) y chevron a la derecha que gira al abrir. */
+details.mas>summary::before{display:none}
+details.mas>summary::after{content:"";flex:none;width:20px;height:20px;margin-left:auto;background-color:currentColor;opacity:.6;-webkit-mask:url('/iconos-material/expand_more.svg') center/contain no-repeat;mask:url('/iconos-material/expand_more.svg') center/contain no-repeat}
+details.mas[open]>summary::after{transform:rotate(180deg);opacity:1}
+details.mas>summary>:is(.i,.ic){width:20px;height:20px;color:var(--marca-texto)}
+/* Teléfono del encabezado de la orden: se reconoce como acción de llamar. */
+a.tel{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}a.tel .ic{width:16px;height:16px}
+.subnav a .ic{width:18px;height:18px;margin-right:6px}
+/* Clientes: el acceso «Agregar un auto sin recibirlo» ya abre el formulario; cerrado, no se repite debajo. */
+.accesos:has([data-abrir-alta])~details[data-alta]:not([open]){display:none}
 /* Teléfonos muy angostos: las tres tarjetas pasan a filas para que el estado se lea entero. */
 @media (max-width:359px){.rv-tiles{grid-template-columns:1fr}.rv-tile{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:10px;min-height:48px}.rv-tile b{margin-top:0;font-size:14px}.rv-tl-h{min-width:5.5em}}

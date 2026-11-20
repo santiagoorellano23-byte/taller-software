@@ -68,8 +68,10 @@ function grupoRuta(r) {
 function submenu(r) {
   const g=grupoRuta(r); if(!g || g==='taller' || r.modulo==='ajustes') return '';
   const actual=location.hash.replace(/^#\//,'').split('?')[0];
-  return `<nav class="subnav" aria-label="${g==='taller'?'Taller':g==='caja'?'Caja':g==='ajustes'?'Ajustes':'Repuestos'}">${GRUPOS[g].filter(x=>!x[2]||app.puede(x[2])).map(([ruta,nombre])=>`<a href="#/${ruta}" ${actual===ruta?'aria-current="page"':''}>${nombre}</a>`).join('')}</nav>`;
+  return `<nav class="subnav" aria-label="${g==='taller'?'Taller':g==='caja'?'Caja':g==='ajustes'?'Ajustes':'Repuestos'}">${GRUPOS[g].filter(x=>!x[2]||app.puede(x[2])).map(([ruta,nombre])=>`<a href="#/${ruta}" ${actual===ruta?'aria-current="page"':''}>${ICONO_SUB[ruta]?ic(ICONO_SUB[ruta]):''}${nombre}</a>`).join('')}</nav>`;
 }
+// Los mismos íconos que esos accesos tienen en Más, para reconocer el apartado de un vistazo.
+const ICONO_SUB = { stock:'inventory_2', compras:'local_shipping', proveedores:'handshake', caja:'payments', cuentas:'account_balance_wallet', mostrador:'storefront' };
 const memoriaVistas=new Map(); let vistaActual=''; let turnoRender=0;
 function recordarVista() {
   if(!vistaActual) return;
