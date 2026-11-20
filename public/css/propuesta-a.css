@@ -602,6 +602,8 @@ html[data-tema-efectivo="oscuro"] .pt-filtros .filtro[aria-current] b{background
 .etapas{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;flex:1}
 .etapas i{height:6px;border-radius:3px;background:var(--surface-3)}.etapas i.h{background:var(--ink-2)}.etapas i.a{background:var(--marca)}
 .t-chips{display:flex;flex-wrap:wrap;gap:6px}
+/* Un bloqueo largo (repuesto con nombre extenso) corta en líneas en vez de salirse de la pantalla. */
+.t-chips .chip{white-space:normal;overflow-wrap:anywhere;max-width:100%}
 .t-det{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .t-pie{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:10px;flex-wrap:wrap}
 .t-meta{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;min-width:0}
