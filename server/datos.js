@@ -70,6 +70,11 @@ export function cargarVisita(db, tallerId, id, { conDinero = true } = {}) {
 // El mecánico ve qué está autorizado y qué falta, sin importes ni cobros.
 export function ocultarDinero(v) {
   if (v.presupuesto) for (const l of v.presupuesto.lineas) { l.precio_unit = null; l.importe = null; }
+  // El detalle de cada versión se guardó con importes: se quitan y queda qué se agregó o cambió.
+  if (v.presupuesto) for (const x of v.presupuesto.versiones) {
+    const cambios = json(x.cambios, null);
+    if (Array.isArray(cambios)) x.cambios = JSON.stringify(cambios.map((s) => String(s).replace(/ ?\(\$[^)]*\)/g, '').replace(/,? ?(precio|importe): \$[^,;]*/g, '').replace(/:\s*$/, ': cambió el precio')));
+  }
   v.cuenta = [];
   v.totales = null;
   for (const s of v.seguimientos || []) s.importe = null;

@@ -2,7 +2,7 @@
 import { api, get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
 import {
   esc, icono, pesos, cant, km, fecha, fechaHora, cuando, chip, chipRespuesta, chipEtapa, ETAPAS, TIPO_LINEA, MEDIOS, UNIDADES, CANALES, campo, opcionesRadio, casilla,
-  alEnviar, toast, confirmar, aviso, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago
+  alEnviar, toast, confirmar, aviso, leerForm, mostrarError, limpiarErrores, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago
 } from '../ui.js?v=0.1.0';
 import { qrSVG } from '../qr-util.js?v=0.1.0';
 import {catalogoPresupuesto,enlazarCatalogoPresupuesto} from '../presupuesto-pos.js?v=0.1.0';
@@ -12,50 +12,207 @@ import {vistaHallazgos,enlazarHallazgos} from '../hallazgos.js?v=0.1.0';
 const resp = (l) => l.respuesta?.respuesta || (l.autorizada_ingreso ? 'autoriza' : null);
 const RESULTADOS = [['resuelto', 'Resuelto y comprobado', 'check'], ['mejoro', 'Mejoró, pero falta resolver', 'alerta'], ['no_reproducido', 'No se pudo reproducir el problema', 'info'], ['pendiente', 'Sigue pendiente', 'reloj']];
 const RES_TXT = Object.fromEntries(RESULTADOS.map(([k, t]) => [k, t]));
-const ESTADO_REV = { en_revision: ['En revisión', 'teal', 'buscar'], sin_falla: ['Sin falla encontrada', 'azul', 'info'], confirmado: ['Diagnóstico confirmado', 'verde', 'check'] };
 const cerrada = (v) => !!(v.entregada_at || v.anulada_at);
 const acc = async (app, fn, ok) => { try { await fn(); if (ok) toast(ok); app.recargar(); } catch (e) { toast(e.message, { error: true }); } };
 
 // ---------------- Revisión ----------------
+// Diseño de Revisión: estado en tres partes, hallazgos (se guardan uno por uno) y revisión técnica en cuatro grupos que
+// separan relato, hechos, sospecha y conclusión. Las reglas son las del servidor: relato y observaciones (o un hallazgo)
+// para guardar, pruebas para concluir, y diagnóstico con confirmación expresa para «Diagnóstico confirmado».
+const EST_REV = {
+  en_revision: { t: 'Sigue en revisión', c: 'En revisión', d: 'Todavía estás probando. Podés guardar lo que tengas y seguir después.', i: 'pausa', k: 'ambar' },
+  sin_falla: { t: 'Sin falla encontrada', c: 'Sin falla', d: 'Se probó y la falla no apareció.', i: 'info', k: 'azul' },
+  confirmado: { t: 'Diagnóstico confirmado', c: 'Confirmado', d: 'Las pruebas comprobaron la causa. Escribí qué se confirmó.', i: 'escudo', k: 'verde' }
+};
+const CAMPOS_REV = ['relato', 'hallazgos', 'hipotesis', 'pruebas', 'estado', 'diagnostico', 'recomendacion'];
+// Revisión escrita y sin guardar que se conserva en pantalla cuando se guarda un hallazgo y la orden se vuelve a dibujar.
+// Vive solo en memoria: recargar la página o salir de la orden la pierde (la app avisa antes de salir).
+const revisionEnPantalla = new Map();
+
 export function seccionRevision(v, app) {
   const r = v.revision;
   const puede = app.puede('revision.registrar') && !cerrada(v) && !v.controles.some((c) => c.vigente) && (app.sesion.usuario.rol !== 'mecanico' || !v.responsable_id || v.responsable_id === app.sesion.usuario.id);
-  const ver = (t, x) => x ? `<div class="dato"><span>${t}</span><p>${esc(x).replace(/\n/g, '<br>')}</p></div>` : '';
+  const pendiente = puede ? revisionEnPantalla.get(v.id) : null;
+  revisionEnPantalla.delete(v.id);
+  const nH = (v.hallazgos || []).length;
+  const val = (k) => pendiente ? pendiente[k] ?? '' : k === 'relato' ? r?.relato || v.motivo || '' : r?.[k] || (k === 'estado' ? 'en_revision' : '');
+  const est = val('estado');
+  const fila = (cls, ic, rotulo, txt, extra = '', vacio = 'Sin completar') => `<div class="rv-sr ${cls}"><span class="rv-si">${icono(ic)}</span><div class="rv-st"><span class="rv-lbl">${rotulo}${extra}</span><p class="${txt ? '' : 'rv-vac'}">${txt ? esc(txt) : vacio}</p></div></div>`;
+  const tile = (id, k, ic, rotulo, valor, sub, cls) => `<button type="button" class="rv-tile ${cls}" data-ir="${id}" data-tile="${k}"><span class="rv-tl-h"><span class="rv-nd">${icono(ic)}</span>${rotulo}</span><b>${valor}</b><small>${sub}</small></button>`;
+  const e = r ? EST_REV[r.estado] : null;
+  const tiles = `<div class="rv-tiles">${tile('rv-hall', 'h', nH ? 'check' : 'buscar', 'Hallazgos', nH || 'Ninguno', nH ? (nH === 1 ? 'Registrado' : 'Registrados') : 'Opcional', nH ? 'ok' : '')}
+    ${tile('rv-tec', 'r', r ? 'check' : 'portapapeles', 'Revisión', r ? `Versión ${r.version_num}` : 'Pendiente', r ? 'Guardada' : 'Sin registrar', r ? 'ok' : '')}
+    ${tile('rv-tec', 'e', e ? e.i : 'ayuda', 'Estado', e ? e.c : 'Sin elegir', !e ? 'Al registrar' : r.estado === 'en_revision' ? 'Sigue abierta' : 'Concluida', !e ? '' : r.estado === 'en_revision' ? 'wip' : 'ok')}</div>`;
+
+  const guardada = r ? `<div class="rv-edh"><span class="rv-chip rv-chip-ok">${icono('check')}Guardada · versión ${r.version_num}</span><span class="rv-chip">${icono('reloj')}${esc(cuando(r.creado_at))}${r.por ? ' · ' + esc(r.por) : ''}</span></div>
+    <div class="rv-sum">${fila('rv-quote', 'mensaje', 'Lo que cuenta el cliente', r.relato)}${fila('', 'buscar', 'Lo que se observó', r.hallazgos)}${fila('', 'llave', 'Pruebas realizadas', r.pruebas)}</div>
+    <div class="rv-sum"><p class="rv-con-h">Conclusión</p>
+      <div class="rv-sr"><span class="rv-si">${icono(e.i)}</span><div class="rv-st"><span class="rv-lbl">Estado de la revisión</span><span class="rv-est rv-est-${e.k}"><i>${icono(e.i)}</i>${e.t}</span></div></div>
+      ${r.estado === 'confirmado' ? fila('rv-conf', 'escudo', 'Diagnóstico confirmado', r.diagnostico, ' <span class="rv-chip rv-chip-ok">Comprobado</span>') : ''}
+      ${r.hipotesis || r.estado === 'confirmado' ? fila('rv-hipo', 'ayuda', r.estado === 'confirmado' ? 'Posible causa · hipótesis previa' : 'Lo que podría ser', r.hipotesis, ' <span class="rv-chip rv-chip-dash">Sin confirmar</span>', 'Sin hipótesis registrada') : ''}
+      ${fila('', 'documento', 'Recomendación para el presupuesto', r.recomendacion, r.recomendacion ? ' <span class="rv-chip rv-chip-l">No es una autorización</span>' : '', 'Sin recomendación')}
+    </div>` : '';
+  const vacia = !r ? `<div class="rv-vacio"><ul class="rv-incluye" aria-label="Qué incluye la revisión">
+      <li>${icono('mensaje')}<span>Lo que cuenta el cliente</span></li><li>${icono('buscar')}<span>Lo que se observó</span></li><li>${icono('llave')}<span>Pruebas realizadas</span></li>
+      <li>${icono('ayuda')}<span>Posible causa</span></li><li>${icono('escudo')}<span>Estado y diagnóstico</span></li><li>${icono('documento')}<span>Recomendación</span></li></ul>
+      ${v.tipo === 'service' ? '<p class="rv-nota">En un service autorizado no hace falta un diagnóstico extenso.</p>' : ''}
+      ${puede && !pendiente ? `<button type="button" class="btn btn-primario btn-full" data-editar-rev>${icono('portapapeles')}Registrar la revisión</button>` : !puede ? '<p class="rv-nota">Todavía no se registró la revisión.</p>' : ''}</div>` : '';
+
+  const grupo = (n, titulo, chipHTML, cuerpo, cls = '', id = '') => `<div class="rv-grp ${cls}"${id ? ` id="${id}"` : ''}><div class="rv-grp-h"><span class="rv-grp-n">${n}</span><b>${titulo}</b>${chipHTML}</div>${cuerpo}</div>`;
+  const opcion = (k) => `<label class="rv-op"><input type="radio" name="estado" value="${k}"${est === k ? ' checked' : ''} required><span class="rv-op-ic">${icono(EST_REV[k].i)}</span><span class="rv-op-t"><b>${EST_REV[k].t}</b><small>${EST_REV[k].d}</small><span class="rv-op-sel">${icono('check')}Elegido</span></span><span class="rv-op-ind">${icono('check')}</span></label>`;
+  const formulario = puede ? `<form class="form rv-form" id="f-revision" novalidate ${pendiente ? '' : 'hidden'}>
+      <div class="rv-edh"><span class="rv-chip rv-chip-a">${icono('lapiz')}${r ? `Editando la versión ${r.version_num} · al guardar se crea la ${r.version_num + 1}` : 'Sin guardar todavía'}</span><button type="button" class="btn btn-texto btn-chico" data-cancelar-rev>Cancelar</button></div>
+      ${pendiente ? `<p class="rv-aviso rv-aviso-warn" role="status">${icono('alerta')}<span><b>La revisión técnica sigue sin guardar.</b> Se guardó solo el hallazgo. Lo escrito sigue acá: tocá «Guardar revisión» para registrarlo.</span></p>` : ''}
+      ${grupo(1, 'Lo que cuenta el cliente', `<span class="rv-chip">${icono('mensaje')}Relato</span>`, campo({ nombre: 'relato', etiqueta: 'Con sus palabras', tipo: 'textarea', requerido: true, valor: val('relato'), ayuda: 'Anotá lo que dice, aunque no coincida con lo que encuentres.', attrs: 'maxlength="4000" rows="2"' }))}
+      ${grupo(2, 'Lo que observaste y probaste', `<span class="rv-chip">${icono('buscar')}Hechos</span>`,
+        campo({ nombre: 'hallazgos', etiqueta: 'Observaciones generales', tipo: 'textarea', requerido: !nH, valor: val('hallazgos'), ayuda: nH ? 'Los hallazgos de arriba ya se incluyen por separado en el informe; no hace falta repetirlos.' : 'Lo que viste o mediste. Lo puntual podés cargarlo como hallazgo; con un hallazgo, este campo pasa a ser opcional.', attrs: 'maxlength="4000" rows="2"' })
+        + campo({ nombre: 'pruebas', etiqueta: 'Pruebas realizadas', tipo: 'textarea', valor: val('pruebas'), ayuda: 'Solo las pruebas que hiciste, con su resultado. Hacen falta para concluir la revisión.', attrs: 'maxlength="4000" rows="2"' }))}
+      ${grupo(3, 'Lo que podría ser', `<span class="rv-chip rv-chip-dash">${icono('ayuda')}Sin confirmar</span>`, campo({ nombre: 'hipotesis', etiqueta: 'Posible causa', tipo: 'textarea', valor: val('hipotesis'), ayuda: '<span data-ayuda-hip>Una sospecha que todavía no comprobaste. Se guarda marcada como no confirmada.</span>', attrs: 'maxlength="4000" rows="2"' }), 'rv-hip')}
+      ${grupo(4, 'Conclusión', '', `<fieldset class="rv-ops" data-campo="estado"><legend>¿Cómo está la revisión?</legend>${Object.keys(EST_REV).map(opcion).join('')}</fieldset>
+        <div class="rv-diag" data-diag ${est === 'confirmado' ? '' : 'hidden'}>
+          ${campo({ nombre: 'diagnostico', etiqueta: 'Diagnóstico confirmado', tipo: 'textarea', requerido: true, valor: val('diagnostico'), ayuda: 'Qué quedó comprobado y con qué prueba. No es lo mismo que «Posible causa», que se guarda como hipótesis.', attrs: 'maxlength="4000" rows="2"', placeholder: 'Ej.: Batería agotada, no retiene carga' })}
+          <button type="button" class="btn btn-texto btn-chico" data-copiar-hip hidden>${icono('copiar')}Partir del texto de «Posible causa»</button>
+          ${casilla('confirma', 'Confirmo que lo comprobé con las pruebas registradas', !!pendiente?.confirma)}
+        </div>
+        <div class="rv-aviso rv-aviso-warn" data-sobra role="note" hidden>${icono('alerta')}<span><b>Hay un diagnóstico confirmado escrito</b>Con el estado elegido no se guarda como confirmado. El texto se conserva hasta que decidas.
+          <q class="rv-lo" data-sobra-txt></q><span class="rv-lo-a"><button type="button" class="btn btn-texto btn-chico" data-sobra-a="volver">Volver a «Diagnóstico confirmado»</button><button type="button" class="btn btn-texto btn-chico" data-sobra-a="hip">Pasarlo a «Posible causa»</button><button type="button" class="btn btn-texto btn-chico" data-sobra-a="borrar">Borrar el texto</button></span></span></div>
+        <div class="rv-req" data-req></div>
+        ${campo({ nombre: 'recomendacion', etiqueta: 'Recomendación para el presupuesto', tipo: 'textarea', valor: val('recomendacion'), ayuda: 'Una sugerencia para armar el presupuesto. No es un presupuesto ni una autorización del cliente.', attrs: 'maxlength="4000" rows="2"' })}`, '', 'rv-con')}
+      <p class="rv-saves">${icono('info')}<span>«Guardar revisión» guarda los cuatro grupos, no los hallazgos, y crea una versión nueva. Lo que no guardes se pierde al recargar o salir de la orden; la app avisa antes de salir.</span></p>
+      <div class="rv-dock" role="region" aria-label="Guardar la revisión técnica"><span class="rv-dock-t"><b><i class="rv-dot" data-dock-dot></i><span data-dock-t aria-live="polite"></span></b><small data-dock-s></small></span>
+        <button type="button" class="btn" data-verificar-rev hidden>${icono('buscar')}Verificar</button><button type="submit" class="btn btn-primario" data-guardar-rev>${icono('check')}<span data-guardar-txt>Guardar</span></button></div>
+    </form>` : '';
+
   return {
-    html: `${vistaHallazgos(v,app,puede)}<section class="bloque" aria-labelledby="t-rev">
-      <div class="bloque__cab"><h2 id="t-rev">Revisión técnica</h2>${r ? `<p>Versión ${r.version_num} · ${esc(r.por || '')} · ${esc(fechaHora(r.creado_at))}</p>` : ''}</div>
+    html: `${tiles}${vistaHallazgos(v, app, puede)}<section class="rv-sec" id="rv-tec" aria-labelledby="t-rev">
+      <div class="rv-sec-h"><span class="rv-sec-ic">${icono('llave')}</span><div><h2 class="rv-h2" id="t-rev">Revisión técnica</h2><p class="rv-sub">${r || pendiente ? 'Separá lo que dice el cliente, lo que comprobaste y lo que todavía es una sospecha.' : 'Todavía no se registró la revisión.'}</p></div></div>
       ${v.autorizacion_ingreso ? aviso(esc(v.autorizacion_ingreso), 'gris', 'escudo') : ''}
-      ${r ? `<div class="panel panel__cuerpo bloque">${chip(...ESTADO_REV[r.estado])}
-          ${ver('Lo que cuenta el cliente', r.relato)}${ver('Lo que se observó', r.hallazgos)}${ver('Lo que podría ser (sin confirmar)', r.hipotesis)}${ver('Pruebas realizadas', r.pruebas)}${ver('Diagnóstico confirmado', r.diagnostico)}${ver('Recomendación', r.recomendacion)}
-          <p class="muted small">Registrar la revisión no autoriza trabajos.</p></div>`
-        : `<p class="muted">Todavía no se registró la revisión.${v.tipo === 'service' ? ' En un service autorizado no hace falta un diagnóstico extenso.' : ''}</p>`}
-      ${v.revisionesAnteriores.length ? `<details class="mas"><summary>Versiones anteriores (${v.revisionesAnteriores.length})</summary><div class="mas__cuerpo">${v.revisionesAnteriores.slice().reverse().map((x) => `<div class="bloque"><p><strong>Versión ${x.version_num}</strong> · ${esc(x.por || '')} · ${esc(fechaHora(x.creado_at))} · ${esc(ESTADO_REV[x.estado][0])}</p><p class="small">${esc(x.hallazgos)}</p>${x.diagnostico ? `<p class="small">Diagnóstico: ${esc(x.diagnostico)}</p>` : ''}</div>`).join('')}</div></details>` : ''}
-      ${puede ? `<details class="mas" ${!r ? 'open' : ''}><summary>${r ? 'Actualizar la revisión (crea una versión nueva)' : 'Registrar la revisión'}</summary><div class="mas__cuerpo">
-        <form class="form" id="f-revision" novalidate>
-          ${campo({ nombre: 'relato', etiqueta: 'Lo que cuenta el cliente', tipo: 'textarea', requerido: true, valor: r?.relato || v.motivo })}
-          ${campo({ nombre: 'hallazgos', etiqueta: 'Observaciones generales', tipo: 'textarea', requerido: !(v.hallazgos||[]).length, valor: r?.hallazgos || '', ayuda: (v.hallazgos||[]).length ? 'Los hallazgos de arriba ya se incluyen por separado en el informe; no hace falta repetirlos.' : 'También podés registrar observaciones por separado en Hallazgos.' })}
-          ${campo({ nombre: 'hipotesis', etiqueta: 'Lo que podría ser (todavía sin confirmar)', tipo: 'textarea', valor: r?.hipotesis || '' })}
-          ${campo({ nombre: 'pruebas', etiqueta: 'Pruebas realizadas', tipo: 'textarea', valor: r?.pruebas || '', ayuda: 'Necesarias para concluir.' })}
-          ${opcionesRadio('estado', [['en_revision', 'Sigue en revisión'], ['sin_falla', 'Sin falla encontrada'], ['confirmado', 'Diagnóstico confirmado']], r?.estado || 'en_revision', '¿Cómo está la revisión?')}
-          <div data-diag ${r?.estado === 'confirmado' ? '' : 'hidden'} class="bloque">
-            ${campo({ nombre: 'diagnostico', etiqueta: 'Diagnóstico confirmado', tipo: 'textarea', valor: r?.diagnostico || '' })}
-            ${casilla('confirma', 'Confirmo que lo comprobé con las pruebas registradas')}
-          </div>
-          ${campo({ nombre: 'recomendacion', etiqueta: 'Recomendación para el presupuesto', tipo: 'textarea', valor: r?.recomendacion || '' })}
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar revisión</button></div>
-        </form></div></details>` : ''}
+      <div data-rev-vista ${pendiente ? 'hidden' : ''}>${guardada}${vacia}
+        ${r && puede ? `<button type="button" class="btn rv-editar" data-editar-rev>${icono('lapiz')}Editar revisión (crea la versión ${r.version_num + 1})</button>` : ''}</div>
+      ${formulario}
+      ${v.revisionesAnteriores.length ? `<details class="mas"><summary>Versiones anteriores (${v.revisionesAnteriores.length})</summary><div class="mas__cuerpo">${v.revisionesAnteriores.slice().reverse().map((x) => `<div class="bloque"><p><strong>Versión ${x.version_num}</strong> · ${esc(x.por || '')} · ${esc(fechaHora(x.creado_at))} · ${esc(EST_REV[x.estado].t)}</p><p class="small">${esc(x.hallazgos)}</p>${x.diagnostico ? `<p class="small">Diagnóstico: ${esc(x.diagnostico)}</p>` : ''}${x.hipotesis ? `<p class="small">Posible causa (sin confirmar): ${esc(x.hipotesis)}</p>` : ''}</div>`).join('')}</div></details>` : ''}
+      <p class="rv-nota">${icono('escudo', 'i-sm')}Registrar la revisión no autoriza trabajos ni cambia el presupuesto.</p>
     </section>`,
     enlazar(raiz) {
-      enlazarHallazgos(raiz,v,app);
+      raiz.querySelectorAll('[data-ir]').forEach((b) => b.addEventListener('click', () => {
+        const destino = raiz.querySelector('#' + b.dataset.ir);
+        destino?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }));
       const f = raiz.querySelector('#f-revision');
-      if (!f) return;
-      const diag = f.querySelector('[data-diag]');
-      f.querySelectorAll('[name="estado"]').forEach((x) => x.addEventListener('change', () => { diag.hidden = f.querySelector('[name="estado"]:checked').value !== 'confirmado'; }));
-      alEnviar(f, async (d) => {
-        await post(`/api/visitas/${v.id}/revision`, { ...d, diagnostico: d.estado === 'confirmado' ? d.diagnostico : '', versionActual: r?.version_num || 0 });
-        toast('Revisión guardada como versión nueva.');
-        app.ir(`#/visitas/${v.id}/revision`);
+      const sucia = () => !!f?.dataset.sucio;
+      enlazarHallazgos(raiz, v, app, {
+        revisionPendiente: sucia,
+        antesDeRecargar: () => { if (sucia()) revisionEnPantalla.set(v.id, leerForm(f)); }
       });
+      if (!f) return;
+      const vista = raiz.querySelector('[data-rev-vista]');
+      const el = (n) => f.elements[n];
+      const inicial = JSON.stringify(CAMPOS_REV.map((k) => k === 'estado' ? est : val(k)));
+      let guardando = false, incierto = false, error = false;
+      const leer = () => leerForm(f);
+      const tileRev = raiz.querySelector('[data-tile="r"]'), tileEst = raiz.querySelector('[data-tile="e"]');
+      const ponerTile = (t, b, s, cls) => { if (!t) return; t.className = `rv-tile ${cls}`; t.querySelector('b').textContent = b; t.querySelector('small').textContent = s; };
+      const actualizar = () => {
+        const d = leer(), e = d.estado || 'en_revision', has = (k) => !!String(d[k] || '').trim();
+        const cambio = JSON.stringify(CAMPOS_REV.map((k) => d[k] ?? '')) !== inicial || !!pendiente;
+        if (cambio) f.dataset.sucio = '1'; else delete f.dataset.sucio;
+        f.querySelector('[data-diag]').hidden = e !== 'confirmado';
+        f.querySelector('[data-copiar-hip]').hidden = has('diagnostico') || !has('hipotesis');
+        const sobra = e !== 'confirmado' && has('diagnostico');
+        f.querySelector('[data-sobra]').hidden = !sobra;
+        f.querySelector('[data-sobra-txt]').textContent = sobra ? d.diagnostico.trim().slice(0, 160) + (d.diagnostico.trim().length > 160 ? '…' : '') : '';
+        f.querySelector('[data-ayuda-hip]').textContent = e === 'confirmado' ? 'Queda como hipótesis previa, aunque el estado sea «Diagnóstico confirmado». Lo comprobado va en «Diagnóstico confirmado».' : 'Una sospecha que todavía no comprobaste. Se guarda marcada como no confirmada.';
+        f.querySelectorAll('.rv-op').forEach((o) => o.classList.toggle('sel', o.querySelector('input').checked));
+        // Lo que pide el servidor para guardar con el estado elegido.
+        const li = (ok, txt, sub) => `<li class="${ok ? 'ok' : 'nd'}">${icono(ok ? 'check' : 'pausa')}<span>${txt}<small>${sub}</small></span></li>`;
+        const base = [[has('relato'), 'Relato del cliente', has('relato') ? 'Registrado' : 'Hace falta para guardar'], [has('hallazgos') || nH > 0, 'Observaciones', has('hallazgos') ? 'Registradas' : nH ? `Con ${nH} hallazgo${nH === 1 ? '' : 's'} alcanza` : 'Hacen falta para guardar, o un hallazgo']];
+        let titulo, items, pie;
+        if (e === 'en_revision') {
+          const it = [...base, [has('pruebas'), 'Pruebas realizadas', has('pruebas') ? 'Registradas' : 'Sin completar'], [has('hipotesis'), 'Posible causa', has('hipotesis') ? 'Registrada' : 'Sin completar'], [has('recomendacion'), 'Recomendación', has('recomendacion') ? 'Registrada' : 'Sin completar']];
+          titulo = `Registrado hasta ahora · ${it.filter((x) => x[0]).length} de ${it.length}`; items = it;
+          pie = 'Con «Sigue en revisión» podés guardar con lo que tengas. Para cerrar la revisión, elegí «Sin falla encontrada» o «Diagnóstico confirmado»: el sistema pide las pruebas realizadas.';
+        } else {
+          titulo = `Para concluir con «${EST_REV[e].t}»`;
+          items = [...base, [has('pruebas'), 'Pruebas realizadas', has('pruebas') ? 'Registradas' : 'Requeridas para concluir']];
+          if (e === 'confirmado') items.push([has('diagnostico'), 'Diagnóstico confirmado', has('diagnostico') ? 'Escrito' : 'Requerido: qué se comprobó'], [!!d.confirma, 'Confirmación', d.confirma ? 'Marcada' : 'Requerida: comprobado con las pruebas']);
+          pie = 'Son las reglas del sistema: sin esos datos no se guarda y no se pierde nada de lo escrito.';
+        }
+        f.querySelector('[data-req]').innerHTML = `<b>${titulo}</b><ul class="rv-req2">${items.map(([ok, t, s]) => li(ok, t, s)).join('')}</ul><p class="rv-pend">${icono('info', 'i-sm')}<span>${pie}</span></p>`;
+        // Barra de guardado y tarjetas de estado.
+        const dot = f.querySelector('[data-dock-dot]'), t = f.querySelector('[data-dock-t]'), s = f.querySelector('[data-dock-s]'), btn = f.querySelector('[data-guardar-rev]'), verif = f.querySelector('[data-verificar-rev]');
+        verif.hidden = !incierto || guardando;
+        btn.disabled = guardando || (!cambio && !!r && !error && !incierto);
+        f.querySelector('[data-guardar-txt]').textContent = guardando ? 'Guardando…' : incierto || error ? 'Reintentar' : 'Guardar';
+        const [cd, ct, cs] = guardando ? ['', 'Guardando la revisión…', 'Esperá la confirmación del servidor']
+          : incierto ? ['a', 'No sabemos si se guardó', 'Verificá, o reintentá sin cambiar los datos: se comprueba para no duplicarla']
+          : error ? ['r', 'La revisión no se guardó', 'Lo escrito sigue en pantalla']
+          : !cambio && r ? ['g', `Sin cambios desde la versión ${r.version_num}`, 'Cambiá algo para guardar una versión nueva']
+          : cambio ? ['a', 'Revisión sin guardar', 'No incluye los hallazgos'] : ['', 'Revisión sin registrar', 'No incluye los hallazgos'];
+        dot.className = `rv-dot ${cd}`; t.textContent = ct; s.textContent = cs;
+        if (cambio) ponerTile(tileRev, 'Sin guardar', 'Hay cambios', 'wip');
+        else ponerTile(tileRev, r ? `Versión ${r.version_num}` : 'Pendiente', r ? 'Guardada' : 'Sin registrar', r ? 'ok' : '');
+        if (cambio) ponerTile(tileEst, EST_REV[e].c, 'Sin guardar', 'wip');
+      };
+      const mostrarForm = () => { vista.hidden = true; f.hidden = false; actualizar(); el('relato').focus(); };
+      raiz.querySelectorAll('[data-editar-rev]').forEach((b) => b.addEventListener('click', mostrarForm));
+      f.querySelector('[data-cancelar-rev]').addEventListener('click', async () => {
+        if (f.dataset.sucio) {
+          const ok = (await confirmar({ titulo: '¿Descartar los cambios de la revisión?', texto: 'Lo que escribiste en la revisión técnica todavía no se guardó.', efecto: r ? `La versión ${r.version_num} guardada no cambia.` : 'No se registra nada.', aceptar: 'Descartar cambios', peligro: true })).ok;
+          if (!ok) return;
+        }
+        delete f.dataset.sucio;
+        app.recargar();
+      });
+      f.querySelector('[data-copiar-hip]').addEventListener('click', () => { el('diagnostico').value = el('hipotesis').value; actualizar(); el('diagnostico').focus(); });
+      f.querySelectorAll('[data-sobra-a]').forEach((b) => b.addEventListener('click', () => {
+        const a = b.dataset.sobraA, txt = el('diagnostico').value.trim();
+        if (a === 'volver') f.querySelector('input[name="estado"][value="confirmado"]').checked = true;
+        if (a === 'hip') { el('hipotesis').value = [el('hipotesis').value.trim(), txt].filter(Boolean).join('\n'); el('diagnostico').value = ''; }
+        if (a === 'borrar') el('diagnostico').value = '';
+        actualizar();
+        (a === 'volver' ? el('diagnostico') : a === 'hip' ? el('hipotesis') : f.querySelector('input[name="estado"]:checked'))?.focus();
+      }));
+      f.addEventListener('input', () => { if (error) error = false; actualizar(); });
+      f.addEventListener('change', actualizar);
+      const listo = (repetido, version) => {
+        delete f.dataset.sucio;
+        toast(repetido ? `La revisión ya estaba guardada${version ? ` (versión ${version})` : ''}. No se registró dos veces.` : `Revisión guardada como versión ${(r?.version_num || 0) + 1}. Los hallazgos se guardan aparte.`);
+        app.recargar();
+      };
+      // Después de un resultado incierto: consulta la orden y compara con la versión que se estaba editando.
+      f.querySelector('[data-verificar-rev]').addEventListener('click', async () => {
+        guardando = true; actualizar();
+        try {
+          const actual = (await get(`/api/visitas/${v.id}`)).visita.revision;
+          guardando = false;
+          if (actual && actual.version_num > (r?.version_num || 0)) return listo(true, actual.version_num);
+          incierto = false; error = true;
+          mostrarError(f, new Error('La revisión no figura como guardada. Lo escrito sigue en pantalla: podés reintentar.'));
+        } catch (err) { guardando = false; mostrarError(f, err); }
+        actualizar();
+      });
+      f.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (guardando) return;
+        const d = leer();
+        limpiarErrores(f);
+        try {
+          if ((d.estado || 'en_revision') !== 'confirmado' && d.diagnostico.trim()) throw Object.assign(new Error('Hay un diagnóstico confirmado escrito, pero el estado elegido no es «Diagnóstico confirmado». Decidí qué hacer con ese texto antes de guardar.'), { campo: 'estado' });
+          guardando = true; error = false; actualizar();
+          const res = await post(`/api/visitas/${v.id}/revision`, { ...d, versionActual: r?.version_num || 0 }, { idempotencia: claveDeEnvio(f) });
+          guardando = false;
+          listo(!!res.repetido);
+        } catch (err) {
+          guardando = false;
+          incierto = !!err.datos?.guardadoSinConfirmar;
+          error = !incierto;
+          // Un dato rechazado no deja nada guardado: con los datos corregidos se envía como operación nueva.
+          if (error) delete f.dataset.clave;
+          mostrarError(f, err);
+          actualizar();
+        }
+      });
+      actualizar();
     }
   };
 }
@@ -72,6 +229,25 @@ function formLinea(i, l = {}) {
   </div>`;
 }
 
+// Diseño B: resumen con barra de estados, líneas desplegables, aviso de lo que falta responder y hoja inferior para
+// registrar la respuesta. Lo elegido en la hoja es un borrador hasta que el servidor lo confirma; cerrar la hoja lo
+// conserva y salir de la pantalla pide confirmación. Importes, totales y reglas vienen del servidor.
+const RESP_B = { autoriza: ['Autorizado', 'ok', 'check'], rechaza: ['No autorizado', 'no', 'ban'], posterga: ['Para más adelante', 'luego', 'pausa'] };
+const OPC_B = { autoriza: ['Autoriza', 'check'], rechaza: ['No autoriza', 'ban'], posterga: ['Para más adelante', 'pausa'] };
+const CANALES_B = [['telefono', 'Teléfono'], ['whatsapp', 'WhatsApp'], ['presencial', 'En persona'], ['correo', 'Correo'], ['otro', 'Otro']];
+const pl = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+// Aviso del último guardado confirmado por el servidor: se muestra una vez al volver a dibujar la orden.
+const ultimaRespuesta = new Map();
+
+function estadoLinea(l) {
+  if (l.estado === 'reemplazada') return { txt: 'Reemplazada por un cambio', cls: 'gris', ic: 'historial' };
+  if (l.estado !== 'vigente') return { txt: 'Cambio rechazado: no rige', cls: 'gris', ic: 'ban' };
+  const r = resp(l);
+  if (!r) return { txt: l.origen_linea_id ? 'Cambio sin respuesta' : 'Sin respuesta', cls: 'pend', ic: 'reloj' };
+  const [txt, cls, ic] = RESP_B[r];
+  return { txt: txt + (l.realizado_at ? ' · Realizado' : r === 'autoriza' ? ' · Por hacer' : ''), cls, ic };
+}
+
 export function seccionPresupuesto(v, app, cat) {
   const dinero = app.puede('ver.dinero');
   const p = v.presupuesto;
@@ -79,58 +255,151 @@ export function seccionPresupuesto(v, app, cat) {
   const vigentes = lineas.filter((l) => l.estado === 'vigente');
   const otras = lineas.filter((l) => l.estado !== 'vigente');
   const sinResp = vigentes.filter((l) => !resp(l));
+  const respondidas = vigentes.filter((l) => resp(l));
   const conResp = vigentes.filter((l) => l.respuesta && !l.realizado_at);
   const puedePrep = app.puede('presupuesto.preparar') && !cerrada(v);
   const puedeResp = app.puede('presupuesto.respuesta') && !cerrada(v);
   const t = v.totales;
-  const lineaHTML = (l) => {
+  const vActual = p ? p.versiones.at(-1) : null;
+  const vSig = (vActual?.numero || 0) + 1;
+  const monto = (c) => c === 0 ? 'Sin cargo' : pesos(c);
+  const ok = ultimaRespuesta.get(v.id);
+  // Lo que propuso la revisión, como referencia para armar el presupuesto: no se agrega solo ni autoriza nada.
+  const propuestas = [...(v.revision?.recomendacion ? [['Recomendación de la revisión', v.revision.recomendacion]] : []), ...(v.hallazgos || []).filter((h) => h.propuesta).map((h) => [`Hallazgo: ${h.observacion}`, h.propuesta])];
+  const referencia = propuestas.length ? `<details class="mas pb-ref"><summary>Lo que propuso la revisión (${propuestas.length})</summary><div class="mas__cuerpo"><ul class="pb-ver-l">${propuestas.map(([de, txt]) => `<li><span class="pb-n">${esc(txt)}<small class="pb-nota">${esc(de)}</small></span></li>`).join('')}</ul><p class="pb-nota">Es una referencia: para presupuestarlo, cargalo como línea. El cliente lo responde después.</p></div></details>` : '';
+  ultimaRespuesta.delete(v.id);
+
+  const porTexto = (l) => [
+    l.respuesta ? `Respondió ${esc(l.respuesta.persona)} (${esc(CANALES[l.respuesta.canal] || l.respuesta.canal)}) · ${esc(cuando(l.respuesta.fecha_respuesta))}` : l.autorizada_ingreso ? 'Autorizado al recibir el auto.' : l.estado === 'vigente' ? 'Todavía sin respuesta del cliente.' : '',
+    l.respuestasAnteriores?.length ? 'La respuesta se corrigió; la anterior queda en las versiones.' : '',
+    l.realizado_at ? `Realizado${l.realizado_por_nombre ? ' por ' + esc(l.realizado_por_nombre) : ''} · ${esc(cuando(l.realizado_at))}.` : ''
+  ].filter(Boolean).join(' ');
+  const filaHTML = (l) => {
+    const e = estadoLinea(l);
     const reemplazo = lineas.find((x) => x.origen_linea_id === l.id && x.estado === 'vigente');
     const origen = l.origen_linea_id ? lineas.find((x) => x.id === l.origen_linea_id) : null;
-    return `<div class="linea ${l.estado !== 'vigente' ? 'linea--reemplazada' : ''}">
-      <div class="linea__top"><div><p class="linea__desc">${esc(l.descripcion)}</p>
-        <p class="linea__meta">${esc(TIPO_LINEA[l.tipo])} · ${esc(cant(l.cantidad_m, l.unidad))}${dinero ? ' × ' + pesos(l.precio_unit) : ''} · versión ${l.version_num}${l.autorizada_ingreso ? ' · autorizado al recibir' : ''}</p></div>
-        ${dinero ? `<span class="linea__importe num">${pesos(l.importe)}</span>` : ''}</div>
-      <div class="acciones">${l.estado === 'vigente' ? chipRespuesta(resp(l), !!l.origen_linea_id) : l.estado === 'reemplazada' ? chip(reemplazo ? 'Reemplazada por un cambio' : 'Reemplazada', '', 'historial') : chip('Cambio rechazado: no rige', '', 'ban')}
-        ${l.realizado_at ? chip('Realizado', 'verde', 'llave') : ''}
-        ${l.respuesta ? `<span class="muted small">${esc(l.respuesta.persona)} · ${esc(CANALES[l.respuesta.canal] || l.respuesta.canal)} · ${esc(cuando(l.respuesta.fecha_respuesta))}</span>` : ''}
-        ${l.estado === 'vigente' && puedePrep && !l.realizado_at && !l.cargo_id && !reemplazo ? `<button type="button" class="btn btn-chico btn-texto" data-cambiar="${l.id}">${icono('lapiz', 'i-sm')}Cambiar</button>` : ''}</div>
-      ${origen ? `<p class="small muted">Cambio sobre «${esc(origen.descripcion)}»${dinero ? ` (antes ${pesos(origen.importe)})` : ''}. ${resp(origen) === 'autoriza' ? 'La autorización anterior se conserva mientras el cliente responde.' : ''}</p>` : ''}
-      ${l.respuesta?.nota ? `<p class="small muted">Nota: ${esc(l.respuesta.nota)}</p>` : ''}
-      <div data-form-cambio="${l.id}" hidden></div>
-    </div>`;
+    const cambiable = l.estado === 'vigente' && puedePrep && !l.realizado_at && !l.cargo_id && !reemplazo;
+    return `<li class="pb-l" data-linea-id="${l.id}">
+      <button type="button" class="pb-fila" aria-expanded="false" aria-controls="pb-d-${l.id}" data-desplegar>
+        <span class="pb-ic pb-c-${e.cls}" data-ic-linea>${icono(e.ic)}</span>
+        <span class="pb-tx"><span class="pb-n">${esc(l.descripcion)}</span><span class="pb-st pb-t-${e.cls}" data-estado-linea>${esc(e.txt)}</span></span>
+        ${dinero ? `<span class="pb-imp num${l.importe === 0 ? ' pb-sincargo' : ''}">${monto(l.importe)}</span>` : ''}
+        <span class="pb-chev">${icono('abajo')}</span>
+      </button>
+      <div class="pb-det" id="pb-d-${l.id}" hidden>
+        <dl class="pb-kv"><div><dt>Tipo</dt><dd>${esc(TIPO_LINEA[l.tipo])}</dd></div><div><dt>Cantidad</dt><dd>${esc(cant(l.cantidad_m, l.unidad))}</dd></div>
+          ${dinero ? `<div><dt>Precio unitario</dt><dd>${monto(l.precio_unit)}</dd></div>` : ''}<div><dt>Versión</dt><dd>${l.version_num}</dd></div></dl>
+        <p class="pb-nota">${porTexto(l)}</p>
+        ${origen ? `<p class="pb-nota">Cambio sobre «${esc(origen.descripcion)}»${dinero ? ` (antes ${monto(origen.importe)})` : ''}.${resp(origen) === 'autoriza' ? ' La autorización anterior se conserva mientras el cliente responde.' : ''}</p>` : ''}
+        ${l.respuesta?.nota ? `<p class="pb-nota">Nota: ${esc(l.respuesta.nota)}</p>` : ''}
+        ${cambiable ? `<button type="button" class="btn btn-chico" data-cambiar="${l.id}">${icono('lapiz', 'i-sm')}Cambiar esta línea</button>` : ''}
+        <div class="pb-cambio" data-form-cambio="${l.id}" hidden></div>
+      </div>
+    </li>`;
   };
+
+  // Resumen: los cuatro importes son los del servidor; la barra solo reparte esos mismos valores.
+  const aut = vigentes.filter((l) => resp(l) === 'autoriza');
+  const hechos = aut.filter((l) => l.realizado_at).length;
+  const nRes = (r) => vigentes.filter((l) => resp(l) === r).length;
+  const tiles = [
+    ['ok', 'Autorizado', t?.autorizado, aut.length, aut.length ? `${pl(aut.length, 'trabajo', 'trabajos')} · ${hechos} hecho${hechos === 1 ? '' : 's'} · ${aut.length - hechos} por hacer` : 'Nada autorizado todavía'],
+    ['pend', 'Sin respuesta', t?.sinRespuesta, sinResp.length, sinResp.length ? `${pl(sinResp.length, 'trabajo', 'trabajos')} · falta que responda` : 'Nada pendiente'],
+    ['no', 'No autorizado', t?.rechazado, nRes('rechaza'), pl(nRes('rechaza'), 'trabajo', 'trabajos')],
+    ['luego', 'Para más adelante', t?.postergado, nRes('posterga'), nRes('posterga') ? `${pl(nRes('posterga'), 'trabajo', 'trabajos')} · no se cobra` : '0 trabajos']
+  ];
+  const partes = tiles.map(([k, , imp, n]) => [k, dinero ? imp || 0 : n]).filter(([, x]) => x > 0);
+  const resumen = !vigentes.length ? '' : `<div class="pb-sum">
+      <div class="pb-total">${dinero ? `<div><span class="pb-lbl">Total presupuestado</span><b class="pb-big num">${pesos(t.presupuestado)}</b></div>` : '<span class="pb-lbl">Estado de las líneas vigentes</span>'}<span class="pb-chip">${pl(vigentes.length, 'línea', 'líneas')}</span></div>
+      ${partes.length ? `<div class="pb-barra" aria-hidden="true">${partes.map(([k, x]) => `<span class="pb-s-${k}" style="flex:${x}"></span>`).join('')}</div>` : ''}
+      <div class="pb-tiles">${tiles.map(([k, rotulo, imp, n, txt]) => `<div class="pb-tile${n ? '' : ' cero'}${k === 'pend' && n ? ' atento' : ''}"><span class="pb-lg"><span class="pb-dot pb-s-${k}"></span>${rotulo}</span>
+        <b class="num">${dinero ? pesos(imp || 0) : pl(n, 'trabajo', 'trabajos')}</b><small>${dinero ? txt : k === 'ok' && n ? `${hechos} hecho${hechos === 1 ? '' : 's'} · ${aut.length - hechos} por hacer` : ''}</small></div>`).join('')}</div>
+      ${dinero && t.cambiosPendientes ? `<p class="pb-nota">${icono('info', 'i-sm')}Mientras un cambio espera respuesta, lo autorizado antes sigue contando como autorizado.</p>` : ''}
+    </div>`;
+
+  // Versiones: cada una muestra lo que agregó o cambió, el estado actual de esas líneas y las respuestas registradas.
+  const versionesHTML = !p ? '' : p.versiones.slice().reverse().map((x) => {
+    const propias = lineas.filter((l) => l.version_num === x.numero);
+    const eventos = new Map();
+    for (const l of propias) for (const r of [...(l.respuestasAnteriores || []), l.respuesta].filter(Boolean)) {
+      const k = [r.fecha_respuesta, r.persona, r.canal, r.cargado_por].join('|');
+      if (!eventos.has(k)) eventos.set(k, { r, items: [], notas: new Set() });
+      eventos.get(k).items.push(`${l.descripcion}: ${OPC_B[r.respuesta][0].toLowerCase()}`);
+      if (r.nota) eventos.get(k).notas.add(r.nota);
+    }
+    const alRecibir = propias.filter((l) => l.autorizada_ingreso);
+    const cambios = (() => { try { return JSON.parse(x.cambios || 'null') || []; } catch { return []; } })();
+    return `<section class="pb-ver${x === vActual ? ' actual' : ''}" aria-labelledby="pb-ver-${x.numero}">
+      <div class="pb-ver-h"><span><b id="pb-ver-${x.numero}">Versión ${x.numero}</b><span class="pb-chip${x === vActual ? ' pb-vig' : ''}">${x === vActual ? 'Vigente' : 'Anterior'}</span></span>${dinero ? `<span class="pb-nota">Agregado: <b class="num">${pesos(propias.reduce((s, l) => s + l.importe, 0))}</b></span>` : ''}</div>
+      <p class="pb-nota">${esc(fechaHora(x.creado_at))}${x.por ? ' · ' + esc(x.por) : ''}${x.nota ? ' · ' + esc(x.nota) : ''} · válida hasta ${esc(fecha(x.validez_hasta))}</p>
+      ${cambios.length ? `<p class="pb-nota">${cambios.map(esc).join('; ')}</p>` : ''}
+      <ul class="pb-ver-l">${propias.map((l) => { const e = estadoLinea(l); return `<li><span class="pb-n">${esc(l.descripcion)}</span><span class="pb-ver-a">${dinero ? `<span class="num">${monto(l.importe)}</span>` : ''}<span class="pb-st pb-t-${e.cls}">${esc(e.txt)}</span></span></li>`; }).join('')}</ul>
+      <span class="pb-lbl">Respuestas registradas</span>
+      ${alRecibir.length ? `<div class="pb-ev"><b>Autorizado al recibir el auto</b><span>${alRecibir.map((l) => esc(l.descripcion)).join('; ')}</span></div>` : ''}
+      ${[...eventos.values()].map(({ r, items, notas }) => `<div class="pb-ev"><b>${esc(r.persona)} · ${esc(CANALES[r.canal] || r.canal)} · ${esc(cuando(r.fecha_respuesta))}</b><span>${items.map(esc).join('; ')}</span>${[...notas].map((n) => `<i>«${esc(n)}»</i>`).join('')}${r.cargado_por_nombre ? `<small>Lo registró ${esc(r.cargado_por_nombre)}</small>` : ''}</div>`).join('')}
+      ${!eventos.size && !alRecibir.length ? '<p class="pb-nota">Todavía no hay respuestas en esta versión.</p>' : ''}
+    </section>`;
+  }).join('');
+
+  const hoja = puedeResp && sinResp.length ? `<dialog class="hoja-dlg pb-hoja" data-hoja-respuesta aria-labelledby="pb-hoja-t">
+      <form class="pb-form" id="f-respuesta" novalidate>
+        <header class="pb-hoja-cab"><button type="button" class="btn btn-texto pb-volver" data-cerrar-hoja>${icono('izq')}Volver al presupuesto</button><span class="pb-chip borrador" data-borr-chip hidden></span></header>
+        <div class="hoja-c pb-hoja-c">
+          <div><h2 id="pb-hoja-t" tabindex="-1">Registrar respuesta del cliente</h2><p class="pb-nota">Orden N.º ${esc(v.numero)} · ${esc(v.vehiculo?.patente || 'Sin patente')} · presupuesto versión ${vActual.numero}</p></div>
+          <div class="pb-lh"><h3>Sin respuesta (${sinResp.length})</h3><span>Elegí solo lo que respondió</span></div>
+          ${sinResp.map((l) => {
+            const origen = l.origen_linea_id ? lineas.find((x) => x.id === l.origen_linea_id) : null;
+            const ops = ['autoriza', 'rechaza', ...(l.origen_linea_id ? [] : ['posterga'])];
+            return `<fieldset class="pb-pcard" data-campo="r-${l.id}"><legend class="sr">Respuesta del cliente para ${esc(l.descripcion)}</legend>
+              <div class="pb-pcard-top"><div><p class="pb-n">${esc(l.descripcion)}</p><p class="pb-nota">${esc(TIPO_LINEA[l.tipo])} · ${esc(cant(l.cantidad_m, l.unidad))}${dinero ? ' × ' + monto(l.precio_unit) : ''} · versión ${l.version_num}</p></div>${dinero ? `<span class="pb-imp num${l.importe === 0 ? ' pb-sincargo' : ''}">${monto(l.importe)}</span>` : ''}</div>
+              ${origen ? `<p class="pb-nota">${icono('info', 'i-sm')}Cambio sobre «${esc(origen.descripcion)}»${dinero ? ` (antes ${monto(origen.importe)})` : ''}. Se autoriza o se rechaza; si se rechaza, vuelve a regir la línea anterior.</p>` : ''}
+              <div class="pb-r3${ops.length === 2 ? ' dos' : ''}">${ops.map((k) => `<label class="pb-op pb-op-${k}"><input type="radio" name="r-${l.id}" value="${k}"><span class="pb-op-i">${icono(OPC_B[k][1])}</span><span>${OPC_B[k][0]}</span></label>`).join('')}</div>
+            </fieldset>`;
+          }).join('')}
+          ${respondidas.length ? `<details class="pb-ya"><summary>Ver lo ya respondido (${respondidas.length})</summary><ul class="pb-ver-l">${respondidas.map((l) => { const e = estadoLinea(l); return `<li><span class="pb-n">${esc(l.descripcion)}</span><span class="pb-st pb-t-${e.cls}">${esc(e.txt)}</span></li>`; }).join('')}</ul></details>` : ''}
+          <div class="pb-datos"><h3>Quién y cómo respondió</h3>
+            ${campo({ nombre: 'persona', etiqueta: '¿Quién respondió?', requerido: true, placeholder: 'Nombre de quien respondió', ayuda: 'Confirmá o escribí quién respondió. Puede ser otra persona.', attrs: 'maxlength="120" autocomplete="off"' })}
+            ${v.contacto_nombre ? `<button type="button" class="pb-sug" data-sugerir>Usar «${esc(v.contacto_nombre)}» · cliente de la orden</button>` : ''}
+            <fieldset class="grupo pb-canales" data-campo="canal"><legend>¿Por dónde respondió?</legend><div class="pb-pills">${CANALES_B.map(([k, tx]) => `<label class="pb-pill"><input type="radio" name="canal" value="${k}"><span>${tx}</span></label>`).join('')}</div></fieldset>
+            ${campo({ nombre: 'fecha', etiqueta: 'Cuándo', tipo: 'datetime-local', ayuda: 'Vacío = el sistema registra el momento del guardado.' })}
+            ${campo({ nombre: 'nota', etiqueta: 'Nota', tipo: 'textarea', placeholder: 'Por ejemplo, por qué lo deja para después', ayuda: 'Se guarda en cada línea que respondas ahora.', attrs: 'maxlength="500" rows="2"' })}
+          </div>
+          <section class="pb-antes" aria-labelledby="pb-antes-t"><h3 id="pb-antes-t">Antes de guardar</h3><ul class="pb-ver-l" data-resumen-sel hidden></ul><p class="pb-nota" data-quedan>Todavía no elegiste ninguna respuesta.</p>
+            <p class="pb-nota"><b>Autorizar no significa que el trabajo esté realizado.</b> Queda «Por hacer» hasta que se registre en Trabajos.</p></section>
+        </div>
+        <footer class="pb-pie"><div data-pie-aviso></div><p class="pb-pie-linea" role="status" aria-live="polite" data-pie-linea>Ninguna respuesta elegida todavía.</p>
+          <div class="pb-pie-acc"><button type="button" class="btn" data-descartar hidden>Descartar</button><button type="submit" class="btn btn-primario" data-guardar>Guardar respuesta</button></div></footer>
+      </form>
+    </dialog>` : '';
+
   return {
-    html: `<section class="bloque" aria-labelledby="t-pre">
-      <div class="bloque__cab"><h2 id="t-pre">Presupuesto y respuesta del cliente</h2>${p ? `<p>Versión ${p.versiones.at(-1).numero} · válido hasta ${esc(fecha(p.versiones.at(-1).validez_hasta))}</p>` : ''}</div>
-      ${dinero && t && p ? `<div class="montos">
-        <div class="monto"><span>${icono('documento', 'i-sm')}Presupuestado</span><b class="num">${pesos(t.presupuestado)}</b><small>Total de lo vigente</small></div>
-        <div class="monto"><span style="color:var(--green)">${icono('check', 'i-sm')}Autorizado</span><b class="num">${pesos(t.autorizado)}</b><small>Se hace en esta visita</small></div>
-        ${t.postergado ? `<div class="monto"><span style="color:var(--amber)">${icono('pausa', 'i-sm')}Para más adelante</span><b class="num">${pesos(t.postergado)}</b><small>No se incluye ni se cobra</small></div>` : ''}
-        ${t.sinRespuesta ? `<div class="monto"><span style="color:var(--purple)">${icono('reloj', 'i-sm')}Sin respuesta</span><b class="num">${pesos(t.sinRespuesta)}</b><small>Falta que el cliente responda</small></div>` : ''}
-      </div>` : ''}
-      ${!dinero ? aviso('Ves qué está autorizado y qué no. Los importes los ve recepción o el dueño.', 'gris') : ''}
-      ${vigentes.length ? `<div class="panel">${vigentes.map(lineaHTML).join('')}</div>` : `<p class="muted">${v.tipo === 'revision' ? 'Todavía no hay presupuesto. Se prepara con lo que surge de la revisión.' : 'Sin líneas de presupuesto. Si el importe del service se acordó, podés cargarlo acá.'}</p>`}
-      ${otras.length ? `<details class="mas"><summary>Líneas reemplazadas o rechazadas (${otras.length})</summary><div class="mas__cuerpo panel" style="padding:0">${otras.map(lineaHTML).join('')}</div></details>` : ''}
-      ${puedeResp && sinResp.length ? `<div class="panel panel__cuerpo bloque" id="respuesta"><h3>Registrar respuesta del cliente</h3>
-        <form class="form" id="f-respuesta" novalidate>
-          ${sinResp.map((l) => `<fieldset class="grupo" data-campo="r-${l.id}"><legend>${esc(l.descripcion)}${dinero ? ' · ' + pesos(l.importe) : ''}${l.origen_linea_id ? ' <span class="estado estado--violeta">Cambio</span>' : ''}</legend>
-            <div class="opciones">${[['autoriza', 'Autoriza', 'check'], ['rechaza', 'No autoriza', 'ban'], ...(l.origen_linea_id ? [] : [['posterga', 'Para más adelante', 'pausa']])].map(([k, tx, ic]) => `<label class="opcion"><input type="radio" name="r-${l.id}" value="${k}"><span>${icono(ic)}${tx}</span></label>`).join('')}</div>
-            <input type="text" name="n-${l.id}" class="sr" aria-hidden="true" tabindex="-1"></fieldset>`).join('')}
-          <div class="fila-campos">${campo({ nombre: 'persona', etiqueta: '¿Quién respondió?', requerido: true, valor: v.contacto_nombre || '' })}
-            ${campo({ nombre: 'canal', etiqueta: '¿Por dónde?', tipo: 'select', opciones: [['telefono', 'Teléfono'], ['whatsapp', 'WhatsApp'], ['presencial', 'En persona'], ['correo', 'Correo'], ['otro', 'Otro']] })}
-            ${campo({ nombre: 'fecha', etiqueta: 'Cuándo', tipo: 'datetime-local', ayuda: 'Vacío = ahora.' })}</div>
-          ${campo({ nombre: 'nota', etiqueta: 'Nota (por ejemplo, por qué lo deja para después)' })}
-          <p class="muted small">Podés responder solo algunas líneas: lo autorizado se habilita y el resto sigue esperando.</p>
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar respuesta</button></div>
-        </form></div>` : ''}
+    html: `<section class="bloque pb" aria-labelledby="t-pre">
+      <div class="pb-cab"><h2 id="t-pre">Presupuesto y respuesta del cliente</h2>
+        <div class="pb-vrow">${p ? `<button type="button" class="pb-vbtn" data-ver-versiones aria-haspopup="dialog" aria-label="Ver versiones del presupuesto. Vigente: versión ${vActual.numero}"><span class="pb-chip pb-vig">Versión ${vActual.numero} · vigente${icono('der', 'i-sm')}</span></button><span class="pb-nota">Hasta ${esc(fecha(vActual.validez_hasta))}</span>` : '<span class="pb-chip">Sin presupuesto</span>'}
+          ${puedeResp && sinResp.length && vigentes.length >= 4 ? `<button type="button" class="pb-sec" data-responder aria-haspopup="dialog"><span data-responder-txt>Responder (${sinResp.length})</span>${icono('der', 'i-sm')}</button>` : ''}</div></div>
+      ${!vigentes.length ? `<div class="pb-vacio"><span class="pb-vacio-ic">${icono('documento')}</span><b>Todavía no hay presupuesto</b><p>${v.tipo === 'revision' ? 'Se prepara con lo que surge de la revisión.' : 'Si el importe del service se acordó, podés cargarlo acá.'} Hasta que el cliente responda, nada queda autorizado.</p></div>` : ''}
+      ${!dinero ? `<p class="pb-aviso" role="note">${icono('info')}<span>Ves qué está autorizado y qué no. Los importes los ve recepción o el dueño.</span></p>` : ''}
+      ${resumen}
+      ${ok ? `<p class="pb-aviso pb-aviso-ok" role="status">${icono('check')}<span><b>${esc(ok.titulo)}</b><br>${esc(ok.texto)}</span></p>` : ''}
+      ${vigentes.length ? `<div class="pb-lh"><h3>Trabajos y repuestos</h3><span>Tocá una línea para ver el detalle</span></div><ul class="pb-lista">${vigentes.map(filaHTML).join('')}</ul>` : ''}
+      ${otras.length ? `<details class="mas pb-otras"><summary>Líneas reemplazadas o rechazadas (${otras.length})</summary><ul class="pb-lista">${otras.map(filaHTML).join('')}</ul></details>` : ''}
+      ${puedeResp && sinResp.length ? `<div class="pb-cta" data-cta><div class="pb-cta-c"><div><b>${pl(sinResp.length, 'trabajo sin respuesta', 'trabajos sin respuesta')}</b><span>${dinero ? `${pesos(t.sinRespuesta)} esperando respuesta · ` : ''}podés responder solo algunos</span></div><span class="pb-chip borrador" data-borr-chip hidden></span></div>
+        <p class="pb-nota" data-borr-nota hidden></p>
+        <button type="button" class="btn btn-primario btn-full" data-abrir-respuesta aria-haspopup="dialog">${icono('check')}<span data-abrir-txt>Registrar respuesta</span></button>
+        <button type="button" class="btn btn-texto" data-descartar hidden>Descartar borrador</button></div>` : ''}
+      ${vigentes.length && !sinResp.length ? `<p class="pb-aviso" role="note">${icono('check')}<span>El cliente respondió todas las líneas de la versión ${vActual.numero}.${puedePrep ? ` Si hace falta sumar algo, agregá trabajos: se crea la versión ${vSig}.` : ''}</span></p>` : ''}
+      ${p || puedePrep ? `<div class="pb-cambios"><div class="pb-cambios-h">${icono('historial')}<span><b>Cambios y versiones</b><small>${puedePrep ? `Cambiar o agregar trabajos crea la versión ${vSig}. ` : ''}${p ? 'Las versiones anteriores y sus respuestas se conservan.' : 'Al guardar se crea la versión 1.'}${puedePrep && vigentes.length ? ' Para cambiar una línea, abrila en la lista.' : ''}</small></span></div>
+        <div class="pb-pie-acc">${puedePrep ? `<button type="button" class="btn" data-agregar aria-expanded="${!vigentes.length}">${icono('mas')}${vigentes.length ? 'Agregar trabajos' : 'Preparar el presupuesto'}</button>` : ''}${p ? `<button type="button" class="btn" data-ver-versiones aria-haspopup="dialog">${icono('historial')}Ver versiones (${p.versiones.length})</button>` : ''}</div></div>` : ''}
       ${puedeResp && conResp.length ? `<details class="mas"><summary>Corregir una respuesta ya registrada</summary><div class="mas__cuerpo"><form class="form" id="f-corregir-resp" novalidate>
         ${campo({ nombre: 'lineaId', etiqueta: 'Trabajo', tipo: 'select', opciones: conResp.map((l) => [l.id, `${l.descripcion} (${chipTexto(resp(l))})`]) })}
         ${campo({ nombre: 'respuesta', etiqueta: 'Respuesta correcta', tipo: 'select', opciones: [['autoriza', 'Autoriza'], ['rechaza', 'No autoriza'], ['posterga', 'Para más adelante']] })}
         <div class="fila-campos">${campo({ nombre: 'persona', etiqueta: '¿Quién respondió?', requerido: true, valor: v.contacto_nombre || '' })}${campo({ nombre: 'canal', etiqueta: '¿Por dónde?', tipo: 'select', opciones: [['telefono', 'Teléfono'], ['whatsapp', 'WhatsApp'], ['presencial', 'En persona'], ['otro', 'Otro']] })}</div>
         ${campo({ nombre: 'nota', etiqueta: 'Motivo de la corrección', requerido: true })}
         <button class="btn" type="submit">Guardar corrección</button></form></div></details>` : ''}
-      ${puedePrep ? `<details class="mas" ${!vigentes.length ? 'open' : ''}><summary>${vigentes.length ? 'Agregar trabajos (versión nueva, no cambia lo respondido)' : 'Preparar el presupuesto'}</summary><div class="mas__cuerpo">
-        <datalist id="dl-trabajos">${[...(cat?.servicios||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.articulos||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.trabajos || []).map((x) => x.nombre), ...(window.TALLERES_CATALOGOS?.productos || []).map((x) => x.nombre)].map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
+      ${puedePrep ? `<div class="pb-editor" data-editor ${vigentes.length ? 'hidden' : ''}><h3 tabindex="-1" data-editor-titulo>${vigentes.length ? `Agregar trabajos · versión ${vSig}` : 'Preparar el presupuesto'}</h3>
+        ${referencia}
+        ${vigentes.length ? `<p class="pb-nota">Lo que agregues entra en la versión ${vSig}, sin respuesta. Lo ya respondido no cambia.</p>` : ''}
+        <datalist id="dl-trabajos">${[...(cat?.servicios||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.articulos||[]).filter(x=>x.activo).map(x=>x.nombre),...(cat?.trabajos || []).map((x) => x.nombre), ...(globalThis.TALLERES_CATALOGOS?.productos || []).map((x) => x.nombre)].map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
         <form class="form presupuesto-editor" id="f-presupuesto" novalidate>
           ${catalogoPresupuesto(cat)}
           <div class="fila"><h3 data-borrador-titulo tabindex="-1">Líneas del borrador</h3><span class="small muted">Revisá cantidades y precios</span></div>
@@ -139,34 +408,181 @@ export function seccionPresupuesto(v, app, cat) {
           <details class="calculadora-inline"><summary>${icono('calculadora')}Calcular mano de obra acá</summary><div><div class="fila-campos">${campo({nombre:'horasCalculo',etiqueta:'Horas estimadas',attrs:'inputmode="decimal"',valor:'1'})}${campo({nombre:'tarifaCalculo',etiqueta:'Valor por hora',attrs:'inputmode="decimal"',valor:aEntradaDinero(cat.valorHora),ayuda:'Tarifa del taller; podés ajustarla para este cálculo.'})}${campo({nombre:'trabajoCalculo',etiqueta:'Trabajo',valor:'Mano de obra',attrs:'list="dl-trabajos"'})}</div><p class="small muted">Horas × tarifa. El responsable decide el importe y el cliente debe autorizarlo.</p><button type="button" class="btn" data-calcular-linea>Agregar mano de obra al editor</button><p data-calculo-error role="alert" class="small"></p></div></details>
           <div class="presupuesto-total"><span>Esta versión · todavía sin guardar</span><strong data-total>$0</strong></div>
           ${campo({ nombre: 'nota', etiqueta: 'Nota de la versión', placeholder: vigentes.length ? 'Ej.: trabajo adicional encontrado al desarmar' : '' })}
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar presupuesto</button></div>
-        </form></div></details>` : ''}
-      ${p ? `<details class="mas"><summary>Versiones del presupuesto (${p.versiones.length})</summary><div class="mas__cuerpo"><ol class="actividad">${p.versiones.slice().reverse().map((x) => `<li><div><time>${esc(fechaHora(x.creado_at))} · ${esc(x.por || '')}</time><p><strong>Versión ${x.numero}</strong> · ${esc(x.nota || '')}</p>${x.cambios ? `<p class="small muted">${JSON.parse(x.cambios).map(esc).join('; ')}</p>` : ''}</div></li>`).join('')}</ol>
-        <p class="small muted">Las versiones anteriores y sus respuestas no se modifican.</p></div></details>` : ''}
+          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Guardar presupuesto</button>${vigentes.length ? '<button type="button" class="btn" data-cerrar-editor>Cancelar</button>' : ''}</div>
+        </form></div>` : ''}
+      ${p ? `<dialog class="hoja-dlg pb-hoja" data-hoja-versiones aria-labelledby="pb-vers-t"><header><h2 id="pb-vers-t" tabindex="-1">Versiones del presupuesto</h2><button type="button" class="ibtn" data-cerrar-hoja aria-label="Cerrar">${icono('x')}</button></header>
+        <div class="hoja-c"><p class="pb-nota">Cada cambio crea una versión. Cada respuesta queda con la línea y la versión en la que se dio; las anteriores no se modifican.</p>${versionesHTML}<button type="button" class="btn" data-cerrar-hoja>Volver al presupuesto</button></div></dialog>` : ''}
+      ${hoja}
     </section>`,
     enlazar(raiz) {
-      const fr = raiz.querySelector('#f-respuesta');
-      if (fr) alEnviar(fr, async (d) => {
-        const respuestas = sinResp.filter((l) => d[`r-${l.id}`]).map((l) => ({ lineaId: l.id, respuesta: d[`r-${l.id}`], nota: d.nota }));
-        if (!respuestas.length) throw Object.assign(new Error('Elegí la respuesta de al menos un trabajo.'), { campo: `r-${sinResp[0].id}` });
-        await post(`/api/visitas/${v.id}/respuestas`, { persona: d.persona, canal: d.canal, fecha: d.fecha || null, respuestas });
-        toast('Respuesta del cliente guardada.');
+      // Líneas desplegables: solo cambian lo visible, no vuelven a pedir datos.
+      raiz.querySelectorAll('[data-desplegar]').forEach((b) => b.addEventListener('click', () => {
+        const abierta = b.getAttribute('aria-expanded') !== 'true';
+        b.setAttribute('aria-expanded', String(abierta));
+        raiz.querySelector('#' + b.getAttribute('aria-controls')).hidden = !abierta;
+      }));
+      const abrirHoja = (d, origen) => {
+        d.showModal();
+        d.querySelector('h2')?.focus();
+        d.addEventListener('close', () => { if (origen?.isConnected) origen.focus(); }, { once: true });
+      };
+      const hv = raiz.querySelector('[data-hoja-versiones]');
+      if (hv) {
+        raiz.querySelectorAll('[data-ver-versiones]').forEach((b) => b.addEventListener('click', () => abrirHoja(hv, b)));
+        hv.querySelectorAll('[data-cerrar-hoja]').forEach((b) => b.addEventListener('click', () => hv.close()));
+      }
+      const editor = raiz.querySelector('[data-editor]');
+      const botonAgregar = raiz.querySelector('[data-agregar]');
+      botonAgregar?.addEventListener('click', () => {
+        editor.hidden = false;
+        botonAgregar.setAttribute('aria-expanded', 'true');
+        editor.querySelector('[data-editor-titulo]').focus();
+      });
+      editor?.querySelector('[data-cerrar-editor]')?.addEventListener('click', async () => {
+        const fp = editor.querySelector('form');
+        if (fp.dataset.sucio) {
+          const r = await confirmar({ titulo: '¿Descartar los trabajos sin guardar?', texto: 'Las líneas que cargaste en el editor todavía no se guardaron.', efecto: 'El presupuesto vigente no cambia.', aceptar: 'Descartar', peligro: true });
+          if (!r.ok) return;
+        }
+        delete fp.dataset.sucio;
         app.recargar();
       });
+
+      // Respuesta del cliente: borrador visible en la lista y en el aviso hasta que el servidor confirma.
+      const hr = raiz.querySelector('[data-hoja-respuesta]');
+      const fr = raiz.querySelector('#f-respuesta');
+      if (hr && fr) {
+        const abrir = raiz.querySelector('[data-abrir-respuesta]');
+        const pieAviso = fr.querySelector('[data-pie-aviso]');
+        const guardarBtn = fr.querySelector('[data-guardar]');
+        let guardando = false, incierto = false, errorTxt = '';
+        const elegida = (l) => fr.elements[`r-${l.id}`]?.value || '';
+        const elegidas = () => sinResp.filter(elegida);
+        const borrador = () => elegidas().length > 0 || ['persona', 'fecha', 'nota'].some((k) => fr.elements[k].value.trim()) || !!fr.elements.canal.value;
+        const avisoPie = (tipo, html) => { pieAviso.innerHTML = html ? `<p class="pb-aviso pb-aviso-${tipo}" role="alert">${icono(tipo === 'err' ? 'alerta' : 'info')}<span>${html}</span></p>` : ''; };
+        const actualizar = () => {
+          const els = elegidas(), n = els.length, faltan = sinResp.length - n;
+          const hay = borrador();
+          if (hay) fr.dataset.sucio = '1'; else delete fr.dataset.sucio;
+          raiz.querySelectorAll('[data-borr-chip]').forEach((c) => { c.hidden = !n; c.textContent = pl(n, 'elegida sin guardar', 'elegidas sin guardar'); });
+          raiz.querySelectorAll('[data-descartar]').forEach((b) => { b.hidden = !hay; });
+          const nota = raiz.querySelector('[data-borr-nota]');
+          nota.hidden = !n;
+          nota.textContent = n ? `Borrador sin guardar: ${els.map((l) => `${l.descripcion} → ${OPC_B[elegida(l)][0].toLowerCase()}`).join('; ')}. Se registra recién al tocar «Guardar respuesta».` : '';
+          raiz.querySelector('[data-abrir-txt]').textContent = hay ? 'Continuar respuesta' : 'Registrar respuesta';
+          const rTxt = raiz.querySelector('[data-responder-txt]');
+          if (rTxt) rTxt.textContent = hay ? 'Continuar respuesta' : `Responder (${sinResp.length})`;
+          for (const l of sinResp) {
+            const st = raiz.querySelector(`.pb-lista [data-linea-id="${l.id}"] [data-estado-linea]`);
+            if (!st) continue;
+            const e = estadoLinea(l), r = elegida(l);
+            st.textContent = r ? `Sin guardar: ${OPC_B[r][0]}` : e.txt;
+            st.className = `pb-st pb-t-${r ? 'borr' : e.cls}`;
+          }
+          const lista = fr.querySelector('[data-resumen-sel]');
+          lista.hidden = !n;
+          lista.innerHTML = els.map((l) => { const [txt, cls] = RESP_B[elegida(l)]; return `<li><span class="pb-n">${esc(l.descripcion)}</span><span class="pb-st pb-t-${cls}">${txt}</span></li>`; }).join('');
+          fr.querySelector('[data-quedan]').textContent = !n ? 'Todavía no elegiste ninguna respuesta.' : faltan ? `${pl(faltan, 'línea queda', 'líneas quedan')} sin respuesta y ${faltan === 1 ? 'sigue' : 'siguen'} esperando.` : 'Respondés todas las líneas pendientes.';
+          fr.querySelector('[data-pie-linea]').textContent = n ? `${pl(n, 'respuesta elegida', 'respuestas elegidas')} · ${faltan} sin elegir` : 'Ninguna respuesta elegida todavía.';
+          guardarBtn.textContent = guardando ? 'Guardando…' : incierto ? 'Verificar y reintentar' : errorTxt ? 'Reintentar guardado' : n ? `Guardar respuesta (${n})` : 'Guardar respuesta';
+        };
+        abrir.addEventListener('click', () => abrirHoja(hr, abrir));
+        // Con cuatro líneas o más, un acceso arriba evita bajar hasta el aviso para responder.
+        const responder = raiz.querySelector('[data-responder]');
+        responder?.addEventListener('click', () => abrirHoja(hr, responder));
+        fr.querySelector('[data-cerrar-hoja]').addEventListener('click', () => hr.close());
+        hr.addEventListener('cancel', (e) => { if (guardando) e.preventDefault(); });
+        // Tocar de nuevo la opción elegida la quita: esa línea vuelve a quedar sin elegir.
+        fr.addEventListener('click', (e) => {
+          const r = e.target.closest('input[type="radio"]');
+          if (!r) return;
+          if (r.dataset.previa === '1') { r.checked = false; r.dataset.previa = ''; }
+          else { fr.querySelectorAll(`input[name="${r.name}"]`).forEach((x) => { x.dataset.previa = ''; }); r.dataset.previa = '1'; }
+          actualizar();
+        });
+        fr.addEventListener('input', () => { if (errorTxt && !incierto) { errorTxt = ''; avisoPie(); } fr.querySelectorAll('[aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid')); actualizar(); });
+        fr.querySelector('[data-sugerir]')?.addEventListener('click', () => { fr.elements.persona.value = v.contacto_nombre; actualizar(); fr.elements.persona.focus(); });
+        const descartar = async () => {
+          const els = elegidas();
+          const r = await confirmar({ titulo: '¿Descartar el borrador?', texto: els.length ? `Se pierden ${pl(els.length, 'respuesta elegida', 'respuestas elegidas')} que todavía no se guardaron: ${els.map((l) => esc(l.descripcion)).join(', ')}.` : 'Se borra lo escrito sobre quién y cómo respondió.', efecto: 'No cambia nada guardado: las líneas siguen sin respuesta.', aceptar: 'Descartar borrador', peligro: true });
+          if (!r.ok) return;
+          fr.reset();
+          fr.querySelectorAll('input[type="radio"]').forEach((x) => { x.dataset.previa = ''; });
+          incierto = false; errorTxt = ''; avisoPie();
+          delete fr.dataset.clave;
+          actualizar();
+        };
+        raiz.querySelectorAll('[data-descartar]').forEach((b) => b.addEventListener('click', descartar));
+        const falta = (msg, ctl) => { errorTxt = msg; avisoPie('err', esc(msg)); if (ctl) { ctl.setAttribute('aria-invalid', 'true'); ctl.focus(); } actualizar(); };
+        const exito = (persona, canal, els, repetido) => {
+          ultimaRespuesta.set(v.id, { titulo: repetido ? 'La respuesta ya estaba guardada' : 'Respuesta guardada', texto: `${persona} (${CANALES[canal]}): ${els.map((l) => `${l.descripcion} → ${OPC_B[elegida(l)][0].toLowerCase()}`).join('; ')}.${repetido ? ' Se verificó en el servidor y no se registró dos veces.' : ''}` });
+          delete fr.dataset.sucio;
+          guardando = false;
+          hr.close();
+          toast(repetido ? 'La respuesta ya estaba guardada. No se duplicó.' : 'Respuesta del cliente guardada.');
+          app.recargar();
+        };
+        fr.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (guardando) return;
+          const els = elegidas();
+          const persona = fr.elements.persona.value.trim(), canal = fr.elements.canal.value;
+          if (!els.length) return falta('Elegí la respuesta de al menos un trabajo.', fr.querySelector('input[name^="r-"]'));
+          if (!persona) return falta('Falta indicar quién respondió para poder guardar.', fr.elements.persona);
+          if (!canal) return falta('Elegí por dónde respondió.', fr.querySelector('input[name="canal"]'));
+          const cuerpo = { persona, canal, fecha: fr.elements.fecha.value || null, respuestas: els.map((l) => ({ lineaId: l.id, respuesta: elegida(l), nota: fr.elements.nota.value.trim() })) };
+          guardando = true; errorTxt = ''; avisoPie();
+          guardarBtn.disabled = true; guardarBtn.classList.add('cargando'); guardarBtn.setAttribute('aria-busy', 'true');
+          fr.querySelector('[data-cerrar-hoja]').disabled = true;
+          actualizar();
+          try {
+            // Después de un resultado incierto, primero se consulta si ya quedó registrada.
+            if (incierto) {
+              const actual = (await get(`/api/visitas/${v.id}`)).visita.presupuesto?.lineas || [];
+              const yaGuardadas = els.filter((l) => actual.find((x) => x.id === l.id)?.respuesta);
+              if (yaGuardadas.length === els.length) return exito(persona, canal, els, true);
+              if (yaGuardadas.length) { incierto = false; errorTxt = 'x'; avisoPie('err', 'Algunas de estas líneas ya tienen una respuesta registrada. Volvé al presupuesto para ver lo que quedó guardado antes de seguir.'); return; }
+            }
+            const r = await post(`/api/visitas/${v.id}/respuestas`, cuerpo, { idempotencia: claveDeEnvio(fr) });
+            exito(persona, canal, els, !!r.repetido);
+          } catch (err) {
+            if (err.datos?.sinConexion) {
+              incierto = true;
+              avisoPie('aviso', '<b>No pudimos confirmar si se guardó.</b> Se cortó la conexión y puede que se haya registrado. Al reintentar, primero se verifica en el servidor para no duplicarla. Tu selección sigue acá.');
+            } else {
+              incierto = false; errorTxt = err.message;
+              const ctl = err.campo === 'persona' ? fr.elements.persona : err.campo === 'canal' ? fr.querySelector('input[name="canal"]') : null;
+              avisoPie('err', `<b>No se registró la respuesta.</b> ${esc(err.message)} Tu selección sigue acá.`);
+              ctl?.setAttribute('aria-invalid', 'true');
+              delete fr.dataset.clave;
+            }
+          } finally {
+            if (guardando) {
+              guardando = false;
+              guardarBtn.disabled = false; guardarBtn.classList.remove('cargando'); guardarBtn.removeAttribute('aria-busy');
+              fr.querySelector('[data-cerrar-hoja]').disabled = false;
+              actualizar();
+            }
+          }
+        });
+        actualizar();
+      }
       const fc = raiz.querySelector('#f-corregir-resp');
-      if (fc) alEnviar(fc, async (d) => { await post(`/api/visitas/${v.id}/respuestas`, { persona: d.persona, canal: d.canal, respuestas: [{ lineaId: Number(d.lineaId), respuesta: d.respuesta, nota: d.nota, corrige: true }] }); toast('Respuesta corregida. La anterior queda registrada.'); app.recargar(); });
+      if (fc) alEnviar(fc, async (d) => { await post(`/api/visitas/${v.id}/respuestas`, { persona: d.persona, canal: d.canal, respuestas: [{ lineaId: Number(d.lineaId), respuesta: d.respuesta, nota: d.nota, corrige: true }] }, { idempotencia: claveDeEnvio(fc) }); toast('Respuesta corregida. La anterior queda registrada.'); app.recargar(); });
       raiz.querySelectorAll('[data-cambiar]').forEach((b) => b.addEventListener('click', () => {
         const l = lineas.find((x) => x.id === Number(b.dataset.cambiar));
         const cont = raiz.querySelector(`[data-form-cambio="${l.id}"]`);
         cont.hidden = false;
-        cont.innerHTML = `<form class="form panel panel__cuerpo" novalidate>
+        b.hidden = true;
+        cont.innerHTML = `<form class="form" novalidate>
           ${resp(l) === 'autoriza' ? aviso('Este trabajo ya está autorizado. El cambio crea una versión nueva y necesita la respuesta del cliente; mientras tanto se conserva lo autorizado.', 'ambar', 'alerta') : ''}
+          <p class="pb-nota">Guardar el cambio crea la versión ${vSig}. La versión ${vActual.numero} y sus respuestas se conservan.</p>
           <div class="fila-campos">${campo({ nombre: 'descripcion', etiqueta: 'Detalle', valor: l.descripcion })}${campo({ nombre: 'cantidad', etiqueta: 'Cantidad', valor: aEntradaCant(l.cantidad_m), attrs: 'inputmode="decimal"' })}${campo({ nombre: 'unidad', etiqueta: 'Unidad', tipo: 'select', valor: l.unidad, opciones: UNIDADES })}${dinero ? campo({ nombre: 'precio', etiqueta: 'Precio unitario', valor: aEntradaDinero(l.precio_unit), attrs: 'inputmode="decimal"' }) : ''}</div>
           ${campo({ nombre: 'motivo', etiqueta: 'Motivo del cambio', requerido: true, placeholder: 'Ej.: el proveedor actualizó el precio' })}
           <div class="form-pie"><button class="btn btn-primario" type="submit">Guardar cambio</button><button type="button" class="btn" data-cancelar>Cancelar</button></div></form>`;
         const f = cont.querySelector('form');
-        f.querySelector('[data-cancelar]').onclick = () => { cont.hidden = true; cont.innerHTML = ''; };
-        alEnviar(f, async (d) => { await post(`/api/visitas/${v.id}/lineas/${l.id}/modificar`, d); toast('Cambio guardado en una versión nueva. Falta la respuesta del cliente.'); app.recargar(); });
+        f.querySelector('[data-cancelar]').onclick = () => { delete f.dataset.sucio; cont.hidden = true; cont.innerHTML = ''; b.hidden = false; b.focus(); };
+        alEnviar(f, async (d) => { await post(`/api/visitas/${v.id}/lineas/${l.id}/modificar`, d, { idempotencia: claveDeEnvio(f) }); toast('Cambio guardado en una versión nueva. Falta la respuesta del cliente.'); app.recargar(); });
         f.querySelector('input').focus();
       }));
       const fp = raiz.querySelector('#f-presupuesto');
