@@ -327,6 +327,23 @@
   :is(.ajg, .ajg-dlg) .btn:not(.btn-primario):not(:disabled):hover { background-color: var(--ajg-s2); }
 }
 
+/* Orden «Paso a paso» (25/11/2026): cápsula «Qué sigue», su versión abierta y el destello al llegar a un destino.
+   Solo transform y opacidad (el destello mueve el contorno); con movimiento reducido no corre nada. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .qs-capsula:not([hidden]) { animation: qs-sube var(--respuesta-panel) var(--respuesta-curva-panel); }
+  .qs-cap-b, .qs-alt, .h-cto { transition: transform var(--respuesta-rapida) var(--respuesta-curva); }
+  .qs-cap-b:active { transform: scale(.98); }
+  :is(.qs-alt, .h-cto):active { transform: scale(.96); }
+  .qs-dlg[open] { animation: qs-crece var(--respuesta-panel) var(--respuesta-curva-panel); transform-origin: 50% 100%; }
+  .qs-dlg[open]::backdrop { animation: qs-fondo var(--respuesta-panel) var(--respuesta-curva); }
+  .ot-hechos > summary .giro { transition: transform var(--respuesta) var(--respuesta-curva); }
+  .destello { animation: qs-destello 800ms ease-out 2; }
+}
+@keyframes qs-sube { from { opacity: 0; transform: translateY(12px); } }
+@keyframes qs-crece { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@keyframes qs-fondo { from { opacity: 0; } }
+@keyframes qs-destello { from { outline-offset: 3px; } to { outline-offset: 9px; outline-color: transparent; } }
+
 @media print {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

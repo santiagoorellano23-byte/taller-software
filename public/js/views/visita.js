@@ -1,10 +1,12 @@
-// Orden (diseño final): cabecera A con la tarjeta grafito (marca, patente, vehículo, cliente, cinco etapas, estado,
-// bloqueos, responsable y retiro) e interior B: «Ahora» con la sección que corresponde atender o la pedida por el
-// enlace, el dinero según permisos y «Toda la orden» con las demás secciones desplegables. Las secciones y sus
-// acciones son las de visita-partes.js: mismos servicios, permisos y validaciones del servidor.
+// Orden (diseño final): cabecera A con la tarjeta grafito (marca, patente, vehículo, cliente con llamar y WhatsApp,
+// cinco etapas, estado, responsable y retiro), «Qué sigue» (también como cápsula sobre la isla, orden-sigue.js) e
+// interior B: «Ahora» con la sección que corresponde atender o la pedida por el enlace, el dinero según permisos y
+// «Toda la orden» con las demás secciones desplegables. Las secciones y sus acciones son las de visita-partes.js:
+// mismos servicios, permisos y validaciones del servidor.
 import { get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
 import { esc, chipSituacion, cuando, fecha, km, pesos, campo, alEnviar, toast, confirmar, hayCambiosSinGuardar } from '../ui.js?v=0.1.0';
 import { seccionRevision, seccionPresupuesto, seccionTrabajo, seccionControl, seccionCobros, seccionArchivos } from './visita-partes.js?v=0.1.0';
+import { queSigue, tarjetaSigue, capsulaSigue, contactoCliente, enlazarSigue, enlazarIr, aplicarPendiente } from '../orden-sigue.js?v=0.1.0';
 import { resumenOrden } from '../orden-presentacion.js?v=0.1.0';
 import { vistaEstadoIngreso } from '../estado-ingreso.js?v=0.1.0';
 import { ic, placa, logoMarca, cabecera, ETAPAS_ORDEN } from '../diseno.js?v=0.1.0';
@@ -15,24 +17,7 @@ const ETAPA = { revision: 1, presupuesto: 2, autorizacion: 2, repuesto: 3, traba
 // Sección abierta en «Toda la orden», por orden: se conserva al guardar y recargar la pantalla.
 const abiertas = new Map();
 
-// Próximo paso real: texto, sección y acción simple cuando corresponde. Sin permiso no hay botón.
-function proximoPaso(v, app) {
-  const s = v.situacion;
-  const ir = (sec, texto) => ({ texto, sec });
-  const mapa = {
-    revision: app.puede('revision.registrar') ? ir('revision', 'Registrar la revisión') : null,
-    presupuesto: app.puede('presupuesto.preparar') ? ir('presupuesto', 'Preparar presupuesto') : null,
-    autorizacion: app.puede('presupuesto.respuesta') ? ir('presupuesto', 'Registrar respuesta') : null,
-    repuesto: app.puede('repuestos.gestionar') ? ir('repuestos', 'Ver repuestos') : null,
-    trabajo: app.puede('trabajo.ejecutar') ? ir('trabajo', 'Registrar avance') : null,
-    control: app.puede('control.registrar') ? ir('control', 'Comprobar el resultado') : null,
-    controlada: app.puede('visita.lista') ? { texto: 'Marcar listo para retirar', accion: 'lista', sec: 'control' } : null,
-    lista: /Liquidar|Cobrar/.test(s.paso) && app.puede('caja.registrar') ? ir('cobros', /Liquidar/.test(s.paso) ? 'Liquidar' : 'Registrar pago')
-      : app.puede('visita.entregar') ? ir('control', 'Registrar entrega') : null
-  };
-  return mapa[s.clave] || null;
-}
-const seccionNatural = (v, app) => ({ revision: 'revision', presupuesto: 'presupuesto', autorizacion: 'presupuesto', repuesto: 'repuestos', trabajo: 'trabajo', control: 'control', controlada: 'control', lista: /Liquidar|Cobrar/.test(v.situacion.paso) && app.puede('ver.dinero') ? 'cobros' : 'control' })[v.situacion.clave] || 'resumen';
+const seccionNatural = (v, app) => ({ revision: 'revision', presupuesto: 'presupuesto', autorizacion: 'presupuesto', repuesto: 'trabajo', trabajo: 'trabajo', control: 'control', controlada: 'control', lista: /Liquidar/.test(v.situacion.paso) && app.puede('ver.dinero') ? 'cobros' : 'control' })[v.situacion.clave] || 'resumen';
 
 function resumenDe(v, k, dinero) {
   const t = v.totales;
@@ -79,7 +64,7 @@ export default async function visita({ params, app }) {
   const pedida = visibles.find((s) => s[0] === params.seccion)?.[0];
   const natural = cerrada ? 'resumen' : seccionNatural(v, app);
   const ahora = pedida || natural;
-  const paso = cerrada ? null : proximoPaso(v, app);
+  const sigue = queSigue(v, app);
 
   // Cada sección se arma con su función de siempre; la de «Ahora» y la abierta en «Toda la orden».
   const actividad = `<details class="desp"><summary>${ic('history')}Actividad de la orden (${v.actividad.length})</summary><div class="desp-c"><ol class="tiempo">${v.actividad.map((a) => `<li><time>${esc(cuando(a.fecha))}</time><span class="li-t"><b>${esc(a.accion)}</b><small>${esc(a.por || '')}${a.detalle ? ' · ' + esc(a.detalle) : ''}</small></span></li>`).join('')}</ol></div></details>`;
@@ -107,8 +92,8 @@ export default async function visita({ params, app }) {
   const etapaTxt = v.anulada_at ? 'Orden anulada: el recorrido se interrumpió' : v.entregada_at ? 'Entregado: recorrido completo' : `Etapa actual: ${ETAPAS_ORDEN[e]}, ${e + 1} de 5`;
   const auto = [v.vehiculo.marca, v.vehiculo.modelo].filter(Boolean).join(' ') || 'Vehículo sin datos';
   const detalleAuto = [v.vehiculo.version_txt, v.vehiculo.anio].filter(Boolean).join(' · ');
-  const bloqueos = v.operacion?.bloqueos || [];
-  const tituloAhora = cerrada ? (v.anulada_at ? 'Orden anulada' : 'Orden entregada') : ahora === natural ? 'Ahora: ' + (paso?.texto || v.situacion.texto).toLowerCase() : SECCIONES.find((s) => s[0] === ahora)[1];
+  // «Qué sigue» ya dice el paso: el título solo aparece si la orden está cerrada o se pidió otra sección.
+  const tituloAhora = cerrada ? (v.anulada_at ? 'Orden anulada' : 'Orden entregada') : ahora === natural ? '' : SECCIONES.find((s) => s[0] === ahora)[1];
   const icAhora = cerrada ? (v.anulada_at ? 'block' : 'history') : SECCIONES.find((s) => s[0] === ahora)[2];
 
   return {
@@ -117,22 +102,19 @@ export default async function visita({ params, app }) {
       ${cabecera({ titulo: `Orden N.º ${esc(v.numero)}`, sub: v.tipo === 'service' ? 'Service' : 'Revisión / reparación', volver: '#/trabajos', ayuda: 'guia' })}
       <section class="heroe" aria-label="Vehículo y progreso de la orden">
         <div class="h-id">${logoMarca(v.vehiculo.marca, { grande: true })}${placa(v.vehiculo.patente, { grande: true })}</div>
-        <div class="h-mod"><b>${esc(auto)}</b>${detalleAuto ? `<small>${esc(detalleAuto)}</small>` : ''}
-          <small>${esc(v.contacto_nombre || 'Sin cliente')}${v.contacto_telefono ? ` · <a class="tel" href="tel:${esc(v.contacto_telefono.replace(/[^\d+]/g, ''))}">${ic('call')}${esc(v.contacto_telefono)}</a>` : ' · <span class="sindato">sin teléfono</span>'}</small></div>
+        <div class="h-mod"><b>${esc(auto)}</b>${detalleAuto ? `<small>${esc(detalleAuto)}</small>` : ''}</div>
+        ${contactoCliente(v)}
         <ol class="pasos ${v.anulada_at ? 'anulada' : ''}" aria-label="${esc(etapaTxt)}">${ETAPAS_ORDEN.map((t, i) => { const cls = v.anulada_at ? 'x' : i < e ? 'h' : i === e ? 'a' : '';
           return `<li class="${cls}" ${i === e ? 'aria-current="step"' : ''}><span>${cls === 'h' ? ic('check') : ''}</span><small>${i === 2 ? '<span class="lg">Presupuesto</span><span class="ct">Presup.</span>' : t}</small></li>`; }).join('')}</ol>
         <p class="pasos-actual" aria-hidden="true">${esc(v.anulada_at ? 'Orden anulada' : v.entregada_at ? 'Entregado' : `${ETAPAS_ORDEN[e]} · etapa ${e + 1} de 5`)}</p>
-        <div class="t-chips">${v.anulada_at ? `<span class="chip err">${ic('block')}Anulada</span>` : chipSituacion(v.situacion)}${!cerrada ? bloqueos.map((b) => `<span class="chip warn">${ic('hourglass_top')}${esc(b.texto)}</span>`).join('') : ''}${v.prioridad === 'alta' && !cerrada ? `<span class="chip err">${ic('priority_high')}Urgente</span>` : ''}${v.lista_at && !cerrada ? `<span class="chip">${ic('directions_car')}Entrega pendiente</span>` : ''}</div>
+        <div class="t-chips">${v.anulada_at ? `<span class="chip err">${ic('block')}Anulada</span>` : chipSituacion(v.situacion)}${v.prioridad === 'alta' && !cerrada ? `<span class="chip err">${ic('priority_high')}Urgente</span>` : ''}${v.lista_at && !cerrada ? `<span class="chip">${ic('directions_car')}Entrega pendiente</span>` : ''}</div>
         <div class="o-meta"><span class="o-meta-i">${ic('person')}${v.responsable ? esc(v.responsable) : '<span class="sindato">Sin responsable</span>'}</span><span class="o-meta-i">${ic('schedule')}${v.retiro_acordado ? (v.entregada_at ? 'Retiro acordado ' : 'Retiro ') + esc(cuando(v.retiro_acordado)) : '<span class="sindato">Retiro a confirmar</span>'}</span></div>
       </section>
     </div>
     <div class="o-der">
-      <section class="ahora" aria-labelledby="ahora-t"><h2 id="ahora-t">${ic(icAhora)}${esc(tituloAhora)}</h2>
+      ${tarjetaSigue(sigue)}
+      <section class="ahora" ${tituloAhora ? 'aria-labelledby="ahora-t"' : 'aria-label="Sección de la orden"'}>${tituloAhora ? `<h2 id="ahora-t">${ic(icAhora)}${esc(tituloAhora)}</h2>` : ''}
         ${v.anulada_at ? `<p class="aviso-in err">${ic('block')}<span>Anulada: ${esc(v.anulada_motivo || '')}. Se conserva todo su historial; solo consulta.</span></p>` : v.entregada_at ? `<p class="aviso-in">${ic('task_alt')}<span>Entregado ${esc(cuando(v.entregada_at))}.</span></p>` : ''}
-        ${!cerrada && ahora === natural ? `<p class="ahora-txt">${esc(v.situacion.paso)}</p>` : ''}
-        ${!cerrada && ahora !== natural ? `<p class="nota">${ic('info')}<span>Lo próximo en esta orden: ${esc((paso?.texto || v.situacion.texto).toLowerCase())}. <a href="#/visitas/${v.id}/${natural}">Ir</a></span></p>` : ''}
-        ${!cerrada && bloqueos.length ? `<ul class="lista-d densa">${bloqueos.map((b) => `<li><a class="li-b" href="#/visitas/${v.id}/${b.seccion}"><span class="li-ic">${ic('hourglass_top')}</span><span class="li-t"><b>${esc(b.texto)}</b></span>${ic('chevron_right')}</a></li>`).join('')}</ul>` : ''}
-        ${paso?.accion ? `<button type="button" class="btn btn-primario btn-full" data-paso="${paso.accion}">${ic('task_alt')}${esc(paso.texto)}</button>` : ''}
         <div class="ahora-cuerpo"><div class="seccion-orden" data-seccion-cuerpo>${parteAhora ? parteAhora.html : ''}</div></div>
         ${!cerrada && app.puede('adjuntos.subir') ? `<button type="button" class="btn btn-texto" data-registrar>${ic('add')}Registrar otra cosa…</button>` : ''}
       </section>
@@ -149,9 +131,12 @@ export default async function visita({ params, app }) {
       </ul>
       <details class="desp"><summary>${ic('move_to_inbox')}Datos de ingreso</summary><div class="desp-c"><p><b>Motivo:</b> ${esc(v.motivo)}</p><p class="nota">Ingreso ${esc(fecha(v.ingreso_at))} · ${v.lecturas[0] ? esc(km(v.lecturas[0].km)) : 'Sin lectura'}</p>${v.autorizacion_ingreso ? `<p>${esc(v.autorizacion_ingreso)}</p>` : ''}${v.relacionada ? `<a href="#/visitas/${v.relacionada.id}">Vuelve por la orden N.º ${esc(v.relacionada.numero)}. La garantía la decide el taller.</a>` : ''}${v.relacionadas.map((x) => `<a href="#/visitas/${x.id}">Orden posterior vinculada N.º ${esc(x.numero)}</a>`).join('')}${v.turno ? `<p>Turno ${esc(v.turno.codigo)}</p>` : ''}</div></details>
       ${app.puede('visita.anular') && !cerrada ? `<div><button type="button" class="btn btn-peligro btn-chico" data-anular>${ic('block')}Anular orden</button></div>` : ''}
-    </div></div>`,
+    </div></div>${capsulaSigue(sigue, v)}`,
     despues(raiz) {
       parteAhora?.enlazar?.(raiz.querySelector('[data-seccion-cuerpo]'));
+      enlazarIr(raiz, v, app);
+      enlazarSigue(raiz);
+      aplicarPendiente();
       // «Toda la orden»: una sección abierta por vez, armada al abrirla con su función real.
       const items = [...raiz.querySelectorAll('.ac-i')];
       const abrir = (det) => {
@@ -162,6 +147,7 @@ export default async function visita({ params, app }) {
         const p = parteDe(det.dataset.sec);
         cuerpo.innerHTML = p ? p.html : '';
         p?.enlazar?.(cuerpo);
+        enlazarIr(cuerpo, v, app);
       };
       items.forEach((det) => { det.addEventListener('toggle', () => abrir(det)); if (det.open) abrir(det); });
       raiz.querySelector('[data-registrar]')?.addEventListener('click', () => {
@@ -172,9 +158,6 @@ export default async function visita({ params, app }) {
         d.innerHTML = `<div class="dialogo__cuerpo bloque"><h2 id="registrar-titulo">¿Qué querés registrar?</h2>${opciones.map(([sec, t]) => `<a class="btn" href="#/visitas/${v.id}/${sec}">${t}${ic('chevron_right')}</a>`).join('')}<button class="btn btn-texto" type="button">Volver</button></div>`;
         document.body.append(d); d.querySelectorAll('a').forEach((a) => { a.onclick = () => d.close(); }); d.querySelector('button').onclick = () => d.close();
         d.addEventListener('close', () => { d.remove(); if (origen.isConnected) origen.focus(); }, { once: true }); d.showModal();
-      });
-      raiz.querySelector('[data-paso="lista"]')?.addEventListener('click', async () => {
-        try { await post(`/api/visitas/${v.id}/lista`, {}); toast('Listo para retirar. Sigue en Hoy hasta la entrega.'); app.recargar(); } catch (err) { toast(err.message, { error: true }); }
       });
       const fc = raiz.querySelector('#f-cabecera');
       if (fc) alEnviar(fc, async (d) => { await put(`/api/visitas/${v.id}`, { ...d, responsableId: d.responsableId || null, retiro: d.retiro || null, version: v.version }); toast('Datos de la orden guardados.'); app.recargar(); });

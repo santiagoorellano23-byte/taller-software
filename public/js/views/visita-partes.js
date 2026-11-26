@@ -2,8 +2,10 @@
 import { api, get, post, put, claveDeEnvio } from '../api.js?v=0.1.0';
 import {
   esc, icono, pesos, cant, km, fecha, fechaHora, cuando, chip, chipRespuesta, chipEtapa, ETAPAS, TIPO_LINEA, MEDIOS, UNIDADES, CANALES, campo, opcionesRadio, casilla,
-  alEnviar, toast, confirmar, aviso, leerForm, mostrarError, limpiarErrores, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago
+  alEnviar, toast, confirmar, aviso, leerForm, mostrarError, limpiarErrores, aEntradaDinero, aEntradaCant, copiar, numeroEntrada, revisarPago, telWhatsApp
 } from '../ui.js?v=0.1.0';
+import { ic } from '../diseno.js?v=0.1.0';
+import { clasificarTrabajos, accionEnCurso } from '../orden-sigue.js?v=0.1.0';
 import { qrSVG } from '../qr-util.js?v=0.1.0';
 import {catalogoPresupuesto,enlazarCatalogoPresupuesto} from '../presupuesto-pos.js?v=0.1.0';
 import {normalizar} from '../seleccion-rapida.js?v=0.1.0';
@@ -638,28 +640,56 @@ export function seccionPresupuesto(v, app, cat) {
 const chipTexto = (r) => ({ autoriza: 'autorizado', rechaza: 'no autorizado', posterga: 'para más adelante' }[r] || 'sin respuesta');
 
 // ---------------- Trabajo y repuestos ----------------
+// Rediseño «Paso a paso» (25/11/2026): resumen, trabajos agrupados (para hacer ahora / esperando / realizados) y cada
+// repuesto con sus cuatro etapas y una sola acción visible; lo demás va en «Más…», con las correcciones aparte.
+// Las acciones, permisos y confirmaciones son los de siempre. Colocar un repuesto no marca el trabajo realizado.
+const PASOS_REP = [['falta_pedir', 'Pedir'], ['pedido', 'Pedido'], ['llego', 'Llegó'], ['colocado', 'Colocado']];
+const TONO_REP = { falta_pedir: 'err', pedido: 'warn', llego: 'info', colocado: 'ok' };
+const IC_LINEA = { mano_obra: 'build', repuesto: 'inventory_2', insumo: 'oil_barrel', revision: 'search', servicio_externo: 'handshake' };
+const EST_TRABAJO = {
+  realizado: ['Realizado', 'ok', 'check'], respuesta: ['Esperando respuesta del cliente', 'warn', 'hourglass_top'], repuesto: ['Esperando repuesto', 'warn', 'lock'],
+  colocar: ['Falta colocar', 'info', 'inventory_2'], tareas: ['Tareas pendientes', 'info', 'checklist'], hacer: ['Por hacer', 'neutro', 'schedule']
+};
+const etq = (t, tipo, i) => `<span class="chip ${tipo}">${ic(i)}${esc(t)}</span>`;
 export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
+  const c = clasificarTrabajos(v, app);
+  const { ejecuta, gestiona, coloca, asignado } = c;
   const lineas = (v.presupuesto?.lineas || []).filter((l) => l.estado === 'vigente');
-  const ejecutables = lineas.filter((l) => resp(l) === 'autoriza');
-  const noEjec = lineas.filter((l) => resp(l) && resp(l) !== 'autoriza');
-  const yo = app.sesion.usuario;
-  const asignado = yo.rol !== 'mecanico' || !v.responsable_id || v.responsable_id === yo.id;
-  const ejecuta = app.puede('trabajo.ejecutar') && !cerrada(v) && asignado;
-  const gestiona = app.puede('repuestos.gestionar') && !cerrada(v);
-  const coloca = app.puede('repuestos.colocar') && asignado;
-  const controlado = v.controles.some((c) => c.vigente);
+  const dinero = app.puede('ver.dinero');
+  const duenio = app.sesion.usuario.rol === 'dueno';
+  const controlado = v.controles.some((x) => x.vigente);
+  const tareas = v.tareas;
+  const sig = { falta_pedir: ['pedido', 'Registrar que se pidió'], pedido: ['llego', 'Registrar que llegó'], llego: ['colocado', 'Registrar que se colocó'] };
+  // Acciones secundarias de un repuesto: las mismas condiciones que tenían los enlaces sueltos.
+  const masDe = (r) => {
+    const it = [], fix = [], info = [];
+    if (r.etapa === 'falta_pedir' && gestiona) it.push(['llego-directo', 'Ya está en el taller', 'Pasa directo a «Llegó». Pedido y llegada no mueven stock.']);
+    if (r.etapa === 'pedido' && gestiona) it.push(['fecha', 'Fecha de llegada', r.fecha_prevista ? `Hoy figura ${fecha(r.fecha_prevista)}.` : 'Todavía sin fecha confirmada.']);
+    if (r.origen === 'taller' && r.etapa !== 'colocado' && app.puede('compras.gestionar')) it.push(['comprar', 'Comprar esta pieza', 'Abre Compras con la pieza cargada.']);
+    if (r.origen === 'taller' && !r.reserva && r.etapa !== 'colocado' && app.puede('stock.reservar') && stock?.length) it.push(['reservar', 'Reservar del stock', 'Se aparta ahora y se descuenta al colocar.']);
+    if (r.reserva?.estado === 'activa' && app.puede('stock.reservar')) it.push(['liberar', 'Liberar reserva', 'Vuelve al stock disponible. Pide motivo.']);
+    if (duenio && r.etapa !== 'falta_pedir' && !cerrada(v)) fix.push(['atras', 'Corregir etapa', `Vuelve a «${ETAPAS[{ pedido: 'falta_pedir', llego: 'pedido', colocado: 'llego' }[r.etapa]][0]}». Pide motivo.`]);
+    if (r.origen === 'taller' && r.etapa !== 'colocado' && !app.puede('compras.gestionar')) info.push('Comprar o reservar del stock: lo hacen recepción o el dueño.');
+    if (!duenio && r.etapa !== 'falta_pedir' && !cerrada(v)) info.push('Corregir la etapa: solo el dueño, con motivo.');
+    return { it, fix, info };
+  };
   const repuestoHTML = (r) => {
-    const sig = { falta_pedir: ['pedido', 'Registrar que se pidió'], pedido: ['llego', 'Registrar que llegó'], llego: ['colocado', 'Registrar que se colocó'] }[r.etapa];
-    const puedeSig = sig && !cerrada(v) && (sig[0] === 'colocado' ? coloca : gestiona);
-    return `<li class="bloque" style="gap:6px"><div class="fila"><span class="fila__izq"><strong>${esc(r.descripcion)}</strong><span class="muted small">× ${esc(cant(r.cantidad_m, r.unidad))} · ${r.origen === 'cliente' ? 'la trae el cliente' : 'del taller'}${r.proveedor ? ' · ' + esc(r.proveedor) : ''}</span></span>${chipEtapa(r.etapa)}</div>
-      <p class="small muted">${r.etapa === 'pedido' ? (r.fecha_prevista ? 'Llegada prevista: ' + esc(fecha(r.fecha_prevista)) : 'Sin fecha de llegada confirmada') : ''}${r.articulo ? ` · Stock: ${esc(r.articulo)}${r.reserva ? (r.reserva.estado === 'activa' ? ' (reservado, se descuenta al colocar)' : ' (descontado al colocar)') : ''}` : ''}</p>
-      <div class="acciones">${puedeSig ? `<button type="button" class="btn btn-chico ${sig[0] === 'colocado' ? 'btn-oscuro' : ''}" data-etapa="${r.id}" data-a="${sig[0]}" data-version="${r.version}">${icono(sig[0] === 'colocado' ? 'check' : sig[0] === 'llego' ? 'caja' : 'camion')}${sig[1]}</button>` : ''}
-        ${r.origen==='taller'&&r.etapa!=='colocado'&&app.puede('compras.gestionar')?`<a class="btn btn-chico btn-texto" href="#/compras?nueva=1&descripcion=${encodeURIComponent(r.descripcion)}&cantidad=${encodeURIComponent(aEntradaCant(r.cantidad_m))}&proveedor=${r.proveedor_id||''}&volver=${v.id}">${icono('camion')}Comprar esta pieza</a>`:''}
-        ${r.etapa === 'falta_pedir' && gestiona ? `<button type="button" class="btn btn-chico btn-texto" data-etapa="${r.id}" data-a="llego" data-version="${r.version}">Ya está en el taller</button>` : ''}
-        ${r.origen === 'taller' && !r.reserva && r.etapa !== 'colocado' && app.puede('stock.reservar') && stock?.length ? `<button type="button" class="btn btn-chico btn-texto" data-reservar="${r.id}">${icono('stock')}Reservar del stock</button>` : ''}
-        ${r.reserva?.estado === 'activa' && app.puede('stock.reservar') ? `<button type="button" class="btn btn-chico btn-texto" data-liberar="${r.reserva.id}">Liberar reserva</button>` : ''}
-        ${r.etapa === 'pedido' && gestiona ? `<button type="button" class="btn btn-chico btn-texto" data-fecha="${r.id}" data-version="${r.version}">${icono('calendario')}Fecha de llegada</button>` : ''}
-        ${app.sesion.usuario.rol === 'dueno' && r.etapa !== 'falta_pedir' && !cerrada(v) ? `<button type="button" class="btn btn-chico btn-texto" data-atras="${r.id}" data-version="${r.version}">Corregir etapa</button>` : ''}</div></li>`;
+    const s = sig[r.etapa];
+    const permitido = s && !cerrada(v) && (s[0] === 'colocado' ? coloca : gestiona);
+    const i = PASOS_REP.findIndex(([k]) => k === r.etapa);
+    const mas = masDe(r);
+    const meta = [r.origen === 'cliente' ? 'La trae el cliente' : 'Del taller', r.proveedor, r.etapa === 'pedido' ? (r.fecha_prevista ? 'Llegada prevista ' + fecha(r.fecha_prevista) : 'Sin fecha de llegada confirmada') : '',
+      r.articulo ? `Stock: ${r.articulo}${r.reserva ? (r.reserva.estado === 'activa' ? ' · reservado, se descuenta al colocar' : ' · descontado al colocar') : ''}` : r.origen === 'taller' && r.etapa !== 'colocado' ? 'Sin reserva de stock' : ''].filter(Boolean);
+    const sinPermiso = s && !permitido && !cerrada(v) ? (s[0] === 'colocado' ? (app.puede('repuestos.colocar') ? `Colocar: lo registra ${v.responsable ? esc(v.responsable) + ' (asignado)' : 'el mecánico asignado'} o el dueño.` : 'Colocar: lo registran el mecánico o el dueño.') : '') : '';
+    return `<div class="ot-pieza" id="rep-${r.id}">
+      <div class="ot-pieza-cab">${ic('inventory_2')}<p><span class="ot-k">Repuesto</span><b>${esc(r.descripcion)}</b> <span class="ot-cant">× ${esc(cant(r.cantidad_m, r.unidad))}</span></p></div>
+      <ol class="ot-pasos" aria-hidden="true">${PASOS_REP.map(([k, t], n) => `<li class="${n < i || r.etapa === 'colocado' ? 'h' : n === i ? 'a ' + TONO_REP[k] : ''}"><span>${n < i || r.etapa === 'colocado' ? ic('check') : ''}</span><small>${t}</small></li>`).join('')}</ol>
+      <p class="sr">Etapa del repuesto: ${esc(ETAPAS[r.etapa][0])}, paso ${i + 1} de 4.</p>
+      ${meta.length ? `<p class="ot-meta">${meta.map(esc).join(' · ')}</p>` : ''}
+      ${permitido || mas.it.length || mas.fix.length || mas.info.length || sinPermiso ? `<div class="ot-pieza-acc">
+        ${permitido ? `<button type="button" class="btn ${s[0] === 'colocado' ? 'btn-oscuro' : ''}" data-etapa="${r.id}" data-a="${s[0]}" data-version="${r.version}">${ic(s[0] === 'colocado' ? 'check' : s[0] === 'llego' ? 'move_to_inbox' : 'local_shipping')}${s[1]}</button>` : sinPermiso ? `<p class="ot-sinperm">${sinPermiso}</p>` : ''}
+        ${mas.it.length || mas.fix.length || mas.info.length ? `<button type="button" class="btn ot-mas" data-mas-rep="${r.id}" aria-haspopup="dialog">${ic('more_vert')}Más<span class="sr"> acciones para ${esc(r.descripcion)}</span></button>` : ''}</div>` : ''}
+    </div>`;
   };
   const formRepuesto = (lineaId) => `<details class="mas"><summary>Agregar repuesto a este trabajo</summary><div class="mas__cuerpo"><form class="form" data-f-repuesto="${lineaId || ''}" novalidate>
     <div class="fila-campos">${campo({ nombre: 'descripcion', etiqueta: 'Repuesto', requerido: true })}${campo({ nombre: 'cantidad', etiqueta: 'Cantidad', valor: '1', attrs: 'inputmode="decimal"' })}${campo({ nombre: 'unidad', etiqueta: 'Unidad', tipo: 'select', opciones: UNIDADES })}</div>
@@ -670,37 +700,52 @@ export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
       ${stock?.length ? campo({ nombre: 'articuloId', etiqueta: 'Artículo del stock', tipo: 'select', ayuda: 'Si sale del stock, se descuenta al colocarlo.', opciones: [['', 'No sale del stock'], ...stock.map((a) => [a.id, `${a.nombre} (${cant(a.disponible, a.unidad)} disponibles)`])] }) : ''}</div>
     <p class="muted small">Agregar un repuesto no cambia el presupuesto ni la autorización. Si cambia el alcance o el importe, agregalo primero al presupuesto.</p>
     <button class="btn btn-primario" type="submit">${icono('mas')}Agregar repuesto</button></form></div></details>`;
-  const tareas = v.tareas;
+  const trabajoHTML = (t) => {
+    const { l, reps, bloqueos, estado } = t;
+    const [et, tono, ei] = EST_TRABAJO[estado];
+    const colocados = reps.length && !t.sinColocar.length;
+    const primero = t.sinColocar[0];
+    return `<article class="ot-card" id="lin-${l.id}">
+      <div class="ot-card-cab"><span class="ot-ic ${tono}" aria-hidden="true">${ic(IC_LINEA[l.tipo] || 'build')}${estado === 'repuesto' ? `<i>${ic('lock')}</i>` : ''}</span>
+        <div><h3>${esc(l.descripcion)}</h3><p class="ot-sub">${esc(TIPO_LINEA[l.tipo] || 'Trabajo')} · ${ic('check')}Autorizado${dinero && l.importe != null ? ` · <span class="num">${esc(pesos(l.importe))}</span>` : ''}</p>${etq(et, tono, ei)}</div></div>
+      ${l.realizado_at ? `<p class="ot-nota">Realizado por ${esc(l.realizado_por_nombre || '')} · ${esc(cuando(l.realizado_at))}</p>` : ''}
+      ${reps.map(repuestoHTML).join('')}
+      ${!reps.length && !l.realizado_at ? '<p class="ot-nota">Sin repuestos vinculados a este trabajo.</p>' : ''}
+      ${!soloRepuestos && colocados && !l.realizado_at ? '<p class="ot-nota">Repuesto colocado. Colocarlo no marca el trabajo realizado: confirmalo acá.</p>' : ''}
+      ${!soloRepuestos && !l.realizado_at && ejecuta && !bloqueos.length ? `<button type="button" class="btn btn-primario btn-full" data-realizado="${l.id}">${ic('check')}Marcar trabajo realizado</button>` : ''}
+      ${!soloRepuestos && !l.realizado_at && bloqueos.length ? `<div class="ot-bloqueo" id="bloqueo-trabajo-${l.id}">${ic('lock')}<p><b>Todavía no se puede marcar realizado.</b> ${bloqueos.map(esc).join(' ')}</p>${primero ? `<button type="button" class="btn btn-texto btn-chico" data-ir-sec="trabajo" data-ir-ancla="rep-${primero.id}">Ir al repuesto</button>` : ''}</div>` : ''}
+      ${!soloRepuestos && !l.realizado_at && !app.puede('trabajo.ejecutar') ? '<p class="ot-nota">Lo marca realizado el mecánico o el dueño.</p>' : ''}
+      ${gestiona && !l.realizado_at ? formRepuesto(l.id) : ''}
+    </article>`;
+  };
+  // Un trabajo realizado con un repuesto que volvió atrás (corrección) se muestra completo para poder resolverlo.
+  const activos = c.trabajos.filter((t) => !t.l.realizado_at || t.sinColocar.length);
+  const ahora = activos.filter((t) => !t.espera);
+  const esperan = activos.filter((t) => t.espera);
+  const hechos = c.trabajos.filter((t) => t.l.realizado_at && !t.sinColocar.length);
+  const total = c.trabajos.length;
+  const nHechos = c.trabajos.filter((t) => t.l.realizado_at).length;
+  const sueltos = v.repuestos.filter((r) => !r.linea_id);
   return {
-    html: `<section class="bloque" aria-labelledby="t-tra">
-      <div class="bloque__cab"><h2 id="t-tra">${soloRepuestos?'Repuestos':'Trabajos'}</h2><p>Llegó no es lo mismo que colocado. El trabajo se marca aparte.</p></div>
-      ${!asignado && app.puede('trabajo.ejecutar') ? aviso(`Esta visita está asignada a ${esc(v.responsable)}. Pedí que te la asignen para registrar avances.`, 'gris') : ''}
-      ${!soloRepuestos&&tareas.length ? `<div class="panel"><div class="panel__cab"><h3>Tareas del service</h3><span class="muted small">${tareas.filter((t) => t.estado !== 'pendiente').length} de ${tareas.length} confirmadas</span></div>
+    html: `<section class="ot" aria-labelledby="t-tra">
+      ${total && !soloRepuestos ? `<div class="ot-res"><div class="ot-res-cab"><div><h2 id="t-tra">Trabajo autorizado</h2><p class="ot-cifra"><b class="num">${nHechos}</b><span class="num">/ ${total}</span> realizados</p></div><span class="ot-ic" aria-hidden="true">${ic('build')}</span></div>
+        <div class="ot-seg" aria-hidden="true">${[...hechos, ...ahora, ...esperan].map((t) => `<i class="${t.l.realizado_at ? 'h' : t.espera ? 'e' : 'p'}"></i>`).join('')}</div>
+        <ul class="ot-cont"><li class="p"><b class="num">${ic('arrow_forward')}${ahora.length}</b><span>Para hacer ahora</span></li><li class="e"><b class="num">${ic('lock')}${esperan.length}</b><span>Esperando</span></li><li class="h"><b class="num">${ic('check')}${hechos.length}</b><span>Realizados</span></li></ul></div>`
+        : `<div class="ot-cabsimple"><h2 id="t-tra">${soloRepuestos ? 'Repuestos' : 'Trabajos'}</h2><p>Llegó no es lo mismo que colocado. El trabajo se marca aparte.</p></div>`}
+      ${!asignado && app.puede('trabajo.ejecutar') ? aviso(`Esta orden está asignada a ${esc(v.responsable)}. Pedí que te la asignen para registrar avances.`, 'gris') : ''}
+      ${!soloRepuestos && tareas.length ? `<div class="panel" id="tareas"><div class="panel__cab"><h3>Tareas del service</h3><span class="muted small">${tareas.filter((t) => t.estado !== 'pendiente').length} de ${tareas.length} confirmadas</span></div>
         <ul class="lista tareas-pos">${tareas.map((t) => `<li><div class="fila"><span>${esc(t.descripcion)}</span>${t.estado === 'hecho' ? chip('Hecho', 'verde', 'check') : t.estado === 'no_aplica' ? chip('No aplica', '', 'menos') : chip('Pendiente', 'violeta', 'reloj')}</div>
           ${t.explicacion ? `<p class="small muted">${esc(t.explicacion)}</p>` : ''}${t.por ? `<p class="xs muted">${esc(t.por)} · ${esc(cuando(t.actualizado_at))}</p>` : ''}
           ${ejecuta && !controlado ? `<div class="acciones">${t.estado !== 'hecho' ? `<button type="button" class="btn btn-chico" data-tarea="${t.id}" data-e="hecho">${icono('check')}Marcar hecho</button>` : ''}${t.estado !== 'no_aplica' ? `<button type="button" class="btn btn-chico" data-tarea="${t.id}" data-e="no_aplica">No aplica</button>` : ''}${t.estado !== 'pendiente' ? `<button type="button" class="btn btn-chico btn-texto" data-tarea="${t.id}" data-e="pendiente">Volver a pendiente</button>` : ''}</div>` : ''}</li>`).join('')}</ul>
         ${ejecuta && !controlado ? `<div class="panel__cuerpo"><form class="form" id="f-tarea" novalidate><div class="fila-campos">${campo({ nombre: 'descripcion', etiqueta: 'Agregar una tarea', placeholder: 'Ej.: revisar correa' })}</div><button class="btn btn-chico" type="submit">${icono('mas')}Agregar tarea</button></form></div>` : ''}</div>` : ''}
-      ${ejecutables.length ? ejecutables.map((l) => {
-        const reps = v.repuestos.filter((r) => r.linea_id === l.id);
-        const cambio = (v.presupuesto?.lineas || []).find((x) => x.origen_linea_id === l.id && x.estado === 'vigente');
-        const bloqueos = [
-          ...(cambio && !resp(cambio) ? ['Hay un cambio pendiente de respuesta del cliente.'] : []),
-          ...(reps.some(r => r.etapa !== 'colocado') ? ['Falta colocar: ' + reps.filter(r => r.etapa !== 'colocado').map(r => r.descripcion).join(', ') + '.'] : []),
-          ...(v.tipo === 'service' && l.autorizada_ingreso && tareas.some(t => t.estado === 'pendiente') ? ['Confirmá las tareas del service antes de marcarlo realizado.'] : [])
-        ];
-        return `<article class="panel"><div class="panel__cuerpo bloque">
-          <div class="fila"><h3>${esc(l.descripcion)}</h3>${l.realizado_at ? chip('Realizado', 'verde', 'check') : chip('Por hacer', 'teal', 'llave')}</div>
-          ${l.realizado_at ? `<p class="small muted">Realizado por ${esc(l.realizado_por_nombre || '')} · ${esc(cuando(l.realizado_at))}</p>` : ''}
-          ${cambio ? aviso('Hay un cambio de este trabajo esperando la respuesta del cliente.', 'ambar', 'reloj') : ''}
-          ${reps.length ? `<ul class="lista">${reps.map(repuestoHTML).join('')}</ul>` : '<p class="muted small">Sin repuestos cargados para este trabajo.</p>'}
-          ${!l.realizado_at && ejecuta && bloqueos.length ? `<p id="bloqueo-trabajo-${l.id}" class="small muted">${bloqueos.map(esc).join(' ')}</p>` : ''}
-          <div class="acciones">${!soloRepuestos && !l.realizado_at && ejecuta ? `<button type="button" class="btn btn-primario btn-chico" data-realizado="${l.id}" ${bloqueos.length ? `disabled aria-describedby="bloqueo-trabajo-${l.id}"` : ''}>${icono('check')}Marcar trabajo realizado</button>` : ''}
-            ${l.realizado_at && app.sesion.usuario.rol === 'dueno' && !l.cargo_id && !controlado && !cerrada(v) ? `<button type="button" class="btn btn-chico btn-texto" data-deshacer="${l.id}">Corregir: no está realizado</button>` : ''}</div>
-          ${gestiona && !l.realizado_at ? formRepuesto(l.id) : ''}
-        </div></article>`;
-      }).join('') : `<p class="muted">${lineas.length ? 'Todavía no hay trabajos autorizados por el cliente.' : 'Todavía no hay trabajos en el presupuesto.'}</p>`}
-      ${v.repuestos.filter((r) => !r.linea_id).length ? `<div class="panel"><div class="panel__cab"><h3>Repuestos sin trabajo asignado</h3></div><ul class="lista">${v.repuestos.filter((r) => !r.linea_id).map(repuestoHTML).join('')}</ul></div>` : ''}
-      ${noEjec.length ? `<details class="mas"><summary>Trabajos que no se hacen en esta visita (${noEjec.length})</summary><div class="mas__cuerpo"><ul>${noEjec.map((l) => `<li>${esc(l.descripcion)} · ${esc(chipTexto(resp(l)))}</li>`).join('')}</ul></div></details>` : ''}
+      ${ahora.length ? `<h3 class="ot-grp">${ic('arrow_forward')}Para hacer ahora</h3>${ahora.map(trabajoHTML).join('')}` : ''}
+      ${esperan.length ? `<h3 class="ot-grp">${ic('lock')}Esperando</h3>${esperan.map(trabajoHTML).join('')}` : ''}
+      ${hechos.length ? (soloRepuestos ? hechos.map(trabajoHTML).join('') : `<details class="ot-hechos"><summary><span class="ot-ic ok" aria-hidden="true">${ic('check')}</span><span class="ot-hechos-t">Realizados · ${hechos.length}</span>${ic('expand_more', 'giro')}</summary>
+        <ul>${hechos.map(({ l, reps }) => `<li id="lin-${l.id}"><div><b>${esc(l.descripcion)}</b><small>${esc(TIPO_LINEA[l.tipo] || 'Trabajo')} · ${esc(l.realizado_por_nombre || '')} · ${esc(cuando(l.realizado_at))}${reps.length ? ` · ${reps.length} repuesto${reps.length > 1 ? 's' : ''} colocado${reps.length > 1 ? 's' : ''}` : ''}${dinero && l.importe != null ? ` · ${esc(pesos(l.importe))}` : ''}</small></div>
+          ${duenio && !l.cargo_id && !controlado && !cerrada(v) ? `<button type="button" class="btn btn-texto btn-chico" data-deshacer="${l.id}">Corregir<span class="sr">: ${esc(l.descripcion)} no está realizado</span></button>` : ''}</li>`).join('')}</ul></details>`) : ''}
+      ${!total ? `<p class="muted">${lineas.length ? 'Todavía no hay trabajos autorizados por el cliente.' : 'Todavía no hay trabajos en el presupuesto.'}</p>` : ''}
+      ${sueltos.length ? `<div class="ot-card"><div class="ot-card-cab"><span class="ot-ic neutro" aria-hidden="true">${ic('inventory_2')}</span><div><h3>Repuestos sin trabajo asignado</h3><p class="ot-sub">No están vinculados a un trabajo del presupuesto.</p></div></div>${sueltos.map(repuestoHTML).join('')}</div>` : ''}
+      ${c.noEjecutables.length ? `<ul class="ot-no">${c.noEjecutables.map((l) => `<li>${etq(chipTexto(resp(l)).replace(/^./, (x) => x.toUpperCase()), 'neutro', resp(l) === 'posterga' ? 'schedule' : 'block')}<span>${esc(l.descripcion)} · no se hace en esta visita</span></li>`).join('')}</ul>` : ''}
       ${!soloRepuestos && (v.tipo === 'service' || v.productos.length) ? `<div class="panel"><div class="panel__cab"><h3>Productos usados</h3><span class="muted small">Lo que realmente se usó, con cantidad</span></div>
         ${v.productos.length ? `<ul class="lista">${v.productos.map((p) => `<li><div class="fila"><span><strong>${esc(p.descripcion)}</strong> × ${esc(cant(p.cantidad_m, p.unidad))}</span>${ejecuta ? `<button type="button" class="btn btn-chico btn-texto" data-anular-prod="${p.id}">Anular</button>` : ''}</div><p class="xs muted">${p.origen === 'cliente' ? 'Lo trajo el cliente' : p.articulo_id ? 'Descontado del stock' : 'Del taller'} · ${esc(p.por || '')}</p></li>`).join('')}</ul>` : '<div class="panel__cuerpo"><p class="muted small">Todavía no se registraron productos.</p></div>'}
         ${ejecuta ? `<div class="panel__cuerpo"><form class="form" id="f-producto" novalidate><div class="fila-campos">
@@ -708,9 +753,64 @@ export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
           ${stock?.length ? campo({ nombre: 'articuloId', etiqueta: 'Sale del stock', tipo: 'select', opciones: [['', 'No'], ...stock.map((a) => [a.id, `${a.nombre} (${cant(a.disponible, a.unidad)})`])] }) : ''}</div>
           <datalist id="dl-productos">${(window.TALLERES_CATALOGOS?.productos || []).map((x) => `<option value="${esc(x.nombre)}">`).join('')}</datalist>
           <button class="btn btn-chico" type="submit">${icono('mas')}Registrar producto usado</button></form></div>` : ''}</div>` : ''}
-      ${gestiona && !ejecutables.length && lineas.length === 0 ? formRepuesto(null) : ''}
+      ${gestiona && !total && lineas.length === 0 ? formRepuesto(null) : ''}
     </section>`,
     enlazar(raiz) {
+      const repDe = (id) => v.repuestos.find((x) => x.id === Number(id));
+      const MSJ = { pedido: 'Repuesto registrado como pedido.', llego: 'Repuesto registrado como llegado (todavía falta colocarlo).', colocado: 'Repuesto colocado. El trabajo se marca aparte.' };
+      // Acciones de un repuesto: las mismas llamadas y confirmaciones que antes, desde el botón o desde «Más…».
+      const accionRep = async (a, rp, boton) => {
+        if (a === 'llego-directo') return accionEnCurso(boton, app, () => post(`/api/repuestos/${rp.id}/etapa`, { etapa: 'llego', version: rp.version }), MSJ.llego);
+        if (a === 'comprar') return app.ir(`#/compras?nueva=1&descripcion=${encodeURIComponent(rp.descripcion)}&cantidad=${encodeURIComponent(aEntradaCant(rp.cantidad_m))}&proveedor=${rp.proveedor_id || ''}&volver=${v.id}`);
+        if (a === 'fecha') {
+          const r = await confirmar({ titulo: 'Fecha de llegada prevista', texto: esc(rp.descripcion), aceptar: 'Guardar', pedir: { etiqueta: 'Fecha', tipo: 'date', valor: rp.fecha_prevista || '' } });
+          if (r.ok) acc(app, () => put(`/api/repuestos/${rp.id}`, { fechaPrevista: r.valor, version: rp.version }), 'Fecha guardada.');
+          return;
+        }
+        if (a === 'atras') {
+          const anterior = { pedido: 'falta_pedir', llego: 'pedido', colocado: 'llego' }[rp.etapa];
+          const r = await confirmar({ titulo: 'Corregir la etapa del repuesto', texto: `Vuelve de «${ETAPAS[rp.etapa][0]}» a «${ETAPAS[anterior][0]}».`, efecto: rp.etapa === 'colocado' && rp.reserva ? 'Si se había descontado del stock, se reintegra con un movimiento.' : '', aceptar: 'Corregir', peligro: true, pedir: { etiqueta: 'Motivo de la corrección' } });
+          if (r.ok) acc(app, () => post(`/api/repuestos/${rp.id}/etapa`, { etapa: anterior, motivo: r.valor, version: rp.version }), 'Etapa corregida.');
+          return;
+        }
+        if (a === 'liberar') {
+          const r = await confirmar({ titulo: 'Liberar la reserva', texto: esc(rp.descripcion), aceptar: 'Liberar', pedir: { etiqueta: 'Motivo' } });
+          if (r.ok) acc(app, () => post(`/api/reservas/${rp.reserva.id}/liberar`, { motivo: r.valor }), 'Reserva liberada.');
+          return;
+        }
+        if (a === 'reservar') {
+          const opciones = (stock || []).filter((x) => x.unidad === rp.unidad);
+          if (!opciones.length) return toast(`No hay artículos de stock que se cuenten en «${rp.unidad}».`, { error: true });
+          const d = document.createElement('dialog');
+          d.className = 'dialogo';
+          d.innerHTML = `<form method="dialog" class="form"><div class="dialogo__cuerpo"><h2>Reservar del stock</h2><p>${esc(rp.descripcion)} × ${esc(cant(rp.cantidad_m, rp.unidad))}. Se aparta ahora y se descuenta al colocarlo.</p>
+            ${campo({ nombre: 'articuloId', etiqueta: 'Artículo', tipo: 'select', opciones: opciones.map((x) => [x.id, `${x.nombre} (${cant(x.disponible, x.unidad)} disponibles)`]) })}</div>
+            <div class="dialogo__pie"><button type="button" class="btn" data-no>Volver</button><button class="btn btn-primario" value="si">Reservar</button></div></form>`;
+          document.body.appendChild(d);
+          d.querySelector('[data-no]').onclick = () => d.close();
+          d.addEventListener('close', () => { const val = d.querySelector('select').value; const ok = d.returnValue === 'si'; d.remove(); if (ok) acc(app, () => post(`/api/repuestos/${rp.id}/reservar`, { articuloId: Number(val) }), 'Stock reservado.'); });
+          d.showModal();
+        }
+      };
+      raiz.querySelectorAll('[data-etapa]').forEach((b) => b.addEventListener('click', () => accionEnCurso(b, app, () => post(`/api/repuestos/${b.dataset.etapa}/etapa`, { etapa: b.dataset.a, version: Number(b.dataset.version) }), MSJ[b.dataset.a])));
+      // «Más…»: hoja con lo que este perfil puede hacer, las correcciones aparte y quién hace lo demás.
+      raiz.querySelectorAll('[data-mas-rep]').forEach((b) => b.addEventListener('click', () => {
+        const rp = repDe(b.dataset.masRep);
+        const { it, fix, info } = masDe(rp);
+        const fila = ([a, t, d]) => `<button type="button" class="ot-hoja-i${a === 'atras' ? ' fix' : ''}" data-a="${a}"><b>${esc(t)}</b><small>${esc(d)}</small></button>`;
+        const d = document.createElement('dialog');
+        d.className = 'hoja-dlg';
+        d.setAttribute('aria-labelledby', 'hoja-rep-t');
+        d.innerHTML = `<header><div><h2 id="hoja-rep-t">${esc(rp.descripcion)}</h2><p class="muted small">${esc(ETAPAS[rp.etapa][0])} · ${esc(cant(rp.cantidad_m, rp.unidad))} · ${rp.origen === 'cliente' ? 'la trae el cliente' : 'del taller'}</p></div><button type="button" class="ibtn" aria-label="Cerrar" data-cerrar>${ic('close')}</button></header>
+          <div class="hoja-c">${it.map(fila).join('')}${fix.length ? `<h3 class="ot-hoja-g">Correcciones</h3>${fix.map(fila).join('')}` : ''}${info.map((x) => `<p class="ot-hoja-i off">${esc(x)}</p>`).join('')}</div>`;
+        document.body.appendChild(d);
+        d.querySelector('[data-cerrar]').onclick = () => d.close();
+        d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+        d.addEventListener('close', () => { d.remove(); if (b.isConnected) b.focus({ preventScroll: true }); });
+        d.querySelectorAll('[data-a]').forEach((x) => x.addEventListener('click', () => { d.close(); accionRep(x.dataset.a, rp, b); }));
+        d.showModal();
+        (d.querySelector('[data-a]') || d.querySelector('[data-cerrar]')).focus();
+      }));
       raiz.querySelectorAll('[data-tarea]').forEach((b) => b.addEventListener('click', async () => {
         let explicacion = '';
         if (b.dataset.e === 'no_aplica') {
@@ -718,39 +818,9 @@ export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
           if (!r.ok) return;
           explicacion = r.valor;
         }
-        acc(app, () => post(`/api/tareas/${b.dataset.tarea}`, { estado: b.dataset.e, explicacion }), 'Tarea actualizada.');
+        accionEnCurso(b, app, () => post(`/api/tareas/${b.dataset.tarea}`, { estado: b.dataset.e, explicacion }), 'Tarea actualizada.');
       }));
-      raiz.querySelectorAll('[data-etapa]').forEach((b) => b.addEventListener('click', () => acc(app, () => post(`/api/repuestos/${b.dataset.etapa}/etapa`, { etapa: b.dataset.a, version: Number(b.dataset.version) }),
-        { pedido: 'Repuesto registrado como pedido.', llego: 'Repuesto registrado como llegado (todavía falta colocarlo).', colocado: 'Repuesto colocado. El trabajo se marca aparte.' }[b.dataset.a])));
-      raiz.querySelectorAll('[data-fecha]').forEach((b) => b.addEventListener('click', async () => {
-        const r = await confirmar({ titulo: 'Fecha de llegada prevista', aceptar: 'Guardar', pedir: { etiqueta: 'Fecha', tipo: 'date' } });
-        if (r.ok) acc(app, () => put(`/api/repuestos/${b.dataset.fecha}`, { fechaPrevista: r.valor, version: Number(b.dataset.version) }), 'Fecha guardada.');
-      }));
-      raiz.querySelectorAll('[data-atras]').forEach((b) => b.addEventListener('click', async () => {
-        const rp = v.repuestos.find((x) => x.id === Number(b.dataset.atras));
-        const anterior = { pedido: 'falta_pedir', llego: 'pedido', colocado: 'llego' }[rp.etapa];
-        const r = await confirmar({ titulo: 'Corregir la etapa del repuesto', texto: `Vuelve de «${ETAPAS[rp.etapa][0]}» a «${ETAPAS[anterior][0]}».`, efecto: rp.etapa === 'colocado' && rp.reserva ? 'Si se había descontado del stock, se reintegra con un movimiento.' : '', aceptar: 'Corregir', peligro: true, pedir: { etiqueta: 'Motivo de la corrección' } });
-        if (r.ok) acc(app, () => post(`/api/repuestos/${rp.id}/etapa`, { etapa: anterior, motivo: r.valor, version: rp.version }), 'Etapa corregida.');
-      }));
-      raiz.querySelectorAll('[data-reservar]').forEach((b) => b.addEventListener('click', async () => {
-        const rp = v.repuestos.find((x) => x.id === Number(b.dataset.reservar));
-        const opciones = (stock || []).filter((a) => a.unidad === rp.unidad);
-        if (!opciones.length) return toast(`No hay artículos de stock que se cuenten en «${rp.unidad}».`, { error: true });
-        const d = document.createElement('dialog');
-        d.className = 'dialogo';
-        d.innerHTML = `<form method="dialog" class="form"><div class="dialogo__cuerpo"><h2>Reservar del stock</h2><p>${esc(rp.descripcion)} × ${esc(cant(rp.cantidad_m, rp.unidad))}. Se aparta ahora y se descuenta al colocarlo.</p>
-          ${campo({ nombre: 'articuloId', etiqueta: 'Artículo', tipo: 'select', opciones: opciones.map((a) => [a.id, `${a.nombre} (${cant(a.disponible, a.unidad)} disponibles)`]) })}</div>
-          <div class="dialogo__pie"><button type="button" class="btn" data-no>Volver</button><button class="btn btn-primario" value="si">Reservar</button></div></form>`;
-        document.body.appendChild(d);
-        d.querySelector('[data-no]').onclick = () => d.close();
-        d.addEventListener('close', () => { const val = d.querySelector('select').value; const ok = d.returnValue === 'si'; d.remove(); if (ok) acc(app, () => post(`/api/repuestos/${rp.id}/reservar`, { articuloId: Number(val) }), 'Stock reservado.'); });
-        d.showModal();
-      }));
-      raiz.querySelectorAll('[data-liberar]').forEach((b) => b.addEventListener('click', async () => {
-        const r = await confirmar({ titulo: 'Liberar la reserva', aceptar: 'Liberar', pedir: { etiqueta: 'Motivo' } });
-        if (r.ok) acc(app, () => post(`/api/reservas/${b.dataset.liberar}/liberar`, { motivo: r.valor }), 'Reserva liberada.');
-      }));
-      raiz.querySelectorAll('[data-realizado]').forEach((b) => b.addEventListener('click', () => acc(app, () => post(`/api/visitas/${v.id}/lineas/${b.dataset.realizado}/realizado`, {}), 'Trabajo marcado como realizado.')));
+      raiz.querySelectorAll('[data-realizado]').forEach((b) => b.addEventListener('click', () => accionEnCurso(b, app, () => post(`/api/visitas/${v.id}/lineas/${b.dataset.realizado}/realizado`, {}), 'Trabajo marcado como realizado.')));
       raiz.querySelectorAll('[data-deshacer]').forEach((b) => b.addEventListener('click', async () => {
         const r = await confirmar({ titulo: 'Corregir trabajo realizado', texto: 'El trabajo vuelve a pendiente. Queda registrado quién y por qué.', aceptar: 'Corregir', peligro: true, pedir: { etiqueta: 'Motivo' } });
         if (r.ok) acc(app, () => post(`/api/visitas/${v.id}/lineas/${b.dataset.deshacer}/realizado`, { realizado: false, motivo: r.valor }), 'Corrección guardada.');
@@ -769,6 +839,10 @@ export function seccionTrabajo(v, app, cat, stock, {soloRepuestos=false}={}) {
 }
 
 // ---------------- Control y entrega ----------------
+// Rediseño «Paso a paso»: tres registros distintos (comprobado, listo, entregado) y el cobro aparte. Las reglas son
+// las del servidor: comprobar exige los trabajos autorizados realizados; entregar exige estar listo, liquidar lo
+// realizado con importe y, con saldo, la regla del taller. Entregar nunca marca pagado.
+const RES_CORTO = { resuelto: ['Resuelto', 'ok', 'check'], mejoro: ['Parcial', 'warn', 'priority_high'], no_reproducido: ['No reproducido', 'warn', 'priority_high'], pendiente: ['Sigue pendiente', 'err', 'priority_high'] };
 export function seccionControl(v, app) {
   const sinLiquidar = (v.presupuesto?.lineas || []).some((l) => l.estado === 'vigente' && resp(l) === 'autoriza' && l.realizado_at && l.importe > 0 && !l.cargo_id);
   const vigente = v.controles.find((c) => c.vigente);
@@ -776,33 +850,59 @@ export function seccionControl(v, app) {
   const yo = app.sesion.usuario;
   const asignado = yo.rol !== 'mecanico' || !v.responsable_id || v.responsable_id === yo.id;
   const lineas = (v.presupuesto?.lineas || []).filter((l) => l.estado === 'vigente');
-  const bloqueos = [];
-  if (lineas.some((l) => !resp(l))) bloqueos.push('Hay trabajos sin respuesta del cliente.');
+  const sinResp = lineas.filter((l) => !resp(l));
   const pend = lineas.filter((l) => resp(l) === 'autoriza' && !l.realizado_at);
-  if (pend.length) bloqueos.push(`Faltan trabajos autorizados: ${pend.map((l) => l.descripcion).join(', ')}.`);
-  if (v.tareas.some((t) => t.estado === 'pendiente')) bloqueos.push('Hay tareas del service sin confirmar.');
+  const tareasPend = v.tareas.filter((t) => t.estado === 'pendiente');
+  const faltas = [...(sinResp.length ? [`${sinResp.length} trabajo${sinResp.length > 1 ? 's' : ''} sin respuesta del cliente`] : []), ...(pend.length ? [`terminar ${pend.length === 1 ? esc(pend[0].descripcion) : pend.length + ' trabajos'}`] : []), ...(tareasPend.length ? [`confirmar ${tareasPend.length} tarea${tareasPend.length > 1 ? 's' : ''} del service`] : [])];
   const postergados = lineas.filter((l) => resp(l) === 'posterga');
   const pendientesEntrega = postergados.length || (vigente && vigente.resultado !== 'resuelto');
   const metodos = window.TALLERES_CATALOGOS?.metodosControl || [];
   const proximo = v.seguimientos.find((s) => s.tipo === 'service' && s.estado === 'pendiente');
-  const saldo = v.totales?.saldo || 0;
+  const t = v.totales;
+  const dinero = app.puede('ver.dinero') && !!t;
+  const saldo = t?.saldo || 0;
   const reglaSaldo = app.sesion.taller?.entregaSaldo || { regla: 'recepcion', puedo: true };
-  const irCobros = `<a class="btn btn-chico" href="#/visitas/${v.id}/cobros">${icono('dinero')}Ir a Cobros</a>`;
+  const irDinero = dinero ? `<a class="btn btn-chico" href="#/visitas/${v.id}/cobros">${ic('payments')}Ir a Dinero</a>` : '';
   const bloqueoSaldo = saldo > 0 && !reglaSaldo.puedo
     ? (reglaSaldo.regla === 'ninguno' ? 'La regla de este taller es no entregar con saldo: registrá el pago antes de la entrega.' : 'En este taller solo el dueño autoriza entregar con saldo. Pedile que registre la entrega o cobrá el saldo.')
     : '';
+  const entregable = !cerrada(v) && v.lista_at && app.puede('visita.entregar') && !sinLiquidar && !bloqueoSaldo;
+  // Tres registros que no se mezclan. El estado se nombra con palabras, no solo con color.
+  const tiles = [
+    ['Comprobado', vigente ? RES_CORTO[vigente.resultado] : ['Pendiente', '', '']],
+    ['Listo para retirar', v.lista_at || v.entregada_at ? ['Sí', 'ok', 'check'] : ['No', '', '']],
+    ['Entregado', v.entregada_at ? (v.entrega_saldo ? ['Con saldo', 'warn', 'check'] : ['Sí', 'ok', 'check']) : entregable ? ['Disponible ahora', 'accion', 'arrow_forward'] : ['No', '', '']]
+  ];
+  const n = [vigente, v.lista_at || v.entregada_at, v.entregada_at].filter(Boolean).length;
+  // Cobro: autorizado ≠ realizado ≠ liquidado ≠ cobrado. Antes de liquidar no hay saldo; un anticipo no es pago final.
+  let cobro = '';
+  if (dinero) {
+    const realizadoSinImporte = !t.liquidado && !t.realizado && !pend.length && lineas.some((l) => resp(l) === 'autoriza');
+    let c;
+    if (!t.liquidado && realizadoSinImporte) c = { v: pesos(t.cobrado), de: 'cobrado', d: t.cobrado ? `Lo realizado no tiene importe: no hay nada que liquidar. Lo cobrado (${pesos(t.cobrado)}) queda a favor del cliente; se resuelve en Dinero.` : 'Lo realizado no tiene importe: no hay nada que liquidar ni cobrar.', est: t.cobrado ? ['A favor del cliente', 'info'] : ['Sin importe', 'ok'], ir: t.cobrado > 0 };
+    else if (!t.liquidado) c = { v: pesos(t.cobrado), de: t.cobrado ? 'de anticipo' : 'cobrado', d: `${t.cobrado ? 'Anticipo registrado. ' : 'Sin anticipo registrado. '}El total se fija al liquidar lo realizado.`, est: ['Sin liquidar', 'neutro'], ir: sinLiquidar && !(v.lista_at && app.puede('visita.entregar')) };
+    else if (saldo > 0) c = { v: pesos(t.cobrado), de: `de ${pesos(t.liquidado)} liquidado`, d: `Falta cobrar ${pesos(saldo)}.`, est: ['Con saldo', 'warn'], barra: Math.min(100, Math.round(t.cobrado / t.liquidado * 100)), ir: true };
+    else if (t.aFavor) c = { v: pesos(t.cobrado), de: `de ${pesos(t.liquidado)} liquidado`, d: `Se cobró ${pesos(t.aFavor)} de más: queda a favor del cliente.`, est: ['A favor del cliente', 'info'], barra: 100, ir: true };
+    else c = { v: pesos(t.cobrado), de: `de ${pesos(t.liquidado)} liquidado`, d: 'Sin saldo pendiente.', est: ['Cobrado', 'ok'], barra: 100, ir: false };
+    cobro = `<div class="oe-cobro"><div class="oe-cobro-cab"><h3>Cobro · se registra aparte</h3><span class="oe-est ${c.est[1]}">${esc(c.est[0])}</span></div>
+      <p class="oe-cifra"><b class="num">${esc(c.v)}</b> <span class="num">${esc(c.de)}</span></p>
+      ${c.barra != null ? `<div class="oe-barra" role="img" aria-label="Cobrado ${c.barra}% de lo liquidado"><i style="width:${c.barra}%"></i></div>` : ''}
+      <div class="oe-cobro-pie"><p>${esc(c.d)}${t.liquidado && sinLiquidar ? ' Hay trabajo realizado sin liquidar: se liquida aparte.' : ''}</p>${c.ir ? irDinero : ''}</div></div>`;
+  } else if (!app.puede('ver.dinero')) cobro = '<p class="oe-nota">Cobro: lo ven y registran recepción o el dueño.</p>';
   return {
-    html: `<section class="bloque" aria-labelledby="t-ctl">
-      <div class="bloque__cab"><h2 id="t-ctl">Control y entrega</h2><p>Comprobado, listo, entregado y pagado son pasos distintos.</p></div>
-      ${vigente ? `<div class="panel panel__cuerpo bloque"><div class="fila"><h3>Resultado comprobado</h3>${chip(RES_TXT[vigente.resultado], vigente.resultado === 'resuelto' ? 'verde' : vigente.resultado === 'pendiente' ? 'rojo' : 'ambar', vigente.resultado === 'resuelto' ? 'check' : 'alerta')}</div>
-          <p><strong>Cómo se comprobó:</strong> ${esc(vigente.como)}</p>${vigente.nota ? `<p class="muted">${esc(vigente.nota)}</p>` : ''}<p class="xs muted">${esc(vigente.por || '')} · ${esc(cuando(vigente.creado_at))}</p></div>`
-        : (v.entregada_at ? '' : bloqueos.length ? aviso(`<strong>Todavía no se puede comprobar el resultado.</strong> ${bloqueos.map(esc).join(' ')}`, 'gris') :
-          app.puede('control.registrar') && asignado && !cerrada(v) ? `<div class="panel panel__cuerpo"><form class="form" id="f-control" novalidate><h3>Comprobar el resultado</h3>
-            ${opcionesRadio('resultado', RESULTADOS, '', 'Resultado')}
-            ${campo({ nombre: 'metodo', etiqueta: 'Cómo se comprobó', tipo: 'select', opciones: [['', 'Elegí una forma…'], ...metodos.map((m) => [m, m])] })}
-            ${campo({ nombre: 'como', etiqueta: 'Detalle de la comprobación', requerido: true, placeholder: 'Ej.: prueba de ruta 10 km con lomos de burro' })}
+    html: `<section class="oe" id="entrega" aria-labelledby="t-ctl" tabindex="-1">
+      <div class="oe-cab"><h2 id="t-ctl">Entrega</h2><span>${n} de 3 registrados</span></div>
+      <ol class="oe-tiles" aria-label="Registros de la entrega">${tiles.map(([l, [txt, tono, i]]) => `<li class="${tono}"><span class="oe-c" aria-hidden="true">${i ? ic(i) : ''}</span><b>${l}</b><small>${esc(txt)}</small></li>`).join('')}</ol>
+      ${vigente ? `<p class="oe-det">${ic('checklist')}<span><b>Comprobación:</b> ${esc(RES_TXT[vigente.resultado])} · ${esc(vigente.como)}${vigente.nota ? ` · Para el cliente: ${esc(vigente.nota)}` : ''} <small>${esc(vigente.por || '')} · ${esc(cuando(vigente.creado_at))}</small></span></p>` : ''}
+      ${cobro}
+      ${!vigente && !v.entregada_at && faltas.length ? `<div class="oe-paso oe-falta">${ic('lock')}<p>Para comprobar, falta ${faltas.join(' y ')}.</p><a class="btn btn-texto btn-chico" href="#/visitas/${v.id}/${sinResp.length ? 'presupuesto' : 'trabajo'}">${sinResp.length ? 'Ir al presupuesto' : 'Ir a Trabajo'}</a></div>` : ''}
+      ${!vigente && !v.entregada_at && !faltas.length ? (app.puede('control.registrar') && asignado && !cerrada(v) ? `<div class="oe-paso"><form class="form" id="f-control" novalidate><h3>Comprobar el resultado</h3>
+            ${opcionesRadio('resultado', RESULTADOS, '', 'Resultado · obligatorio')}
+            <p class="oe-ayuda" data-res-aviso hidden>Queda visible como pendiente. Al entregar se pide confirmar que se lo explicaste al cliente.</p>
+            ${metodos.length ? `<fieldset class="grupo oe-metodos"><legend>Forma de comprobar <span class="muted xs">(opcional)</span></legend><div class="oe-pills">${metodos.map((m) => `<label class="oe-pill"><input type="radio" name="metodo" value="${esc(m)}"><span>${esc(m)}</span></label>`).join('')}</div></fieldset>` : ''}
+            ${campo({ nombre: 'como', etiqueta: 'Cómo lo comprobaste · obligatorio', requerido: true, placeholder: 'Ej.: prueba de ruta 10 km con lomos de burro' })}
             ${campo({ nombre: 'nota', etiqueta: 'Observación para el cliente', tipo: 'textarea' })}
-            <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('escudo')}Guardar resultado</button></div></form></div>` : aviso('El resultado lo comprueba el mecánico asignado o el dueño.', 'gris'))}
+            <button class="btn btn-primario btn-full" type="submit">${ic('task_alt')}Guardar resultado</button></form></div>` : `<p class="oe-nota">El resultado lo comprueba el mecánico asignado o el dueño.</p>`) : ''}
       ${anteriores.length ? `<details class="mas"><summary>Controles anteriores (${anteriores.length})</summary><div class="mas__cuerpo">${anteriores.map((c) => `<p class="small"><strong>${esc(RES_TXT[c.resultado])}</strong> · ${esc(c.como)} · ${esc(fechaHora(c.creado_at))}<br><span class="muted">${esc(c.reemplazado_motivo || '')}</span></p>`).join('')}</div></details>` : ''}
       ${v.tipo === 'service' || proximo ? `<div class="panel panel__cuerpo bloque"><h3>Próximo service</h3>
         ${proximo ? `<p><strong>${[proximo.km_objetivo != null ? km(proximo.km_objetivo) : null, proximo.fecha_objetivo ? fecha(proximo.fecha_objetivo) : null].filter(Boolean).join(' o ')}</strong> · ${esc(proximo.criterio || '')}</p>` : '<p class="muted">Todavía no se indicó el próximo service.</p>'}
@@ -811,23 +911,32 @@ export function seccionControl(v, app) {
           ${campo({ nombre: 'criterio', etiqueta: 'Criterio', valor: 'Lo que ocurra primero.' })}
           ${casilla('confirma', 'Lo definí como técnico para este auto (el sistema no calcula intervalos solo)')}
           <button class="btn btn-primario" type="submit">Guardar próximo service</button></form></div></details>` : ''}</div>` : ''}
-      ${!cerrada(v) && vigente && !v.lista_at && app.puede('visita.lista') ? `<div class="panel panel__cuerpo fila"><p>El resultado está comprobado. Marcar listo no lo entrega: sigue en Hoy hasta registrar la entrega.</p><button type="button" class="btn btn-primario" data-lista>${icono('check')}Marcar listo para retirar</button></div>` : ''}
-      ${!cerrada(v) && v.lista_at && app.puede('visita.entregar') && sinLiquidar ? `<div class="panel panel__cuerpo fila"><p><strong>Antes de entregar falta liquidar.</strong> Hay trabajos realizados sin liquidar: en Cobros se fija el importe a cobrar.</p>${irCobros}</div>` : ''}
-      ${!cerrada(v) && v.lista_at && app.puede('visita.entregar') && !sinLiquidar && bloqueoSaldo ? `<div class="panel panel__cuerpo fila"><p><strong>Queda un saldo de ${pesos(saldo)}.</strong> ${bloqueoSaldo}</p>${irCobros}</div>` : ''}
-      ${!cerrada(v) && v.lista_at && app.puede('visita.entregar') && !sinLiquidar && !bloqueoSaldo ? `<div class="panel panel__cuerpo"><form class="form" id="f-entrega" novalidate><h3>Registrar entrega</h3>
-          ${pendientesEntrega ? `${aviso(`Queda pendiente: ${[...postergados.map((l) => esc(l.descripcion)), vigente && vigente.resultado !== 'resuelto' ? 'el resultado no está resuelto del todo' : ''].filter(Boolean).join(', ')}.`, 'ambar', 'alerta')}${casilla('pendientesInformados', 'Le expliqué al cliente lo que queda pendiente')}` : ''}
-          ${saldo > 0 ? `${aviso(`Queda un saldo de <strong>${pesos(saldo)}</strong>. Entregar no marca pagado: el saldo sigue en la cuenta del cliente.`, 'ambar', 'dinero')}${casilla('conSaldo', 'El cliente retira con saldo pendiente')}` : ''}
+      ${!cerrada(v) && vigente && !v.lista_at ? (app.puede('visita.lista') ? `<div class="oe-paso"><button type="button" class="btn btn-primario btn-full" data-lista>${ic('check')}Marcar listo para retirar</button><p class="oe-ayuda centro">No registra la entrega: sigue en Hoy hasta entregarlo.</p></div>` : '') : ''}
+      ${!cerrada(v) && v.lista_at && !app.puede('visita.entregar') ? '<p class="oe-nota">La entrega la registran recepción o el dueño.</p>' : ''}
+      ${!cerrada(v) && v.lista_at && app.puede('visita.entregar') && sinLiquidar ? `<div class="oe-paso oe-falta">${ic('lock')}<p><b>Antes de entregar falta liquidar.</b> Hay trabajos realizados sin liquidar: en Dinero se fija el importe a cobrar.</p>${irDinero}</div>` : ''}
+      ${!cerrada(v) && v.lista_at && app.puede('visita.entregar') && !sinLiquidar && bloqueoSaldo ? `<div class="oe-paso oe-falta">${ic('lock')}<p><b>Queda un saldo de ${pesos(saldo)}.</b> ${bloqueoSaldo}</p>${irDinero}</div>` : ''}
+      ${entregable ? `<div class="oe-paso"><form class="form" id="f-entrega" novalidate><h3>Registrar entrega</h3>
+          ${pendientesEntrega ? `<div class="oe-check">${casilla('pendientesInformados', `Le expliqué al cliente lo pendiente: <b>${[...postergados.map((l) => esc(l.descripcion)), vigente && vigente.resultado !== 'resuelto' ? esc(RES_TXT[vigente.resultado]).toLowerCase() : ''].filter(Boolean).join(', ')}</b>`)}</div>` : ''}
+          ${saldo > 0 ? `<div class="oe-check">${casilla('conSaldo', `Retira con saldo pendiente de <b>${pesos(saldo)}</b>. Entregar no lo marca pagado: el saldo sigue en la cuenta del cliente.`)}</div>` : ''}
           ${campo({ nombre: 'nota', etiqueta: saldo > 0 ? 'Motivo y lo acordado sobre el saldo' : 'Nota de la entrega', tipo: 'textarea', requerido: saldo > 0, placeholder: saldo > 0 ? 'Ej.: cliente habitual, paga el viernes por transferencia' : '' })}
-          <div class="form-pie"><button class="btn btn-primario" type="submit">${icono('check')}Registrar entrega</button></div></form></div>` : ''}
+          <button class="btn btn-primario btn-full" type="submit">${ic('check')}Registrar entrega</button></form></div>` : ''}
       ${v.entregada_at ? `${aviso(`<strong>Entregado</strong> ${esc(fechaHora(v.entregada_at))}.${v.entrega_saldo ? ` Retiró con saldo pendiente de <strong>${pesos(v.entrega_saldo)}</strong>.` : ''}${v.entrega_nota ? ' ' + esc(v.entrega_nota) : ''}`, v.entrega_saldo ? 'ambar' : 'verde', v.entrega_saldo ? 'dinero' : 'check')}
         ${app.puede('visita.recibir') ? `<p><a class="btn" href="#/recibir?vehiculo=${v.vehiculo.id}&relacionada=${v.id}">${icono('historial')}Vuelve por el mismo problema</a></p><p class="muted small">Crea una visita nueva vinculada a esta. No aplica garantía automáticamente.</p>` : ''}` : ''}
     </section>`,
     enlazar(raiz) {
       const fc = raiz.querySelector('#f-control');
-      if (fc) alEnviar(fc, async (d) => { await post(`/api/visitas/${v.id}/control`, { resultado: d.resultado, como: [d.metodo, d.como].filter(Boolean).join(': '), nota: d.nota }); toast('Resultado guardado.'); app.recargar(); });
+      if (fc) {
+        // El método es opcional: tocar de nuevo el elegido lo quita.
+        fc.querySelectorAll('input[name="metodo"]').forEach((r) => {
+          r.addEventListener('pointerdown', () => { r.dataset.antes = r.checked ? '1' : ''; });
+          r.addEventListener('click', () => { if (r.dataset.antes) { r.checked = false; r.dataset.antes = ''; } });
+        });
+        fc.addEventListener('change', (e) => { if (e.target.name === 'resultado') fc.querySelector('[data-res-aviso]').hidden = e.target.value === 'resuelto'; });
+        alEnviar(fc, async (d) => { await post(`/api/visitas/${v.id}/control`, { resultado: d.resultado, como: [d.metodo, d.como].filter(Boolean).join(': '), nota: d.nota }); toast('Resultado guardado.'); app.recargar(); });
+      }
       const fp = raiz.querySelector('#f-proximo');
       if (fp) alEnviar(fp, async (d) => { await post(`/api/visitas/${v.id}/proximo`, d); toast('Próximo service guardado. Aparece en Pendientes.'); app.recargar(); });
-      raiz.querySelector('[data-lista]')?.addEventListener('click', () => acc(app, () => post(`/api/visitas/${v.id}/lista`, {}), 'Listo para retirar. Sigue en Hoy hasta la entrega.'));
+      raiz.querySelector('[data-lista]')?.addEventListener('click', (e) => accionEnCurso(e.currentTarget, app, () => post(`/api/visitas/${v.id}/lista`, {}), 'Listo para retirar. Sigue en Hoy hasta la entrega.'));
       const fe = raiz.querySelector('#f-entrega');
       if (fe) alEnviar(fe, async (d) => { await post(`/api/visitas/${v.id}/entrega`, d); toast('Entrega registrada. La visita queda en el historial.'); app.recargar(); });
     }
@@ -940,9 +1049,7 @@ export function seccionArchivos(v, app, avisos) {
       if (fv) alEnviar(fv, async (d) => { await post('/api/avisos', { visitaId: v.id, canal: d.canal, texto: d.texto }); toast('Mensaje preparado. Todavía no se envió.'); app.recargar(); });
       raiz.querySelectorAll('[data-abrir-wa]').forEach((b) => b.addEventListener('click', async () => {
         const a = avisos.find((x) => x.id === Number(b.dataset.abrirWa));
-        const d = String(a.telefono || '').replace(/\D/g, '').replace(/^0+/, '');
-        const n = d.startsWith('54') ? d : d.length === 10 ? '549' + d : d;
-        window.open(`https://wa.me/${n}?text=${encodeURIComponent(a.texto)}`, '_blank', 'noopener');
+        window.open(`https://wa.me/${telWhatsApp(a.telefono)}?text=${encodeURIComponent(a.texto)}`, '_blank', 'noopener');
         acc(app, () => post(`/api/avisos/${a.id}/estado`, { estado: 'abierto' }), 'WhatsApp abierto. Cuando lo envíes, tocá «Ya lo envié».');
       }));
       raiz.querySelectorAll('[data-copiar-aviso]').forEach((b) => b.addEventListener('click', () => copiar(avisos.find((x) => x.id === Number(b.dataset.copiarAviso)).texto)));

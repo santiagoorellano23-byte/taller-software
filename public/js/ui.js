@@ -51,6 +51,13 @@ export function haceCuanto(iso) {
   return `hace ${Math.floor(h / 24)} día(s)`;
 }
 
+// Teléfono para enlaces de llamada y de WhatsApp. Solo arma el número: abrirlo lo decide la persona tocando el enlace.
+export const telLlamada = (t) => String(t || '').replace(/[^\d+]/g, '');
+export function telWhatsApp(t) {
+  const d = String(t || '').replace(/\D/g, '').replace(/^0+/, '');
+  return d.startsWith('54') ? d : d.length === 10 ? '549' + d : d;
+}
+
 // ---------- Piezas visuales ----------
 export const patente = (p, grande = false) => `<span class="patente${grande ? ' patente--grande' : ''}" translate="no">${esc(p)}</span>`;
 export function nombreAuto(v) {

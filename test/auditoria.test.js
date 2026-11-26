@@ -61,14 +61,15 @@ test('trabajo y liquidación explican bloqueos visibles coherentes con el servid
   const app = { puede: () => true, sesion: { usuario: { id: 1, rol: 'dueno' } } };
   const linea = v.presupuesto.lineas.find(l => l.descripcion === 'Amortiguadores traseros (par)');
   const html = seccionTrabajo(v, app, { proveedores: [] }, []).html;
-  assert.match(html, new RegExp(`data-realizado="${linea.id}" disabled aria-describedby="bloqueo-trabajo-${linea.id}"`));
-  assert.match(html, /Falta colocar: Amortiguadores traseros/);
+  // Diseño «Paso a paso» (25/11/2026): sin botón gris; la causa reemplaza al botón y lleva al repuesto.
+  assert.doesNotMatch(html, new RegExp(`data-realizado="${linea.id}"`));
+  assert.match(html, new RegExp(`id="bloqueo-trabajo-${linea.id}"[^>]*>.*Falta colocar: Amortiguadores traseros`, 's'));
   assert.equal((await dueno.pedir('POST', `/api/visitas/${id}/lineas/${linea.id}/realizado`, {})).estado, 400);
   const rp = v.repuestos.find(r => r.linea_id === linea.id);
   await dueno.post(`/api/repuestos/${rp.id}/etapa`, { etapa: 'llego' });
   await dueno.post(`/api/repuestos/${rp.id}/etapa`, { etapa: 'colocado' });
   ({ visita: v } = await dueno.get(`/api/visitas/${id}`));
-  assert.doesNotMatch(seccionTrabajo(v, app, { proveedores: [] }, []).html, new RegExp(`data-realizado="${linea.id}" disabled`));
+  assert.match(seccionTrabajo(v, app, { proveedores: [] }, []).html, new RegExp(`data-realizado="${linea.id}"`));
   await dueno.post(`/api/visitas/${id}/lineas/${linea.id}/realizado`, {});
   ({ visita: v } = await dueno.get(`/api/visitas/${id}`));
   const cobros = seccionCobros(v, app).html;
