@@ -276,6 +276,8 @@ async function mostrar({ conservarScroll = false } = {}) {
       const sub=main.querySelector(':scope > .subnav'); if(sub) cab.after(sub); // los apartados del grupo van debajo del título
     }
     vistaActual=location.hash;
+    // Listado desde el que se abre una orden: su «volver» regresa ahí, con el mismo filtro y la misma posición.
+    if(['hoy','trabajos','autos','ficha','pendientes'].includes(r.modulo)) app.ultimaLista=location.hash;
     document.title = `${v.titulo} · ${app.sesion.taller.nombre}`;
     main.removeAttribute('aria-busy');
     if (v.despues) v.despues(main);

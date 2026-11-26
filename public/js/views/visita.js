@@ -99,7 +99,7 @@ export default async function visita({ params, app }) {
   return {
     titulo: `${v.vehiculo.patente || 'Sin patente'} · Orden ${v.numero}`,
     html: `<div class="o-grid"><div class="o-izq">
-      ${cabecera({ titulo: `Orden N.º ${esc(v.numero)}`, sub: v.tipo === 'service' ? 'Service' : 'Revisión / reparación', volver: '#/trabajos', ayuda: 'guia' })}
+      ${cabecera({ titulo: `Orden N.º ${esc(v.numero)}`, sub: v.tipo === 'service' ? 'Service' : 'Revisión / reparación', volver: app.ultimaLista || '#/trabajos', ayuda: 'guia' })}
       <section class="heroe" aria-label="Vehículo y progreso de la orden">
         <div class="h-id">${logoMarca(v.vehiculo.marca, { grande: true })}${placa(v.vehiculo.patente, { grande: true })}</div>
         <div class="h-mod"><b>${esc(auto)}</b>${detalleAuto ? `<small>${esc(detalleAuto)}</small>` : ''}</div>

@@ -23,7 +23,10 @@ export default async function trabajos({ app, query }) {
   };
   return {
     titulo: 'Taller',
-    html: `<header class="a-cab"><div class="a-tit"><h1 tabindex="-1">Taller</h1></div><div class="a-cab-acc">${ibtn('help', 'Ayuda', { attrs: 'data-ayuda="guia"' })}</div></header>
+    // Encabezado con la cifra del listado elegido y el auto de la colección (decorativo: fuera de la lectura asistida).
+    html: `<header class="a-cab tl-cab"><div class="tl-tit"><h1 tabindex="-1">Taller</h1><p class="tl-cifra"><b>${visitas.length}</b> ${ver === 'historial' ? (visitas.length === 1 ? 'entregada o anulada' : 'entregadas y anuladas') : ver === 'mias' ? (visitas.length === 1 ? 'asignada a mí' : 'asignadas a mí') : (visitas.length === 1 ? 'auto en el taller' : 'autos en el taller')}</p></div>
+      <img class="tl-auto" src="/ilustraciones/taller/auto-hatchback-320.webp?v=0.1.0" srcset="/ilustraciones/taller/auto-hatchback-160.webp?v=0.1.0 160w, /ilustraciones/taller/auto-hatchback-320.webp?v=0.1.0 320w" sizes="148px" width="148" height="83" alt="" decoding="async">
+      <div class="a-cab-acc">${ibtn('help', 'Ayuda', { attrs: 'data-ayuda="guia"' })}</div></header>
       <div class="buscador-d">${ic('search')}<label class="sr" for="taller-q">Buscar orden por patente, cliente, teléfono o número</label><input id="taller-q" type="search" placeholder="Patente, cliente, teléfono o N.º" autocomplete="off" enterkeyhint="search"></div>
       <nav class="seg" aria-label="Órdenes">${vistas.map(([k, t]) => `<a href="#/trabajos?ver=${k}" ${k === ver ? 'aria-current="page"' : ''}>${t}</a>`).join('')}</nav>
       ${visitas.length ? `<nav class="filtros" aria-label="Filtrar por estado"><a class="filtro" href="${enlace('')}" ${!estado ? 'aria-current="true"' : ''}><span>Todas</span><b>${visitas.length}</b></a>${estados.map((e) => `<a class="filtro" href="${enlace(e)}" ${estado === e ? 'aria-current="true"' : ''}><span>${esc(e)}</span><b>${visitas.filter((v) => estadoDe(v) === e).length}</b></a>`).join('')}</nav>` : ''}

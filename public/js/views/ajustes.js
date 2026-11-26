@@ -5,6 +5,7 @@ import { get, post, put, api, claveDeEnvio } from '../api.js?v=0.1.0';
 import { esc, icono, pesos, cant, fechaHora, chip, campo, casilla, alEnviar, limpiarErrores, toast, confirmar, aviso, copiar, aEntradaDinero, aEntradaCant, aLocal, hoyLocal } from '../ui.js?v=0.1.0';
 import { PALETAS, tokensApariencia, problemaApariencia, aparienciaEfectiva, normalizarHex } from '../marca.js?v=0.1.0';
 import { entrada } from '../movimiento.js?v=0.1.0';
+import { ic, ibtn } from '../diseno.js?v=0.1.0';
 
 const GRUPOS = [['taller', 'El taller'], ['presencia', 'Presencia e imagen'], ['equipo', 'Equipo'], ['cuenta', 'Cuenta y datos']];
 // [ruta, grupo, nombre, permiso, ícono, descripción]. Las rutas anteriores (#/ajustes/taller, /datos, /integraciones…) siguen valiendo.
@@ -21,6 +22,23 @@ const AREAS = [
   ['datos', 'cuenta', 'Exportación y respaldo', 'exportar', 'descargar', 'Descargar datos, archivos adjuntos y estado del respaldo completo.'],
   ['registro', 'cuenta', 'Registro de acciones', 'auditoria.ver', 'historial', 'Quién hizo cada cambio importante y cuándo.']
 ];
+// Los mismos íconos que esos accesos tienen en Más, para reconocer cada apartado en los dos lugares.
+const ICONO_AREA = { taller: 'storefront', presupuestos: 'receipt_long', horario: 'schedule', catalogos: 'checklist', publica: 'share', identidad: 'contrast', usuarios: 'manage_accounts', plan: 'handshake', integraciones: 'link', datos: 'download', registro: 'history' };
+// Valor actual que ya trae la sesión (sin pedir nada más). Sin dato confiable, la fila muestra su descripción.
+function valorArea(k, t) {
+  if (k === 'taller') return `<span translate="no">${esc(t.nombre)}</span>`;
+  if (k === 'presupuestos') return `Validez ${Number(t.validezDias)} días`;
+  if (k === 'publica') return t.publico ? (t.en_directorio ? 'Publicada · en el directorio' : 'Publicada') : 'Sin publicar';
+  if (k === 'plan') return t.servicio?.estadoTexto ? esc(t.servicio.estadoTexto) : '';
+  if (k === 'identidad' && t.apariencia) {
+    const a = t.apariencia, p = PALETAS.find((x) => x.principal === a.principal && x.acento === a.acento);
+    return `<span class="ajg-muestra" aria-hidden="true"><i style="background:${esc(a.principal)}"></i><i style="background:${esc(a.acento)}"></i></span>${esc(p ? p.nombre : 'Colores propios')}`;
+  }
+  return '';
+}
+// Último guardado confirmado por el servidor: se muestra en la barra al volver a pintar el área y junto a su fila.
+let ultimoGuardado = null;
+const reciente = (k) => ultimoGuardado?.area === k && Date.now() - ultimoGuardado.hora < 120000;
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 // Ancho del contenedor desde el que el índice queda al costado (igual que la consulta de contenedor en propuesta-a.css).
@@ -42,21 +60,25 @@ export default async function ajustes({ params, app }) {
   const ayuda = area[0] === 'usuarios' ? 'usuarios' : area[0] === 'datos' ? 'respaldo' : 'guia';
   const indice = GRUPOS.map(([g, nombre]) => {
     const items = visibles.filter((a) => a[1] === g);
-    return items.length ? `<p class="ajg-indice__grupo">${nombre}</p><ul>${items.map(([k, , n, , ic, d]) => `<li><a href="#/ajustes/${k}" data-area-enlace="${k}"${k === area[0] ? ' aria-current="page"' : ''}>${icono(ic)}<span class="ajg-indice__txt"><span>${n}</span><small>${d}</small></span>${icono('der', 'ajg-indice__ir')}</a></li>`).join('')}</ul>` : '';
+    return items.length ? `<p class="ajg-indice__grupo">${nombre}</p><ul>${items.map(([k, , n, , , d]) => {
+      const valor = valorArea(k, app.sesion.taller);
+      return `<li><a href="#/ajustes/${k}" data-area-enlace="${k}"${k === area[0] ? ' aria-current="page"' : ''}><span class="li-ic">${ic(ICONO_AREA[k])}</span><span class="ajg-indice__txt"><span>${n}${reciente(k) ? ' <span class="ajg-guardado">Guardado</span>' : ''}</span><small${valor ? ' class="ajg-indice__valor"' : ''}>${valor || d}</small></span>${ic('chevron_right', 'ajg-indice__ir')}</a></li>`;
+    }).join('')}</ul>` : '';
   }).join('');
   const titulo = lista ? `<h2 class="ajg-titulo" tabindex="-1">${area[2]}</h2>` : `<h1 class="ajg-titulo" tabindex="-1">${area[2]}</h1>`;
+  const taller = `<p class="ajg-ctx" translate="no">${esc(app.sesion.taller.nombre)}</p>`;
   return {
     titulo: lista ? 'Ajustes' : `Ajustes · ${area[2]}`,
     html: `<div class="ajg" data-ajg${lista ? ' data-lista' : ''}><div class="ajg__marco">
       <nav class="ajg-indice" aria-label="Secciones de Ajustes"><div class="ajg-indice__cuerpo">
-        ${lista ? '<h1 class="ajg-indice__titulo" tabindex="-1">Ajustes</h1>' : '<p class="ajg-indice__titulo">Ajustes</p>'}
+        <div class="ajg-indice__cab"><div>${taller}${lista ? '<h1 class="ajg-indice__titulo" tabindex="-1">Ajustes</h1>' : '<p class="ajg-indice__titulo">Ajustes</p>'}</div>${ibtn('help', 'Ayuda de Ajustes', { attrs: 'data-ayuda="guia"', cls: 'ajg-indice__ayuda' })}</div>
         <p class="ajg-indice__intro">Cómo funciona el taller, quién lo usa y qué se muestra al público.</p>
         ${indice}
       </div></nav>
       <div class="ajg-area">
-        <a class="ajg-volver" href="#/ajustes">${icono('izq')}Ajustes</a>
-        <header class="ajg-cab"><div>${titulo}<p>${area[5]}</p></div>
-          <div class="ajg-cab__acciones">${v.acciones || ''}<button type="button" class="btn btn-chico btn-texto" data-ayuda="${ayuda}">${icono('ayuda')}¿Cómo hago…?</button></div></header>
+        <div class="ajg-sup"><a class="ajg-volver" href="#/ajustes"><span class="ajg-volver__ic">${ic('arrow_back')}</span>Ajustes</a>${ibtn('help', '¿Cómo hago…? Ayuda de esta sección', { attrs: `data-ayuda="${ayuda}"`, cls: 'ajg-sup__ayuda' })}</div>
+        <header class="ajg-cab"><div>${taller}${titulo}<p>${area[5]}</p></div>
+          ${v.acciones ? `<div class="ajg-cab__acciones">${v.acciones}</div>` : ''}</header>
         ${v.html}
       </div>
       <form hidden data-ajg-borradores aria-hidden="true"></form>
@@ -88,7 +110,7 @@ export default async function ajustes({ params, app }) {
 const sec = (titulo, detalle, cuerpo, { tarjeta = true, id = '' } = {}) => `<section class="ajg-sec"${id ? ` id="${id}" tabindex="-1"` : ''}><header><h2>${titulo}</h2>${detalle ? `<p>${detalle}</p>` : ''}</header>${tarjeta ? `<div class="ajg-tarjeta">${cuerpo}</div>` : `<div class="ajg-sec__cuerpo">${cuerpo}</div>`}</section>`;
 const conSufijo = (html, sufijo) => html.replace(/(<input[^>]*>)/, `<span class="ajg-sufijo">$1<span aria-hidden="true">${esc(sufijo)}</span></span>`);
 const interruptor = (nombre, titulo, detalle, marcado) => `<label class="ajg-sw" data-campo="${nombre}"><input type="checkbox" role="switch" name="${nombre}" value="1"${marcado ? ' checked' : ''}><span class="ajg-sw__pista" aria-hidden="true"></span><span class="ajg-sw__txt"><span class="ajg-sw__t1">${titulo}<span class="ajg-sw__si" aria-hidden="true">Activado</span><span class="ajg-sw__no" aria-hidden="true">Desactivado</span></span><span class="ajg-sw__t2">${detalle}</span></span></label>`;
-const barraHTML = () => `<div class="ajg-barra-envoltura"><div class="ajg-barra" data-barra role="region" aria-label="Cambios sin guardar" inert>
+const barraHTML = () => `<div class="ajg-barra-envoltura"><p class="sr" role="status" data-barra-anuncio></p><div class="ajg-barra" data-barra role="region" aria-label="Cambios sin guardar" inert>
   <p class="ajg-barra__msg" aria-live="polite"><span data-barra-icono>${icono('info')}</span><span><strong data-barra-titulo>Tenés cambios sin guardar</strong><small data-barra-detalle>Se aplican cuando tocás «Guardar».</small></span></p>
   <div class="ajg-barra__acciones"><button type="button" class="btn" data-descartar>Descartar</button><button type="submit" class="btn btn-primario" data-guardar>${icono('check')}Guardar</button></div></div></div>`;
 
@@ -125,6 +147,7 @@ function formulario(app, area, cuerpo, { guardar, ok, despues, alDescartar, extr
       const control = conBarra(form, area, app, { guardar, ok, alDescartar });
       despues?.(raiz, form, control);
       control.revisar();
+      control.confirmarGuardado();
     }
   };
 }
@@ -145,7 +168,8 @@ function conBarra(form, area, app, { guardar, ok, alDescartar }) {
       recuperado: ['Tenés cambios sin guardar', 'Recuperamos lo que habías escrito en esta área.', 'info'],
       bloqueado: ['Falta corregir algo', bloqueo, 'alerta'],
       guardando: ['Guardando…', 'No cierres esta pantalla hasta que termine.', 'reloj'],
-      error: ['No se guardó', 'Revisá el dato marcado. Lo que escribiste sigue acá.', 'alerta']
+      error: ['No se guardó', 'Revisá el dato marcado. Lo que escribiste sigue acá.', 'alerta'],
+      guardado: ['Guardado', ultimoGuardado?.ok || '', 'check']
     }[estado] || ['', '', 'info'];
     barra.querySelector('[data-barra-titulo]').textContent = t;
     barra.querySelector('[data-barra-detalle]').textContent = d;
@@ -167,7 +191,8 @@ function conBarra(form, area, app, { guardar, ok, alDescartar }) {
     try { await guardar(d); } catch (e) { mostrar('error'); throw e; }
     borradores.delete(area);
     delete form.dataset.sucio;
-    toast(ok);
+    // La confirmación la da la barra del área ya repintada con el dato del servidor (confirmarGuardado), en su lugar.
+    ultimoGuardado = { area, ok, hora: Date.now(), mostrar: true };
     app.recargar();
   });
   form.addEventListener('input', revisar);
@@ -180,7 +205,20 @@ function conBarra(form, area, app, { guardar, ok, alDescartar }) {
     form.dispatchEvent(new Event('input', { bubbles: true }));
     form.closest('.ajg-area')?.querySelector('.ajg-titulo')?.focus();
   });
-  return { revisar, bloquear(motivo) { bloqueo = motivo || ''; revisar(); } };
+  // Recién guardado (respuesta del servidor ya recibida y pantalla repintada con el dato nuevo): se confirma unos segundos.
+  const confirmarGuardado = () => {
+    if (!ultimoGuardado?.mostrar || ultimoGuardado.area !== area || form.dataset.sucio) return;
+    ultimoGuardado.mostrar = false;
+    // Un instante después de pintar: la región de estado (fuera de la barra, que es inerte al estar oculta) ya existe
+    // y el lector de pantalla anuncia el resultado.
+    setTimeout(() => {
+      if (form.dataset.sucio) return;
+      mostrar('guardado');
+      form.querySelector('[data-barra-anuncio]').textContent = `Guardado. ${ultimoGuardado.ok || ''}`;
+    }, 80);
+    setTimeout(() => { if (barra.dataset.estado === 'guardado') mostrar(null); }, 4000);
+  };
+  return { revisar, confirmarGuardado, bloquear(motivo) { bloqueo = motivo || ''; revisar(); } };
 }
 
 // Diálogos y paneles propios de Ajustes. Se agregan al documento con el alcance visual de Ajustes (.ajg-dlg)

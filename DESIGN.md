@@ -300,3 +300,17 @@ Los campos que el servidor ya exigía no cambiaron: los testigos y el estado del
 ### Dirección de estilo aplicación (referencias del 19/11/2026)
 
 Cuatro referencias marcan hacia dónde seguir puliendo la app (aplicado por ahora en el paso 2): tarjetas grandes y redondeadas (16–20 px) con un ícono en círculo, cifras grandes y etiqueta corta; una tarjeta destacada en el color de marca entre tarjetas oscuras; buscador en píldora; resúmenes en franja con estados de color (en stock / bajo / sin stock); listas de movimientos con importe y estado a la derecha; selectores en píldora (Todo / Esta semana / Este mes); calendario horizontal de días; botón de acción redondo y elevado sobre la barra inferior; modo oscuro grafito profundo y modo claro lavanda suave. Se toma la composición, no los datos ni marcas de esos ejemplos.
+
+### Refinamiento de toda la app (26/11/2026)
+
+Referencia interna: Hoy. Estilos al final de `propuesta-a.css` («Refinamiento de toda la app»).
+
+- **Encabezados:** nombre del taller arriba (contexto), título de 32 px y ayuda redonda a la derecha en Hoy, Taller, Más y el índice de Ajustes. Dentro de un área de Ajustes: «volver» con botón redondo, nombre del taller, título de 28–30 px y ayuda redonda (reemplaza el enlace «¿Cómo hago…?»).
+- **Filas de opciones (Más e índice de Ajustes):** grupos con rótulo en versalitas sobre una sola superficie de radio 18 con separadores finos; mosaico de ícono de 36 px, nombre, valor actual a la derecha o debajo (solo datos que ya trae la sesión: nombre del taller, validez, página pública, paleta, estado del plan, tema) y flecha. La flecha de avance abre otra pantalla; la flecha hacia arriba abre una hoja (Tu sesión). Los íconos de cada apartado son los mismos en Más y en Ajustes.
+- **Ajustes usa los colores del taller** (ya no el azul fijo `#4652FF`): `marca.js` garantiza el contraste y rechaza un principal muy claro antes de guardar.
+- **Guardado en Ajustes:** pendiente, bloqueado, guardando, error (lo escrito queda) y «Guardado» con el mensaje del servidor, mostrado en la misma barra recién repintada con el dato nuevo y anunciado por una región de estado; el área queda marcada «Guardado» en el índice mientras dure la visita. Con la barra visible, el campo enfocado se desplaza por encima de ella y de la isla.
+- **Superficies y campos:** tarjetas sin marco con sombra mínima en claro y borde fino en oscuro; campos de 48 px, letra de 16 px y radio 12; la elevación queda para la barra de guardado, la isla y las hojas.
+- **Selección:** segmentos con peso 700 y contorno; en oscuro, el filtro activo se invierte (tinta sobre grafito) y el segmento activo se aclara, para que no dependa de un matiz.
+- **Taller:** cifra del listado elegido («3 autos en el taller», «2 asignadas a mí») junto al auto de la colección. En escritorio (≥ 1100 px) Taller y Clientes son filas anchas de una columna: marca, patente, modelo, motivo y estado alineados para comparar.
+- **Auto 3D:** hatchback genérico propio, tres cuartos delantero con la trompa hacia el interior, grafito satinado, cristales ahumados y sombra de contacto corta. Render estático (three.js, solo para producirlo) en `public/ilustraciones/taller/auto-hatchback-160.webp` (4 KB) y `-320.webp` (9 KB), con transparencia, medidas reservadas y `alt=""`. No reemplaza las fotos reales de cada vehículo.
+- **Volver desde una orden:** regresa al listado desde el que se abrió (Hoy con su filtro, Taller, Clientes, ficha o Pendientes), con la misma posición.
