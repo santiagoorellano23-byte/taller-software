@@ -56,7 +56,7 @@ rounded:
   panel: "8px"
   receiving-control: "12px"
   receiving-card: "16px"
-  island: "22px"
+  island: "999px"
 spacing:
   xs: "4px"
   sm: "8px"
@@ -186,11 +186,11 @@ Recepción usa un contenedor máximo de (1080px), contenido flexible, contexto d
 
 Más usa dos columnas de grupos y máximo de (850px); en móvil, una columna y máximo de (560px). Hoy conserva sus tres grupos en todos los tamaños: tarjetas en móvil y tabla con desplazamiento horizontal local cuando sea necesario. El documento no impone convertir todos los módulos en tarjetas.
 
-La isla móvil es la variante C «Deslizador invertido» con Recibir en lengüeta (17/11/2026; `public/js/isla.js` y `isla.css`). Cuerpo de 64 px, a 12 px de los bordes, hasta 440 px de ancho y centrada, radio 22 px, superficie `--surface` con borde `--line-2`. Una superficie clara (`--ink`, radio 16 px) se desliza en 150 ms hasta el destino actual, cuyo texto pasa a `--bg`; en oscuro son exactamente #191b1f, #2e3238, #f5f6f7 y #111214. Hoy, Taller, Clientes y Más son enlaces a sus pantallas reales; las pantallas secundarias (agenda, caja, ajustes…) marcan Más. Recibir es un botón que abre la recepción guiada: nunca queda seleccionado y sube 14 px sobre la isla como lengüeta, con el ícono en el color de acción del taller. Se oculta en modo enfoque (recepción y orden, que tienen su barra), en escritorio desde 1024 px y al escribir con poco alto. Si falta permiso de recepción, quedan cuatro destinos. El contenido reserva 64 + 14 px, la separación del borde (12 px o el área segura más 6) y 16 px de lectura. La primera ubicación del indicador no se anima; con movimiento reducido no se anima nunca.
+La isla móvil es la «Cápsula de vidrio» (26/11/2026; `public/js/isla.js` y `isla.css`), sobre la estructura de la variante C. Cuerpo de 64 px con extremos redondeados (radio completo), a 12 px de los bordes, hasta 440 px de ancho y centrada. Superficie de vidrio sutil: blanco al 74 % en claro y #1e2025 al 70 % en oscuro, con desenfoque de 18 px, borde fino, brillo interior de 1 px en el canto superior y sombra suave. Sin soporte de desenfoque, con transparencia reducida o con más contraste pedido usa la superficie opaca (`--surface` en claro, #1e2025 en oscuro); con más contraste, además, borde `--line-strong` y contorno en la cápsula. Una cápsula interior con el tinte de la marca del taller (12 % sobre blanco en claro, 32 % sobre #1e2025 en oscuro, borde fino y sombra interior leve) se desliza en 240 ms con `cubic-bezier(.32,.72,0,1)` hasta el destino actual; ese destino pasa a `--marca-texto` (claro, 5,4:1 con la marca de la demo) o `--ink` (oscuro, 12:1), con trazo más grueso, relleno tenue del ícono y texto en negrita. Los demás destinos usan `--ink-2`. Hoy, Taller, Clientes y Más son enlaces a sus pantallas reales; las pantallas secundarias (agenda, caja, ajustes…) marcan Más. Recibir es un botón que abre la recepción guiada: nunca queda seleccionado; es una pastilla de 46 × 28 px en el color de acción del taller dentro de la isla, con su nombre debajo. Se oculta en modo enfoque (recepción), en escritorio desde 768 px y al escribir con poco alto. Si falta permiso de recepción, quedan cuatro destinos. El contenido reserva 64 px, la separación del borde (12 px o el área segura más 6) y 16 px de lectura. La primera ubicación de la cápsula no se anima; con movimiento reducido salta sin desplazarse y solo cambia el color (120 ms). En colores forzados el destino actual lleva un contorno.
 
 ## Elevation & Depth
 
-La hoja y las tarjetas son planas, con bordes y cambios tonales. Las sombras se reservan para navegación flotante y superposiciones existentes. La isla conserva una sombra ambiente; Recibir es una lengüeta de la misma superficie, no un resplandor. Los valores exactos y las transiciones se registran en `.impeccable/design.json`.
+La hoja y las tarjetas son planas, con bordes y cambios tonales. Las sombras se reservan para navegación flotante y superposiciones existentes. La isla es vidrio con una sombra ambiente suave; Recibir es una pastilla dentro de ella, con una sombra corta de su color, no un resplandor. Los valores exactos y las transiciones se registran en `.impeccable/design.json`.
 
 Feedback breve, entre (120–180ms), sin retrasar acciones. La presión de motivo, marca y enlace de Más reduce la escala a (.985); con movimiento reducido se elimina. Los avisos entran en (180ms), salvo movimiento reducido. No hay motor de animación nuevo.
 
@@ -198,7 +198,7 @@ Feedback breve, entre (120–180ms), sin retrasar acciones. La presión de motiv
 
 ## Shapes
 
-El sistema compartido conserva esquinas discretas para controles y paneles. Recepción y Más amplían el radio para agrupar decisiones: campos y marcas suaves; motivos, revisión y contenedores con esquinas más amplias. La isla es una cápsula y su acción Recibir es circular (52px). La patente mantiene su silueta propia con borde superior marcado.
+El sistema compartido conserva esquinas discretas para controles y paneles. Recepción y Más amplían el radio para agrupar decisiones: campos y marcas suaves; motivos, revisión y contenedores con esquinas más amplias. La isla es una cápsula y su acción Recibir, una pastilla de 46 × 28 px. La patente mantiene su silueta propia con borde superior marcado.
 
 ## Components
 
@@ -283,7 +283,7 @@ Mostrador conserva categorías con iconos, grilla/lista y disponibilidad/precios
 Fuente: GrowthLabs-Talleres-App-Final (ZIP). Combinación: Hoy, Taller, Clientes y ficha A; Más B; Recepción B; Orden con cabecera A e interior B; resto de módulos A; isla C. Una sola presentación, sin selector A/B. Estilos en la sección «Diseño final» de `propuesta-a.css`; piezas de HTML en `public/js/diseno.js`.
 
 - **Colores:** claro del diseño (fondo `#f2f3f1`, superficies `#fff` / `#f6f7f5` / `#e9ece8`, tinta `#15171a` / `#3b434b` / `#56606a`, líneas `#e0e3df` y controles `#c9cec9`) en `remaster.css`; oscuro grafito en `tema.css` con los estados del diseño (`info`, `ok`, `warn`, `err`). Bloques grafito (`--grafito`) para el resumen de Hoy, la cabecera de la orden y el saldo. La marca de cada taller sigue llegando de `marca.js`.
-- **Armado:** sin barra superior. Debajo de 768 px, isla C (grafito en los dos temas); de 768 a 1099 px, columna de íconos de 88 px; desde 1100 px, columna de 240 px con la marca del taller, «Recibir un auto», Hoy, Taller, Clientes, Más y la sesión. El avatar abre el panel de sesión (perfil, tema claro/oscuro/automático, ayuda y salir). La recepción usa modo enfoque: sin isla ni columna.
+- **Armado:** sin barra superior. Debajo de 768 px, la isla «Cápsula de vidrio» (vidrio claro u oscuro según el tema); de 768 a 1099 px, columna de íconos de 88 px; desde 1100 px, columna de 240 px con la marca del taller, «Recibir un auto», Hoy, Taller, Clientes, Más y la sesión. El avatar abre el panel de sesión (perfil, tema claro/oscuro/automático, ayuda y salir). La recepción usa modo enfoque: sin isla ni columna.
 - **Medidas:** texto 16 px, márgenes 16, tarjetas con radio 16, controles con radio 12, botones de 48 (compactos 44), campos de 52, íconos Material Symbols locales.
 - **Encabezados:** Hoy con la marca del taller, la fecha, DEMO cuando corresponde, ayuda y avatar; Taller, Clientes y Más con título grande y ayuda; módulos y orden con volver, título y ayuda (`cab-mod` / `cab-modulo`). El recordatorio del plan es una línea en Hoy; el servicio vencido o suspendido sigue avisándose en todas las pantallas.
 - **Hoy:** buscador, resumen grafito (en el taller, retiros de hoy y saldo por cobrar de `/api/cuentas`, o listos sin permiso de dinero), grupos de atención, todo el taller / asignado a mí y tarjetas con marca, patente, etapa de cinco segmentos, estados, responsable, retiro y próximo paso. Atención, retiros, turnos, configuración pendiente y órdenes por responsable quedan como desplegables.

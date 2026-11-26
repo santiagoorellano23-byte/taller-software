@@ -1,6 +1,6 @@
-// Isla de navegación móvil, variante C «Deslizador invertido» con Recibir en lengüeta (decisión del 17/11/2026).
+// Isla de navegación móvil «Cápsula de vidrio» (26/11/2026), sobre la variante C del 17/11/2026.
 // Los destinos son enlaces a las pantallas reales; Recibir es un botón que abre la recepción guiada de siempre.
-// Una superficie clara (el indicador) se desliza hasta el destino actual. Cambiar de destino solo mueve el
+// Una cápsula con el tinte de la marca (el indicador) se desliza hasta el destino actual. Cambiar de destino solo mueve el
 // indicador y el aria-current: la isla no se vuelve a dibujar.
 
 // Íconos de trazo de la propuesta C. `.f` es el relleno tenue del destino actual.
