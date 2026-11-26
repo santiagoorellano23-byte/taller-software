@@ -7,22 +7,37 @@
 .isla {display:none}
 @media screen and (max-width:767px) {
   /* Lo que ocupa la isla desde el borde: cuerpo (64) + separación y área segura. */
+  /* La superficie (vidrio, borde, brillo y sombra) es compartida: «Qué sigue» flota sobre la isla con el mismo material. */
   :root {
     --isla-borde:max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px));
     --isla-reserva:calc(64px + var(--isla-borde));
+    --isla-fondo:var(--surface);
+    --isla-vidrio:rgb(255 255 255 / .8);
+    --isla-borde-c:rgb(17 18 20 / .09);
+    --isla-brillo:rgb(255 255 255 / .9);
+    --isla-sombra:0 1px 2px rgb(17 18 20 / .06), 0 14px 32px -8px rgb(17 18 20 / .22);
+    --isla-desenfoque:blur(18px) saturate(1.4);
+  }
+  html[data-tema-efectivo="oscuro"] {
+    --isla-fondo:#1e2025;
+    --isla-vidrio:rgb(30 32 37 / .78);
+    --isla-borde-c:rgb(255 255 255 / .1);
+    --isla-brillo:rgb(255 255 255 / .07);
+    --isla-sombra:0 1px 2px rgb(0 0 0 / .3), 0 16px 36px -8px rgb(0 0 0 / .6);
   }
   html {scroll-padding-bottom:calc(var(--isla-reserva) + 16px)}
+  /* Un campo enfocado no queda detrás de una barra de guardado: el desplazamiento deja lugar para ella. */
+  html:has(.ajg-barra--visible) {scroll-padding-bottom:calc(var(--isla-reserva) + 150px)}
+  html:has(.rv-dock) {scroll-padding-bottom:calc(var(--isla-reserva) + 104px)}
   .principal {padding-bottom:calc(var(--isla-reserva) + 16px)}
   .toasts {bottom:var(--isla-reserva)}
+  /* Guardar y descartar tienen prioridad: un aviso aparece por encima de la barra de guardado, nunca encima de ella. */
+  body:has(.ajg-barra--visible) .toasts {bottom:calc(var(--isla-reserva) + 140px)}
+  body:has(.rv-dock) .toasts {bottom:calc(var(--isla-reserva) + 96px)}
   .recepcion-confirmar {bottom:var(--isla-reserva)}
 
   .isla {
     /* Superficie: opaca por defecto; el vidrio se agrega solo donde el navegador lo soporta. */
-    --isla-fondo:var(--surface);
-    --isla-vidrio:rgb(255 255 255 / .74);
-    --isla-borde-c:rgb(17 18 20 / .09);
-    --isla-brillo:rgb(255 255 255 / .9);
-    --isla-sombra:0 1px 2px rgb(17 18 20 / .06), 0 14px 32px -8px rgb(17 18 20 / .22);
     --isla-tx:var(--ink-2);
     --isla-cap:color-mix(in srgb, var(--marca) 12%, #fff);
     --isla-cap-linea:color-mix(in srgb, var(--marca) 24%, transparent);
@@ -34,17 +49,12 @@
     box-shadow:inset 0 1px 0 var(--isla-brillo), var(--isla-sombra);
   }
   html[data-tema-efectivo="oscuro"] .isla {
-    --isla-fondo:#1e2025;
-    --isla-vidrio:rgb(30 32 37 / .7);
-    --isla-borde-c:rgb(255 255 255 / .1);
-    --isla-brillo:rgb(255 255 255 / .07);
-    --isla-sombra:0 1px 2px rgb(0 0 0 / .3), 0 16px 36px -8px rgb(0 0 0 / .6);
     --isla-cap:color-mix(in srgb, var(--marca) 32%, #1e2025);
     --isla-cap-linea:rgb(255 255 255 / .12);
     --isla-cap-tx:var(--ink);
   }
   @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-    .isla {background:var(--isla-vidrio);-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7)}
+    .isla {background:var(--isla-vidrio);-webkit-backdrop-filter:var(--isla-desenfoque);backdrop-filter:var(--isla-desenfoque)}
   }
   /* Sin transparencias o con más contraste pedido: superficie opaca y borde marcado. */
   @media (prefers-reduced-transparency:reduce) {
@@ -97,7 +107,11 @@
   /* Al escribir con poco alto disponible (teclado abierto), priorizar el campo y sus errores. */
   @media (max-height:540px) {
     .app:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .isla {display:none}
-    .app:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .toasts {bottom:calc(12px + env(safe-area-inset-bottom, 0px))}
+    /* Sin isla, su reserva se libera: las barras de guardado y los avisos bajan al borde en vez de dejar un hueco. */
+    :root:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) {--isla-reserva:env(safe-area-inset-bottom, 0px)}
+    body:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .toasts {bottom:calc(12px + env(safe-area-inset-bottom, 0px))}
+    body:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus):has(.ajg-barra--visible) .toasts {bottom:calc(152px + env(safe-area-inset-bottom, 0px))}
+    body:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus):has(.rv-dock) .toasts {bottom:calc(108px + env(safe-area-inset-bottom, 0px))}
   }
   /* Movimiento reducido: la cápsula salta sin desplazarse; queda solo el cambio de color, breve. */
   @media (prefers-reduced-motion:reduce) {

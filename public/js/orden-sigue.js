@@ -185,11 +185,30 @@ export function enlazarSigue(raiz) {
   if (!tarjeta || !cap || !dlg) return;
   const abrir = cap.querySelector('[data-qs-abrir]');
   // Visible solo cuando la tarjeta quedó por encima de la pantalla (no cuando todavía no se llegó a ella).
+  // Una barra de guardado a la vista (la de la revisión técnica) tiene prioridad: la cápsula ocupa su mismo lugar y se
+  // retira mientras se ve; vuelve al salir de ella.
+  let arriba = false;
+  const docks = new Set();
+  const actualizar = () => { cap.hidden = !arriba || docks.size > 0; };
+  const ioDock = new IntersectionObserver((es) => {
+    es.forEach((e) => (e.isIntersecting ? docks.add(e.target) : docks.delete(e.target)));
+    actualizar();
+  });
+  const vigilarDocks = () => {
+    if (!tarjeta.isConnected) { io.disconnect(); ioDock.disconnect(); mo.disconnect(); return; }
+    docks.forEach((d) => { if (!d.isConnected) docks.delete(d); });
+    raiz.querySelectorAll('.rv-dock').forEach((d) => ioDock.observe(d));
+    actualizar();
+  };
   const io = new IntersectionObserver(([e]) => {
-    if (!tarjeta.isConnected) { io.disconnect(); return; }
-    cap.hidden = e.isIntersecting || e.boundingClientRect.top > 0;
+    if (!tarjeta.isConnected) { io.disconnect(); ioDock.disconnect(); mo.disconnect(); return; }
+    arriba = !e.isIntersecting && e.boundingClientRect.top <= 0;
+    actualizar();
   }, { rootMargin: '-56px 0px 0px 0px' });
   io.observe(tarjeta);
+  const mo = new MutationObserver(vigilarDocks);
+  mo.observe(raiz, { childList: true, subtree: true });
+  vigilarDocks();
   abrir.addEventListener('click', () => { dlg.showModal(); abrir.setAttribute('aria-expanded', 'true'); dlg.querySelector('[data-qs-cerrar]').focus(); });
   dlg.querySelector('[data-qs-cerrar]').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });

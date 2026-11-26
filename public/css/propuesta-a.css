@@ -1680,26 +1680,34 @@ a.tel{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}a.tel .i
 .qs-sug{align-self:flex-start;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line-strong);color:var(--ink-2)}
 .qs-capsula{display:none}
 
-/* Cápsula sobre la isla (solo celular, donde está la isla): grafito en los dos temas, como la isla. */
+/* Cápsula sobre la isla (solo celular, donde está la isla): el mismo vidrio que la isla, en el tema de la pantalla.
+   Un escalón por debajo de la isla en sombra para no competir con la navegación ni con Guardar. */
 @media screen and (max-width:767px){
   .qs-capsula{display:block;position:fixed;z-index:29;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(var(--isla-reserva) + 8px);max-width:440px;margin:0 auto}
   .qs-capsula[hidden]{display:none}
   .app:has(.qs-capsula:not([hidden])) .principal{padding-bottom:calc(var(--isla-reserva) + 96px)}
-  .app:has(.qs-capsula:not([hidden])) .toasts{bottom:calc(var(--isla-reserva) + 80px)}
+  body:has(.qs-capsula:not([hidden])) .toasts{bottom:calc(var(--isla-reserva) + 80px)}
   .app[data-modo=enfoque] .qs-capsula{display:none}
+  /* Barra de cambios sin guardar: siempre por encima de la isla, con aire, y delante de ella si llegan a cruzarse. */
+  .ajg-barra-envoltura{bottom:calc(var(--isla-reserva) + 10px);z-index:31}
 }
 @media screen and (max-width:767px) and (max-height:540px){
   .app:has(#contenido input:focus, #contenido textarea:focus, #contenido select:focus) .qs-capsula{display:none}
 }
-.qs-capsula,.qs-dlg{--ink:#f5f6f7;--ink-2:#bcc1c8;--muted:#959ca6;--line:#383c43;--line-strong:#6b727d;--surface:#22252a;--surface-2:#22252a;--amber:#f2c27a;--amber-bg:#33240f;--marca-texto:#a3aaff;--marca-linea:#4a52b8;color-scheme:dark;color:var(--ink)}
-.qs-cap-b{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;padding:6px 8px 6px 6px;border-radius:28px;border:1px solid #2e3238;background:#191b1f;color:inherit;font:inherit;text-align:left;cursor:pointer;box-shadow:0 10px 30px rgb(17 18 20 / .32);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.qs-dlg{--ink:#f5f6f7;--ink-2:#bcc1c8;--muted:#959ca6;--line:#383c43;--line-strong:#6b727d;--surface:#22252a;--surface-2:#22252a;--amber:#f2c27a;--amber-bg:#33240f;--marca-texto:#a3aaff;--marca-linea:#4a52b8;color-scheme:dark;color:var(--ink)}
+.qs-cap-b{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;padding:6px 8px 6px 6px;border-radius:999px;border:1px solid var(--isla-borde-c);background:var(--isla-fondo);color:var(--ink);font:inherit;text-align:left;cursor:pointer;box-shadow:inset 0 1px 0 var(--isla-brillo),0 8px 24px -10px rgb(17 18 20 / .28);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.qs-cap-b{background:var(--isla-vidrio);-webkit-backdrop-filter:var(--isla-desenfoque);backdrop-filter:var(--isla-desenfoque)}}
+@media (prefers-reduced-transparency:reduce){.qs-cap-b{background:var(--isla-fondo);-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-contrast:more){.qs-cap-b{background:var(--isla-fondo);-webkit-backdrop-filter:none;backdrop-filter:none;border-color:var(--line-strong)}}
+@media (forced-colors:active){.qs-cap-b{border-color:CanvasText}}
 .qs-cap-b .qs-ic{border-radius:50%}
-.qs-cap-b:focus-visible{outline:2px solid #a3aaff;outline-offset:2px}
+.qs-cap-b:focus-visible{outline:2px solid var(--marca-texto);outline-offset:2px}
 .qs-cap-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.qs-cap-s{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#a3aaff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qs-cap-s{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--marca-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-tema-efectivo="oscuro"] .qs-cap-s{color:color-mix(in srgb,var(--marca-texto) 60%,#fff)}
 .qs-cap-x{font-size:14px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .qs-cap-r{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qs-cap-f{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}.qs-cap-f .ic{width:18px;height:18px;transform:rotate(180deg)}
+.qs-cap-f{width:36px;height:36px;border-radius:50%;background:color-mix(in srgb,currentColor 9%,transparent);display:grid;place-items:center;flex:none}.qs-cap-f .ic{width:18px;height:18px;transform:rotate(180deg)}
 .qs-dlg{width:min(440px,calc(100% - 24px));max-width:none;max-height:calc(100dvh - 32px);margin:auto auto max(12px,env(safe-area-inset-bottom,0px));padding:0;border:1px solid #2e3238;border-radius:28px;background:#191b1f;box-shadow:0 14px 34px rgb(0 0 0 / .5);overflow-y:auto}
 .qs-dlg::backdrop{background:rgba(0,0,0,.4)}
 .qs-dlg-c{display:flex;flex-direction:column;gap:12px;padding:14px}
