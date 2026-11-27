@@ -253,6 +253,12 @@
   :is(.orden-f, .acceso, .li-b):active,
   .tarjeta:has(> .t-cab:active) { transform: scale(.985); transition-duration: 60ms; }
   :is(.filtros .filtro, .seg a, .pt-fmas, .subnav a):active { transform: scale(.96); transition-duration: 60ms; }
+  /* Taller: la píldora (no su área táctil), el segmento y los botones redondos; las filas solo cambian de fondo. */
+  :is(.tb-pill > span, .tb-seg a, .tb-ayuda, .tb-borrar) {
+    transition: transform 160ms var(--respuesta-curva), background-color var(--respuesta-rapida),
+      border-color var(--respuesta-rapida), color var(--respuesta-rapida);
+  }
+  :is(.tb-pill:active > span, .tb-seg a:active, .tb-ayuda:active, .tb-borrar:active) { transform: scale(.96); transition-duration: 60ms; }
   /* El chevron gira con el desplegable; el contenido aparece desde arriba sin mover lo que sigue. */
   details.mas > summary::after { transition: transform var(--respuesta) var(--respuesta-curva), opacity var(--respuesta-rapida); }
   details.mas[open] > .mas__cuerpo { animation: desplegar var(--respuesta) var(--respuesta-curva); }

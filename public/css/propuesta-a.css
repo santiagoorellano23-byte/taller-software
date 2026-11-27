@@ -1830,18 +1830,88 @@ html[data-tema-efectivo="oscuro"] .qs-cap-s{color:color-mix(in srgb,var(--marca-
 .ic-hoja{transform:rotate(180deg)}
 @media (min-width:1100px){.mas-b{display:block;columns:2;column-gap:24px}.mas-g{break-inside:avoid;margin-bottom:18px}.mas-ayuda{column-span:all}}
 
-/* ---------- Taller: cifra del listado y el auto de la colección ---------- */
-.tl-cab{align-items:center;gap:4px;min-height:92px}
-.tl-tit{flex:1;min-width:0}
-.tl-tit h1{font-size:32px;font-weight:700;letter-spacing:-.035em;line-height:1.05}
-.tl-cifra{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;margin:6px 0 0;font-size:14px;line-height:1.25;color:var(--muted)}
-.tl-cifra b{font-size:24px;font-weight:700;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
-.tl-auto{flex:none;display:block;width:clamp(108px,34vw,148px);height:auto;aspect-ratio:320/179;margin:0 -6px 0 0;pointer-events:none;user-select:none;-webkit-user-drag:none}
-.tl-cab .a-cab-acc{align-self:flex-start;margin-top:2px}
-html[data-tema-efectivo="oscuro"] .tl-auto{filter:brightness(1.18) contrast(1.04)}
-@media (min-width:1024px){.tl-auto{width:172px}.tl-cab{min-height:104px}}
-.tl-cab{align-items:flex-end}
-.tl-tit{align-self:center}
+/* ---------- Taller (propuesta B): encabezado oscuro, controles y órdenes en una sola superficie ---------- */
+/* El encabezado queda oscuro en los dos temas; en oscuro se separa del fondo con un tono más claro y un filo. */
+.tb-cab{--tb-cab:#141618;position:relative;display:flex;align-items:flex-start;min-height:136px;border-radius:20px;background:var(--tb-cab);color:#fff;overflow:hidden;isolation:isolate}
+html[data-tema-efectivo="oscuro"] .tb-cab{--tb-cab:#1e2126;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.tb-cab-t{position:relative;z-index:1;flex:none;display:flex;flex-direction:column;padding:16px 0 14px 16px}
+.tb-cab h1{margin:0;font-size:28px;line-height:1;font-weight:700;letter-spacing:-.02em;color:#fff}
+.tb-cifra{display:flex;align-items:center;gap:10px;margin:8px 0 0}
+.tb-cifra b{font-size:76px;line-height:.86;font-weight:700;letter-spacing:-.05em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb-cifra.larga b{font-size:56px}
+.tb-cifra span{width:74px;font-size:15px;line-height:1.2;font-weight:600;color:#c3c8ce}
+/* Auto ilustrativo: abajo a la derecha, sin tapar la ayuda ni la cifra; se achica antes que el texto. */
+.tb-auto{position:absolute;right:6px;bottom:2px;width:clamp(132px,calc(100% - 196px),186px);height:auto;aspect-ratio:176/102;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.tb-cab .tb-ayuda{position:absolute;top:10px;right:10px;z-index:2;border-radius:50%;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.07);color:#f2f4f6}
+.tb-cab .tb-ayuda:active{background:rgba(255,255,255,.18)}
+.tb-cab .tb-ayuda:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media (hover:hover) and (pointer:fine){.tb-cab .tb-ayuda:hover{background:rgba(255,255,255,.14)}}
+@media (max-width:359px){.tb-cifra b{font-size:64px}.tb-cifra.larga b{font-size:48px}.tb-auto{width:120px}}
+
+/* Buscador con botón propio para borrar (44 px) en lugar del de cada navegador. */
+.tb-busca{min-height:48px;padding-right:2px}
+.tb-busca input{min-height:46px}
+.tb-busca input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.tb-borrar{flex:none;width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.tb-borrar .ic{width:20px;height:20px}
+.tb-borrar:active{background:var(--surface-3)}
+
+/* Conjunto de órdenes: segmento con la opción elegida en grafito. */
+.tb-seg{container-type:inline-size;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:2px;border-radius:14px;background:var(--surface);border:1px solid var(--line-strong)}
+.tb-seg a{min-height:44px;border-radius:12px;padding:2px 6px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;line-height:1.15;font-weight:500;color:var(--ink-2);text-decoration:none;transition:background-color 160ms ease,color 160ms ease}
+.tb-seg a[aria-current]{background:var(--grafito);color:var(--sobre-grafito);font-weight:650}
+.tb-seg a{font-size:clamp(13px,4.3cqw,15px)}
+.tb-seg.tres a{font-size:clamp(12.5px,3.9cqw,14px)}
+html[data-tema-efectivo="oscuro"] .tb-seg a[aria-current]{background:var(--ink);color:var(--bg)}
+@media (hover:hover) and (pointer:fine){.tb-seg a:not([aria-current]):hover{background:var(--surface-2)}}
+
+/* Etapas: píldora de 36 px dentro de un área táctil de 44 px; la elegida con contorno y cifra en grafito. */
+.tb-filtros{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-6px -16px 0;padding:0 16px;scroll-padding:16px;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,.2));mask-image:linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,.2))}
+.tb-filtros::-webkit-scrollbar{display:none}
+.tb-filtros::after{content:"";flex:0 0 1px}
+.tb-pill{flex:none;min-height:44px;display:flex;align-items:center;text-decoration:none;color:var(--ink-2)}
+.tb-pill>span{height:36px;display:flex;align-items:center;gap:7px;padding:0 6px 0 13px;border-radius:18px;border:1px solid var(--line-strong);font-size:14px;font-weight:500;white-space:nowrap;transition:border-color 160ms ease,background-color 160ms ease}
+.tb-pill b{min-width:22px;height:22px;padding:0 6px;border-radius:11px;display:inline-grid;place-items:center;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--surface-3);color:var(--ink-2)}
+.tb-pill[aria-current]{color:var(--ink)}
+.tb-pill[aria-current]>span{border:1.5px solid var(--ink);background:var(--surface);font-weight:650;padding-left:12.5px}
+.tb-pill[aria-current] b{background:var(--ink);color:var(--surface);font-weight:700}
+.tb-pill.cero:not([aria-current]){color:var(--muted)}
+.tb-pill.cero:not([aria-current]) b{background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong);color:var(--muted)}
+.tb-pill:focus-visible{outline:none}.tb-pill:focus-visible>span{outline:2px solid var(--marca-texto);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){.tb-pill:not([aria-current]):hover>span{background:var(--surface)}}
+@media (min-width:768px){.tb-filtros{margin:-6px 0 0;padding:0;flex-wrap:wrap;-webkit-mask-image:none;mask-image:none}}
+
+/* Órdenes: una superficie, bandas por etapa y filas que se leen de un vistazo (patente, modelo, estado, motivo). */
+.tb-lista{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.tb-grupo>h2{margin:0;padding:9px 16px 8px;background:var(--surface-2);display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:650;color:var(--ink-2)}
+.tb-grupo+.tb-grupo>h2{border-top:1px solid var(--line)}
+.tb-grupo>h2 span{font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.tb-ord{display:grid;grid-template-columns:100px minmax(0,1fr) 18px;grid-template-areas:"pl mo ch" "de de de";column-gap:12px;padding:12px 12px 13px 16px;border-top:1px solid var(--line-2);color:var(--ink);text-decoration:none;transition:background-color 120ms ease}
+.tb-ord[hidden]{display:none}
+.tb-ord .placa{grid-area:pl;align-self:start;width:100px;min-width:0;height:32px;padding:0 4px;font-size:21px;white-space:nowrap}
+.tb-ord .placa.sinpat{font-size:14px}
+.tb-mod{grid-area:mo;align-self:start;min-height:32px;display:flex;align-items:center;gap:8px;min-width:0}
+.tb-mod .logo{width:30px;height:30px;border-radius:8px}.tb-mod .logo img{width:22px;height:22px}
+.tb-mod b{min-width:0;font-size:16px;line-height:1.2;font-weight:700;letter-spacing:-.01em;overflow-wrap:break-word}
+.tb-chev{grid-area:ch;align-self:center;width:18px;height:18px;color:var(--ink-2)}
+.tb-det{grid-area:de;margin-top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.tb-det .estado{min-height:28px;padding:2px 10px 2px 8px;border:0;border-radius:8px;font-size:13.5px;font-weight:650;line-height:1.2;max-width:100%}
+.tb-det .estado .i{width:15px;height:15px;flex:none}
+.tb-mot{align-self:stretch;font-size:14.5px;line-height:1.35;color:var(--ink);overflow-wrap:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tb-det small{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tb-ord:active{background:var(--surface-3)}
+.tb-ord:focus-visible{outline:2px solid var(--marca-texto);outline-offset:-2px;border-radius:4px}
+@media (hover:hover) and (pointer:fine){.tb-ord:hover{background:var(--surface-2)}}
+.tb-sin{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:24px 16px 22px}
+.tb-sin .vt{font-weight:650}.tb-sin .vx{font-size:14px;color:var(--muted);max-width:34ch;overflow-wrap:anywhere}.tb-sin .btn{margin-top:8px;border-radius:999px}
+/* Escritorio: cada orden en una línea para comparar (patente, modelo, estado y motivo alineados). */
+@media (min-width:900px){
+  .tb-cab{min-height:144px}.tb-auto{width:200px;right:76px}
+  .tb-ord{grid-template-columns:100px minmax(180px,1fr) minmax(0,1.6fr) 18px;grid-template-areas:"pl mo de ch";align-items:start;padding:14px 16px}
+  .tb-det{margin-top:0;display:grid;grid-template-columns:200px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
+  .tb-det .estado{grid-row:span 2;justify-self:start}
+  .tb-mot{-webkit-line-clamp:2}
+}
 /* Escritorio: Taller y Clientes en una sola columna de filas anchas, para comparar autos sin recorrer tarjetas. */
 @media (min-width:1100px){
   .grupo-o:has(>.orden-f){display:flex;flex-direction:column;gap:8px}
